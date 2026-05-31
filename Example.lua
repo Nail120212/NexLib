@@ -1,8 +1,8 @@
-local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/YOUR_REPO/Source.lua"))()
+local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/Nail120212/NexLib/refs/heads/main/Source.lua"))()
 local Window = Library:Window({
-    Title = "MyHub",
+    Title = "NexLib",
     Subtitle = "v1.0",
-    Size = Vector2.new(650, 400),
+    Size = Vector2.new(400, 380),
     IconImage = Library.Icons["sword"]
 })
 local MainPage = Window:Page({
@@ -296,6 +296,6 @@ MiscRow:Toggle({
         print("NoFog", Value)
     end
 })
-local Watermark = Library:Watermark("MyHub")
+local Watermark = Library:Watermark("NexxToHub")
 local KeyList = Library:KeybindList()
-Library:Notification("MyHub", "Loaded successfully", 4)
+Library:Notification("NexxtoHub", "Loaded successfully", 4)
