@@ -1,5 +1,4 @@
--- Made by samet
--- Reposted by @da7mu on Discord
+-- Made by zel
 
 if getgenv().Library then
     getgenv().Library:Unload()
