@@ -1,4 +1,4 @@
-local Library = loadstring(game:HttpGet("YOUR_RAW_LINK_HERE"))()
+local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/Nail120212/NexLib/refs/heads/main/euphoriav2/euphoria.lua"))()
 
 --> initialize with title, logo (lucide icon or rbxassetid), and custom size
 local Window = Library:init({
