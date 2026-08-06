@@ -429,7 +429,6 @@ function Library:init(config: ({ title: string?, logo: string?, size: UDim2? } |
     main.Name = "Main"
     main.Size = UDim2.new(0, 0, 0, 0)
     main.Position = UDim2.new(0.5, 0, 0.5, 0)
-    main.AnchorPoint = Vector2.new(0.5, 0.5)
     main.BackgroundColor3 = Theme.Background
     main.BackgroundTransparency = 0.05
     main.BorderSizePixel = 0
