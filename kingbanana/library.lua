@@ -1004,15 +1004,16 @@ function Library:NewWindow(ConfigWindow)
         Color = self.Theme.Accent,
         Parent = FloatingButton
     })
+    local CurrentSize = ConfigWindow.Size
     local DragGrip = Create("Frame", {
         Name = "DragGrip",
         Parent = DropShadowHolder,
         AnchorPoint = Vector2.new(0.5, 0),
-        BackgroundColor3 = Color3.fromRGB(160, 160, 168),
-        BackgroundTransparency = 0.15,
+        BackgroundColor3 = Color3.fromRGB(170, 170, 178),
+        BackgroundTransparency = 0.12,
         BorderSizePixel = 0,
-        Position = UDim2.new(0.5, 0, 1, 8),
-        Size = UDim2.new(0, 56, 0, 5),
+        Position = UDim2.new(0.5, 0, 1, 10),
+        Size = UDim2.new(0, 64, 0, 5),
         ZIndex = 60
     })
     Create("UICorner", {CornerRadius = UDim.new(1, 0), Parent = DragGrip})
@@ -1021,20 +1022,40 @@ function Library:NewWindow(ConfigWindow)
     local ResizeHandle = Create("Frame", {
         Name = "ResizeHandle",
         Parent = DropShadowHolder,
-        AnchorPoint = Vector2.new(1, 0),
-        BackgroundColor3 = Color3.fromRGB(160, 160, 168),
-        BackgroundTransparency = 0.15,
+        AnchorPoint = Vector2.new(1, 1),
+        BackgroundTransparency = 1,
         BorderSizePixel = 0,
-        Position = UDim2.new(1, -2, 1, 8),
-        Size = UDim2.new(0, 28, 0, 5),
+        Position = UDim2.new(1, 10, 1, 10),
+        Size = UDim2.new(0, 22, 0, 22),
         ZIndex = 60
     })
-    Create("UICorner", {CornerRadius = UDim.new(1, 0), Parent = ResizeHandle})
+    local ResizeH = Create("Frame", {
+        Parent = ResizeHandle,
+        AnchorPoint = Vector2.new(1, 1),
+        BackgroundColor3 = Color3.fromRGB(170, 170, 178),
+        BackgroundTransparency = 0.12,
+        BorderSizePixel = 0,
+        Position = UDim2.new(1, 0, 1, 0),
+        Size = UDim2.new(0, 22, 0, 5),
+        ZIndex = 61
+    })
+    Create("UICorner", {CornerRadius = UDim.new(1, 0), Parent = ResizeH})
+    local ResizeV = Create("Frame", {
+        Parent = ResizeHandle,
+        AnchorPoint = Vector2.new(1, 1),
+        BackgroundColor3 = Color3.fromRGB(170, 170, 178),
+        BackgroundTransparency = 0.12,
+        BorderSizePixel = 0,
+        Position = UDim2.new(1, 0, 1, 0),
+        Size = UDim2.new(0, 5, 0, 22),
+        ZIndex = 61
+    })
+    Create("UICorner", {CornerRadius = UDim.new(1, 0), Parent = ResizeV})
     do
         local Resizing = false
         local StartPos, StartSize
         local MinW, MinH = 300, 240
-        ResizeHandle.InputBegan:Connect(function(Input)
+        local function BeginResize(Input)
             if Input.UserInputType == Enum.UserInputType.MouseButton1 or Input.UserInputType == Enum.UserInputType.Touch then
                 Resizing = true
                 StartPos = Input.Position
@@ -1042,10 +1063,16 @@ function Library:NewWindow(ConfigWindow)
                 Input.Changed:Connect(function()
                     if Input.UserInputState == Enum.UserInputState.End then
                         Resizing = false
+                        local s = DropShadowHolder.AbsoluteSize
+                        CurrentSize = UDim2.new(0, s.X, 0, s.Y)
+                        ConfigWindow.Size = CurrentSize
                     end
                 end)
             end
-        end)
+        end
+        ResizeHandle.InputBegan:Connect(BeginResize)
+        ResizeH.InputBegan:Connect(BeginResize)
+        ResizeV.InputBegan:Connect(BeginResize)
         UserInputService.InputChanged:Connect(function(Input)
             if not Resizing then return end
             if Input.UserInputType == Enum.UserInputType.MouseMovement or Input.UserInputType == Enum.UserInputType.Touch then
@@ -1054,6 +1081,8 @@ function Library:NewWindow(ConfigWindow)
                 local nw = math.max(MinW, StartSize.X + dx)
                 local nh = math.max(MinH, StartSize.Y + dy)
                 DropShadowHolder.Size = UDim2.new(0, nw, 0, nh)
+                CurrentSize = UDim2.new(0, nw, 0, nh)
+                ConfigWindow.Size = CurrentSize
             end
         end)
     end
@@ -1311,6 +1340,11 @@ function Library:NewWindow(ConfigWindow)
     end
     local function ToggleWindow()
         if DropShadowHolder.Visible then
+            local s = DropShadowHolder.AbsoluteSize
+            if s.X > 10 and s.Y > 10 then
+                CurrentSize = UDim2.new(0, s.X, 0, s.Y)
+                ConfigWindow.Size = CurrentSize
+            end
             Library:TweenInstance(DropShadowHolder, 0.2, "Size", UDim2.new(0, 0, 0, 0), function()
                 DropShadowHolder.Visible = false
                 DropdownZone.Visible = false
@@ -1318,7 +1352,7 @@ function Library:NewWindow(ConfigWindow)
         else
             DropShadowHolder.Visible = true
             DropShadowHolder.Size = UDim2.new(0, 0, 0, 0)
-            Library:TweenInstance(DropShadowHolder, 0.28, "Size", ConfigWindow.Size)
+            Library:TweenInstance(DropShadowHolder, 0.28, "Size", CurrentSize or ConfigWindow.Size)
         end
     end
     FloatingButton.MouseButton1Click:Connect(ToggleWindow)
@@ -1333,10 +1367,15 @@ function Library:NewWindow(ConfigWindow)
         end)
     end
     Large.MouseButton1Click:Connect(function()
-        if DropShadowHolder.Size == ConfigWindow.Size then
-            DropShadowHolder.Size = UDim2.new(0, 700, 0, 430)
+        local s = DropShadowHolder.AbsoluteSize
+        if math.abs(s.X - 700) < 2 and math.abs(s.Y - 430) < 2 then
+            DropShadowHolder.Size = CurrentSize or ConfigWindow.Size
         else
-            DropShadowHolder.Size = ConfigWindow.Size
+            if s.X > 10 then
+                CurrentSize = UDim2.new(0, s.X, 0, s.Y)
+                ConfigWindow.Size = CurrentSize
+            end
+            DropShadowHolder.Size = UDim2.new(0, 700, 0, 430)
         end
     end)
 
