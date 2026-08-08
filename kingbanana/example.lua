@@ -1,4 +1,4 @@
-local Library = loadstring(game:HttpGet("YOUR_RAW_KINGBANANA_URL_HERE"))()
+local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/Nail120212/NexLib/refs/heads/main/kingbanana/library.lua"))()
 
 local Window = Library:NewWindow({
     Title = "KingBanana Hub",
