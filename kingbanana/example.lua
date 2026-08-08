@@ -28,137 +28,121 @@ local ThemeTab = Window:T("Theme", "palette")
 
 Main:AddToggle({
     Title = "Enable Feature",
-    Description = "Left side by default",
+    Description = "Left side",
     Default = false,
     Position = "left",
     Callback = function(Value)
         Library:SetFlag("EnableFeature", Value)
-        print("Toggle:", Value)
     end
 })
 
 Main:AddKeybind({
     Title = "Action Key",
-    Description = "Press to trigger",
     Default = "E",
     Position = "left",
     Callback = function(Key)
-        print("Keybind:", Key)
+        print("Key:", Key)
     end
 })
 
 Main:AddButton({
-    Title = "Execute",
-    Description = "Runs action",
+    Title = "Open Dialog",
     Position = "left",
     Callback = function()
-        Window:Notify({
-            Title = "Executed",
-            Content = "Action completed",
-            Duration = 3
+        Window:Dialog({
+            Title = "Confirm",
+            Content = "Do you want to continue this action?",
+            Buttons = {
+                {Title = "Yes", Callback = function()
+                    Window:Notify({Title = "OK", Content = "Confirmed", Type = "Success", Duration = 2})
+                end},
+                {Title = "No", Callback = function()
+                    Window:Notify({Title = "Cancelled", Content = "Action cancelled", Type = "Warning", Duration = 2})
+                end}
+            }
         })
     end
 })
 
+Main:AddMultiButton({
+    Title = "Button Section",
+    Position = "left",
+    Buttons = {
+        {Title = "Example", Callback = function()
+            Window:Notify({Title = "Example", Content = "Clicked", Type = "Info", Duration = 2})
+        end},
+        {Title = "Example Off", Callback = function()
+            Window:Notify({Title = "Off", Content = "Clicked", Type = "Error", Duration = 2})
+        end},
+        {Title = "Example Single", Callback = function()
+            print("single")
+        end}
+    }
+})
+
 Main:AddSlider({
     Title = "Speed",
-    Description = "Adjust speed",
     Min = 1,
     Max = 100,
     Default = 50,
-    Increment = 1,
-    Position = "left",
+    Position = "right",
     Callback = function(Value)
         Library:SetFlag("Speed", Value)
-        print("Speed:", Value)
     end
 })
 
 Main:AddDropdown({
     Title = "Mode",
-    Description = "Choose mode",
     Values = {"Normal", "Fast", "Ultra"},
     Default = "Normal",
+    Multi = true,
     Position = "right",
     Callback = function(Value)
-        Library:SetFlag("Mode", Value)
-        print("Mode:", Value)
-    end
-})
-
-Main:AddInput({
-    Title = "Username",
-    Description = "Enter name",
-    PlaceHolder = "Player...",
-    Default = "",
-    Position = "right",
-    Callback = function(Text)
-        Library:SetFlag("Username", Text)
-        print("Input:", Text)
+        print(Value)
     end
 })
 
 Main:AddColorPicker({
     Title = "Accent",
-    Description = "Pick color",
     Default = Color3.fromRGB(158, 158, 158),
     Position = "right",
     Callback = function(Color)
-        print("Color:", Color)
+        print(Color)
     end
 })
 
-Misc:AddSeperator("Groupbox API")
+Main:AddInput({
+    Title = "Username",
+    PlaceHolder = "Player...",
+    Position = "right",
+    Callback = function(Text)
+        Library:SetFlag("Username", Text)
+    end
+})
 
 local LeftBox = Misc:AddLeftGroupbox("Left Box")
-LeftBox:AddToggle({
-    Title = "Left Only",
-    Default = true,
-    Callback = function(v) print(v) end
-})
-LeftBox:AddSlider({
-    Title = "Value",
-    Min = 0,
-    Max = 10,
-    Default = 5,
-    Callback = function(v) print(v) end
-})
+LeftBox:AddToggle({Title = "Left Only", Default = true, Callback = function(v) end})
 
 local RightBox = Misc:AddRightGroupbox("Right Box")
 RightBox:AddButton({
-    Title = "Right Button",
+    Title = "Notify Error",
     Callback = function()
-        Window:Notify({Title = "Right", Content = "From right groupbox", Duration = 2})
+        Window:Notify({Title = "Error", Content = "Something failed", Type = "Error", Duration = 3})
     end
-})
-RightBox:AddKeybind({
-    Title = "Hotkey",
-    Default = "Q",
-    Callback = function(k) print(k) end
 })
 
 Misc:AddParagraph({
     Title = "Info",
-    Content = "Position = left/right on components. Tags on window title. ToggleKey opens UI. Live theme switch below.",
+    Content = "Search filters tabs and elements. Dialog/Popup, MultiButton, live theme, config flags.",
     Position = "left"
-})
-
-Misc:AddToggle({
-    Title = "Locked Feature",
-    Default = false,
-    Locked = true,
-    Locktext = "premium",
-    Position = "right",
-    Callback = function() end
 })
 
 Misc:AddButton({
     Title = "Save Config",
     Position = "left",
     Callback = function()
-        if Library:SaveConfig("myhub") then
-            Window:Notify({Title = "Config", Content = "Saved", Duration = 2})
-        end
+        Library:SaveConfig("myhub")
+        Window:Notify({Title = "Config", Content = "Saved", Type = "Success", Duration = 2})
     end
 })
 
@@ -166,16 +150,17 @@ Misc:AddButton({
     Title = "Load Config",
     Position = "left",
     Callback = function()
-        if Library:LoadConfig("myhub") then
-            Window:Notify({Title = "Config", Content = "Loaded", Duration = 2})
-        end
+        Library:LoadConfig("myhub")
+        Window:Notify({Title = "Config", Content = "Loaded", Type = "Info", Duration = 2})
     end
 })
 
-Misc:AddImage("Banner", {
-    Image = "rbxassetid://89646749075297",
-    Height = 100,
-    Position = "right"
+Misc:AddButton({
+    Title = "Destroy UI",
+    Position = "right",
+    Callback = function()
+        Window:Destroy()
+    end
 })
 
 ThemeTab:AddButton({
@@ -183,7 +168,6 @@ ThemeTab:AddButton({
     Position = "left",
     Callback = function()
         Library:SetTheme("Dark")
-        Window:Notify({Title = "Theme", Content = "Switched to Dark", Duration = 2})
     end
 })
 
@@ -192,7 +176,6 @@ ThemeTab:AddButton({
     Position = "left",
     Callback = function()
         Library:SetTheme("Light")
-        Window:Notify({Title = "Theme", Content = "Switched to Light", Duration = 2})
     end
 })
 
@@ -201,30 +184,8 @@ ThemeTab:AddSlider({
     Min = 0,
     Max = 50,
     Default = 6,
-    Increment = 1,
-    Position = "left",
+    Position = "right",
     Callback = function(v)
         Library:SetTransparency(v / 100)
-    end
-})
-
-ThemeTab:AddButton({
-    Title = "Custom Purple Theme",
-    Position = "right",
-    Callback = function()
-        Library:CreateCustomTheme("Purple", {
-            Main = Color3.fromRGB(18, 12, 28),
-            Accent = Color3.fromRGB(160, 100, 255),
-            Text = Color3.fromRGB(255, 255, 255),
-            TextDisabled = Color3.fromRGB(170, 160, 190),
-            Background = Color3.fromRGB(28, 22, 40),
-            Stroke = Color3.fromRGB(100, 80, 140),
-            Card = Color3.fromRGB(255, 255, 255),
-            CardTransparency = 0.94,
-            Section = Color3.fromRGB(255, 255, 255),
-            SectionTransparency = 0.97
-        })
-        Library:SetTheme("Purple")
-        Window:Notify({Title = "Theme", Content = "Custom Purple applied", Duration = 2})
     end
 })

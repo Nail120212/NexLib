@@ -704,11 +704,12 @@ function Library:NewWindow(ConfigWindow)
     })
     task.defer(function()
         local titleW = NameHub.TextBounds.X
-        TitleTags.Position = UDim2.new(0, 18 + titleW + 10, 0, 6)
+        TitleTags.Position = UDim2.new(0, 18 + titleW + 18, 0, 7)
     end)
     NameHub:GetPropertyChangedSignal("TextBounds"):Connect(function()
-        TitleTags.Position = UDim2.new(0, 18 + NameHub.TextBounds.X + 10, 0, 6)
+        TitleTags.Position = UDim2.new(0, 18 + NameHub.TextBounds.X + 18, 0, 7)
     end)
+
     Create("TextLabel", {
         Name = "Desc",
         Parent = Left,
@@ -1006,8 +1007,16 @@ function Library:NewWindow(ConfigWindow)
         cfnotify = Library:MakeConfig({
             Title = "Notification",
             Content = "",
-            Duration = 5
+            Duration = 5,
+            Type = "Info"
         }, cfnotify or {})
+        local TypeColors = {
+            Info = Library.Theme.Accent,
+            Success = Color3.fromRGB(80, 200, 120),
+            Warning = Color3.fromRGB(255, 190, 60),
+            Error = Color3.fromRGB(255, 80, 80)
+        }
+        local AccentCol = TypeColors[cfnotify.Type] or TypeColors.Info
         local Width = 300
         local ContentHeight = TextService:GetTextSize(
             cfnotify.Content,
@@ -1031,11 +1040,15 @@ function Library:NewWindow(ConfigWindow)
             Parent = Notification
         })
         local NotifyStroke = Create("UIStroke", {
-            Color = Library.Theme.Stroke,
-            Transparency = 0.5,
+            Color = AccentCol,
+            Transparency = 0.35,
             Parent = Notification
         })
-        Library:CreateAccentBar(Notification, 10)
+        local AccentBarN = Library:CreateAccentBar(Notification, 10)
+        if AccentBarN then
+            AccentBarN.BackgroundColor3 = AccentCol
+        end
+
         local TitleNotify = Create("TextLabel", {
             Name = "Title",
             Parent = Notification,
@@ -1991,8 +2004,13 @@ function Library:NewWindow(ConfigWindow)
                             Library:TweenInstance(Item.Title, 0.2, "TextTransparency", Selected and 0 or 0.5)
                         end
                     end
-                    local Joined = table.concat(self.Value, ", ")
-                    SelectText.Text = Joined
+                    if cfdropdown.Multi then
+                        local n = #self.Value
+                        SelectText.Text = n == 0 and "None" or (n == 1 and self.Value[1] or (n .. " selected"))
+                    else
+                        SelectText.Text = table.concat(self.Value, ", ")
+                    end
+
                     if cfdropdown.Multi then
                         cfdropdown.Callback(self.Value)
                     else
@@ -2795,7 +2813,8 @@ function Library:NewWindow(ConfigWindow)
                     HexInput.Text = PreviewHex.Text
                     SatValFrame.BackgroundColor3 = Color3.fromHSV(Hue, 1, 1)
                     SatValKnob.Position = UDim2.new(Sat, 0, 1 - Val, 0)
-                    HueKnob.Position = UDim2.new(0.5, 0, 1 - Hue, 0)
+                    HueKnob.Position = UDim2.new(0.5, 0, Hue, 0)
+
                     cfcolorpicker.Callback(CurrentColor)
                 end
                 function PickerFunc:Set(Value)
@@ -2862,10 +2881,11 @@ function Library:NewWindow(ConfigWindow)
                     if Input.UserInputType == Enum.UserInputType.MouseButton1 or Input.UserInputType == Enum.UserInputType.Touch then
                         DragMode = "H"
                         local _, Y = ApplyFromPosition(HueFrame, Input.Position)
-                        Hue = 1 - Y
+                        Hue = Y
                         UpdateColor()
                     end
                 end)
+
                 UserInputService.InputChanged:Connect(function(Input)
                     if DragMode == "SV" and (Input.UserInputType == Enum.UserInputType.MouseMovement or Input.UserInputType == Enum.UserInputType.Touch) then
                         local X, Y = ApplyFromPosition(SatValFrame, Input.Position)
@@ -2874,10 +2894,11 @@ function Library:NewWindow(ConfigWindow)
                         UpdateColor()
                     elseif DragMode == "H" and (Input.UserInputType == Enum.UserInputType.MouseMovement or Input.UserInputType == Enum.UserInputType.Touch) then
                         local _, Y = ApplyFromPosition(HueFrame, Input.Position)
-                        Hue = 1 - Y
+                        Hue = Y
                         UpdateColor()
                     end
                 end)
+
                 UserInputService.InputEnded:Connect(function(Input)
                     if Input.UserInputType == Enum.UserInputType.MouseButton1 or Input.UserInputType == Enum.UserInputType.Touch then
                         DragMode = nil
@@ -3244,8 +3265,119 @@ function Library:NewWindow(ConfigWindow)
                 end
                 return TagFunc
             end
+            function SectionFunc:AddMultiButton(cfmb)
+                cfmb = Library:MakeConfig({
+                    Title = "Button Section",
+                    Buttons = {}
+                }, cfmb or {})
+                local Opened = true
+                local Card = MakeCardBase(SectionList, 35)
+                Card.Name = "MultiButton"
+                local Header = Create("TextButton", {
+                    Parent = Card,
+                    BackgroundTransparency = 1,
+                    Size = UDim2.new(1, 0, 0, 32),
+                    Text = "",
+                    AutoButtonColor = false
+                })
+                Create("TextLabel", {
+                    Name = "Title",
+                    Parent = Header,
+                    BackgroundTransparency = 1,
+                    Position = UDim2.new(0, 18, 0, 0),
+                    Size = UDim2.new(1, -50, 1, 0),
+                    Font = Enum.Font.GothamBold,
+                    Text = cfmb.Title,
+                    TextColor3 = Library.Theme.Text,
+                    TextSize = 13,
+                    TextXAlignment = Enum.TextXAlignment.Left
+                })
+                local Arrow = Create("TextLabel", {
+                    Parent = Header,
+                    BackgroundTransparency = 1,
+                    Position = UDim2.new(1, -28, 0, 0),
+                    Size = UDim2.new(0, 20, 1, 0),
+                    Font = Enum.Font.GothamBold,
+                    Text = "v",
+                    TextColor3 = Library.Theme.TextDisabled,
+                    TextSize = 12
+                })
+                local Body = Create("Frame", {
+                    Name = "Body",
+                    Parent = Card,
+                    BackgroundTransparency = 1,
+                    Position = UDim2.new(0, 10, 0, 34),
+                    Size = UDim2.new(1, -20, 0, 0),
+                    Visible = true
+                })
+                local Grid = Create("UIGridLayout", {
+                    Parent = Body,
+                    CellSize = UDim2.new(0.5, -4, 0, 30),
+                    CellPadding = UDim2.new(0, 6, 0, 6),
+                    SortOrder = Enum.SortOrder.LayoutOrder,
+                    FillDirectionMaxCells = 2
+                })
+                local function RefreshSize()
+                    if Opened then
+                        local rows = math.ceil(math.max(1, #Body:GetChildren() - 1) / 2)
+                        local h = rows * 36
+                        Body.Size = UDim2.new(1, -20, 0, h)
+                        Card.Size = UDim2.new(1, 0, 0, 38 + h)
+                        Arrow.Text = "v"
+                    else
+                        Body.Size = UDim2.new(1, -20, 0, 0)
+                        Card.Size = UDim2.new(1, 0, 0, 35)
+                        Arrow.Text = ">"
+                    end
+                end
+                for _, B in ipairs(cfmb.Buttons) do
+                    local Btn = Create("TextButton", {
+                        Parent = Body,
+                        BackgroundColor3 = Library.Theme.Background,
+                        BorderSizePixel = 0,
+                        Size = UDim2.new(0, 100, 0, 30),
+                        Font = Enum.Font.GothamBold,
+                        Text = tostring(B.Title or "Button"),
+                        TextColor3 = Library.Theme.Text,
+                        TextSize = 12,
+                        AutoButtonColor = false
+                    })
+                    Create("UICorner", {CornerRadius = UDim.new(0, 4), Parent = Btn})
+                    Create("UIStroke", {Parent = Btn, Color = Library.Theme.Stroke, Transparency = 0.55})
+                    Btn.Activated:Connect(function()
+                        if B.Callback then B.Callback() end
+                    end)
+                end
+                Header.Activated:Connect(function()
+                    Opened = not Opened
+                    Body.Visible = Opened
+                    RefreshSize()
+                end)
+                task.defer(RefreshSize)
+                local MBFunc = {}
+                function MBFunc:AddButton(title, callback)
+                    local Btn = Create("TextButton", {
+                        Parent = Body,
+                        BackgroundColor3 = Library.Theme.Background,
+                        BorderSizePixel = 0,
+                        Font = Enum.Font.GothamBold,
+                        Text = tostring(title or "Button"),
+                        TextColor3 = Library.Theme.Text,
+                        TextSize = 12,
+                        AutoButtonColor = false
+                    })
+                    Create("UICorner", {CornerRadius = UDim.new(0, 4), Parent = Btn})
+                    Create("UIStroke", {Parent = Btn, Color = Library.Theme.Stroke, Transparency = 0.55})
+                    Btn.Activated:Connect(function()
+                        if callback then callback() end
+                    end)
+                    RefreshSize()
+                end
+                return MBFunc
+            end
             return SectionFunc
         end
+
         local LeftSection = MakeGroupbox("", LeftColumn)
 
         local RightSection = MakeGroupbox("", RightColumn)
@@ -3273,6 +3405,7 @@ function Library:NewWindow(ConfigWindow)
         function TabFunc:AddParagraph(cfg) return ResolveSection(cfg):AddParagraph(cfg) end
         function TabFunc:AddKeybind(cfg) return ResolveSection(cfg):AddKeybind(cfg) end
         function TabFunc:AddTag(cfg) return ResolveSection(cfg):AddTag(cfg) end
+        function TabFunc:AddMultiButton(cfg) return ResolveSection(cfg):AddMultiButton(cfg) end
         function TabFunc:AddLeftGroupbox(SectionName) return MakeGroupbox(SectionName, LeftColumn) end
         function TabFunc:AddRightGroupbox(SectionName) return MakeGroupbox(SectionName, RightColumn) end
         function TabFunc:AddSection(SectionName) return MakeGroupbox(SectionName, LeftColumn) end
@@ -3281,12 +3414,151 @@ function Library:NewWindow(ConfigWindow)
 
 
 
+
     SearchBox:GetPropertyChangedSignal("Text"):Connect(function()
         local Query = SearchBox.Text:lower()
         for _, TabData in ipairs(Window.Tabs) do
-            TabData.Button.Visible = Query == "" or string.find(TabData.Name:lower(), Query, 1, true) ~= nil
+            local TabMatch = Query == "" or string.find(TabData.Name:lower(), Query, 1, true) ~= nil
+            TabData.Button.Visible = TabMatch
+            if TabData.Layout then
+                for _, Col in ipairs(TabData.Layout:GetChildren()) do
+                    if Col:IsA("ScrollingFrame") then
+                        for _, Sec in ipairs(Col:GetChildren()) do
+                            if Sec.Name == "Section" then
+                                local List = Sec:FindFirstChild("SectionList")
+                                if List then
+                                    for _, Item in ipairs(List:GetChildren()) do
+                                        if Item:IsA("Frame") then
+                                            local TitleLabel = Item:FindFirstChild("Title")
+                                            if TitleLabel and TitleLabel:IsA("TextLabel") then
+                                                local text = TitleLabel.Text:lower()
+                                                Item.Visible = Query == "" or string.find(text, Query, 1, true) ~= nil or TabMatch and Query == ""
+                                                if Query ~= "" then
+                                                    Item.Visible = string.find(text, Query, 1, true) ~= nil
+                                                else
+                                                    Item.Visible = true
+                                                end
+                                            end
+                                        end
+                                    end
+                                end
+                            end
+                        end
+                    end
+                end
+            end
         end
     end)
+    function Window:Dialog(cfg)
+        cfg = Library:MakeConfig({
+            Title = "Dialog",
+            Content = "",
+            Buttons = {
+                {Title = "OK", Callback = function() end}
+            }
+        }, cfg or {})
+        local DialogFrame = Create("Frame", {
+            Name = "Dialog",
+            Parent = DropdownZone,
+            AnchorPoint = Vector2.new(0.5, 0.5),
+            BackgroundColor3 = Color3.fromRGB(18, 18, 18),
+            BorderSizePixel = 0,
+            Position = UDim2.new(0.5, 0, 0.5, 0),
+            Size = UDim2.new(0, 0, 0, 0),
+            Visible = true,
+            ZIndex = 25
+        })
+        Create("UICorner", {CornerRadius = UDim.new(0, 8), Parent = DialogFrame})
+        Create("UIStroke", {Color = Library.Theme.Stroke, Transparency = 0.4, Parent = DialogFrame})
+        Library:CreateAccentBar(DialogFrame, 10)
+        local DTitle = Create("TextLabel", {
+            Parent = DialogFrame,
+            BackgroundTransparency = 1,
+            Position = UDim2.new(0, 18, 0, 14),
+            Size = UDim2.new(1, -36, 0, 22),
+            Font = Enum.Font.GothamBold,
+            Text = cfg.Title,
+            TextColor3 = Library.Theme.Text,
+            TextSize = 16,
+            TextXAlignment = Enum.TextXAlignment.Left,
+            ZIndex = 26
+        })
+        Library:ApplyGradient(DTitle)
+        local ContentH = TextService:GetTextSize(cfg.Content, 13, Enum.Font.GothamBold, Vector2.new(340, 1000)).Y
+        Create("TextLabel", {
+            Parent = DialogFrame,
+            BackgroundTransparency = 1,
+            Position = UDim2.new(0, 18, 0, 42),
+            Size = UDim2.new(1, -36, 0, ContentH),
+            Font = Enum.Font.GothamBold,
+            Text = cfg.Content,
+            TextColor3 = Library.Theme.TextDisabled,
+            TextSize = 13,
+            TextWrapped = true,
+            TextXAlignment = Enum.TextXAlignment.Left,
+            ZIndex = 26
+        })
+        local BtnRow = Create("Frame", {
+            Parent = DialogFrame,
+            BackgroundTransparency = 1,
+            Position = UDim2.new(0, 18, 1, -52),
+            Size = UDim2.new(1, -36, 0, 36),
+            ZIndex = 26
+        })
+        Create("UIListLayout", {
+            Parent = BtnRow,
+            FillDirection = Enum.FillDirection.Horizontal,
+            HorizontalAlignment = Enum.HorizontalAlignment.Right,
+            Padding = UDim.new(0, 8)
+        })
+        local function CloseDialog()
+            Library:TweenInstance(DialogFrame, 0.18, "Size", UDim2.new(0, 0, 0, 0), function()
+                Window:CloseOverlay(DialogFrame)
+                DialogFrame:Destroy()
+            end)
+        end
+        for _, B in ipairs(cfg.Buttons) do
+            local Btn = Create("TextButton", {
+                Parent = BtnRow,
+                BackgroundColor3 = Library.Theme.Accent,
+                BorderSizePixel = 0,
+                Size = UDim2.new(0, 90, 0, 32),
+                Font = Enum.Font.GothamBold,
+                Text = tostring(B.Title or "OK"),
+                TextColor3 = Library.Theme.Text,
+                TextSize = 13,
+                ZIndex = 27,
+                AutoButtonColor = false
+            })
+            Create("UICorner", {CornerRadius = UDim.new(0, 5), Parent = Btn})
+            Btn.Activated:Connect(function()
+                if B.Callback then B.Callback() end
+                CloseDialog()
+            end)
+        end
+        local TotalH = 70 + ContentH + 50
+        Window:OpenOverlay(DialogFrame)
+        DialogFrame.Size = UDim2.new(0, 0, 0, 0)
+        Library:TweenInstance(DialogFrame, 0.22, "Size", UDim2.new(0, 380, 0, TotalH))
+    end
+    function Window:Popup(cfg)
+        return Window:Dialog(cfg)
+    end
+    function Window:Destroy()
+        for i = #Library.ActiveWindows, 1, -1 do
+            if Library.ActiveWindows[i] == Window then
+                table.remove(Library.ActiveWindows, i)
+                break
+            end
+        end
+        if ScreenGui then
+            ScreenGui:Destroy()
+        end
+    end
+    DropShadowHolder.Size = UDim2.new(0, 0, 0, 0)
+    DropShadowHolder.Visible = true
+    Library:TweenInstance(DropShadowHolder, 0.28, "Size", ConfigWindow.Size)
     return Window
 end
 return Library
+
