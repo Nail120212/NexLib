@@ -122,6 +122,11 @@ function Library:GetFlag(Name, Default)
     if v == nil then return Default end
     return v
 end
+Library.ConfigBinds = {}
+function Library:BindConfig(Flag, Element)
+    if not Flag or Flag == "" or not Element then return end
+    self.ConfigBinds[tostring(Flag)] = Element
+end
 function Library:SaveConfig(FileName)
     FileName = tostring(FileName or "kingbanana_config")
     local ok = pcall(function()
@@ -142,11 +147,30 @@ function Library:LoadConfig(FileName)
     if ok and typeof(data) == "table" then
         for k, v in pairs(data) do
             self.Flags[k] = v
+            local el = self.ConfigBinds[tostring(k)]
+            if el then
+                pcall(function()
+                    if el.Set then
+                        el:Set(v)
+                    elseif el.SetValue then
+                        el:SetValue(v)
+                    end
+                end)
+            end
         end
         return true
     end
     return false
 end
+function Library:ApplyConfigFlags()
+    for k, v in pairs(self.Flags) do
+        local el = self.ConfigBinds[tostring(k)]
+        if el and el.Set then
+            pcall(function() el:Set(v) end)
+        end
+    end
+end
+
 function Library:CreateCustomTheme(Name, Colors)
     if type(Name) ~= "string" or type(Colors) ~= "table" then return end
     local Base = {}
@@ -1420,23 +1444,30 @@ function Library:NewWindow(ConfigWindow)
         local RightColumn = MakeColumn("RightColumn", 1, 5, 10)
         local TabData
         local function SelectTab()
+            if Window.CurrentTab == TabData then return end
             for _, Data in ipairs(Window.Tabs) do
-                Data.Layout.Visible = false
                 Data.Choose.Visible = false
-                Library:TweenInstance(Data.NameTab, 0.2, "TextTransparency", 0.5)
+                Library:TweenInstance(Data.NameTab, 0.15, "TextTransparency", 0.5)
                 if Data.Icon then
                     Library:SetIconColor(Data.Icon, Library.Theme.TextDisabled, 0.15)
                 end
+                if Data.Layout and Data.Layout ~= Layout then
+                    Data.Layout.Visible = false
+                    Data.Layout.Position = UDim2.new(0, 0, 0, 0)
+                end
             end
             Layout.Visible = true
+            Layout.Position = UDim2.new(0, 0, 0, 24)
+            Library:TweenInstance(Layout, 0.22, "Position", UDim2.new(0, 0, 0, 0))
             Choose.Visible = true
             Window.CurrentTab = TabData
-            Library:TweenInstance(NameTab, 0.2, "TextTransparency", 0)
+            Library:TweenInstance(NameTab, 0.15, "TextTransparency", 0)
             if TabIcon then
                 Library:SetIconColor(TabIcon, Library.Theme.Accent, 0)
             end
         end
         ClickTab.Activated:Connect(SelectTab)
+
         TabData = {
             Name = name,
             Button = TabDisable,
@@ -1548,8 +1579,10 @@ function Library:NewWindow(ConfigWindow)
                     Locked = false,
                     Lockicon = "lock",
                     Locktext = "premium",
+                    Flag = "",
                     Callback = function() end
                 }, cftoggle or {})
+
                 local ToggleLock = Library:ResolveLockConfig(cftoggle)
                 local Toggle = MakeCardBase(SectionList, 35)
                 Toggle.Name = "Toggle"
@@ -1645,16 +1678,25 @@ function Library:NewWindow(ConfigWindow)
                     self.Value = Boolean
                     if Boolean then
                         TrackGradient.Enabled = true
-                        Library:TweenInstance(ToggleCheck, 0.25, "BackgroundColor3", Library.Theme.Accent)
-                        Library:TweenInstance(Check, 0.25, "Position", UDim2.new(0, 22, 0.5, 0))
-                        Library:TweenInstance(Check, 0.25, "BackgroundColor3", Library.Theme.Text)
+                        Library:TweenInstance(ToggleCheck, 0.2, "BackgroundColor3", Library.Theme.Accent)
+                        Library:TweenInstance(Check, 0.2, "Position", UDim2.new(0, 22, 0.5, 0))
+                        Library:TweenInstance(Check, 0.2, "BackgroundColor3", Library.Theme.Text)
                     else
                         TrackGradient.Enabled = false
-                        Library:TweenInstance(ToggleCheck, 0.25, "BackgroundColor3", ToggleLock.Locked and Color3.fromRGB(44, 44, 48) or Color3.fromRGB(60, 60, 60))
-                        Library:TweenInstance(Check, 0.25, "Position", UDim2.new(0, 3, 0.5, 0))
-                        Library:TweenInstance(Check, 0.25, "BackgroundColor3", ToggleLock.Locked and Color3.fromRGB(140, 140, 140) or Color3.fromRGB(200, 200, 200))
+                        Library:TweenInstance(ToggleCheck, 0.2, "BackgroundColor3", ToggleLock.Locked and Color3.fromRGB(44, 44, 48) or Color3.fromRGB(60, 60, 60))
+                        Library:TweenInstance(Check, 0.2, "Position", UDim2.new(0, 3, 0.5, 0))
+                        Library:TweenInstance(Check, 0.2, "BackgroundColor3", ToggleLock.Locked and Color3.fromRGB(140, 140, 140) or Color3.fromRGB(200, 200, 200))
+                    end
+                    if cftoggle.Flag and cftoggle.Flag ~= "" then
+                        Library:SetFlag(cftoggle.Flag, Boolean)
                     end
                     cftoggle.Callback(Boolean)
+                end
+                if cftoggle.Flag and cftoggle.Flag ~= "" then
+                    Library:BindConfig(cftoggle.Flag, ToggleFunc)
+                    if Library.Flags[cftoggle.Flag] ~= nil then
+                        ToggleFunc.Value = Library.Flags[cftoggle.Flag]
+                    end
                 end
                 ToggleFunc:Set(ToggleFunc.Value)
                 ToggleClick.Activated:Connect(function()
@@ -1666,6 +1708,7 @@ function Library:NewWindow(ConfigWindow)
                 end)
                 return ToggleFunc
             end
+
             function SectionFunc:AddButton(cfbutton)
                 cfbutton = Library:MakeConfig({
                     Title = "Button < Missing Title >",
@@ -1759,8 +1802,10 @@ function Library:NewWindow(ConfigWindow)
                     Values = {},
                     Default = {},
                     Multi = false,
+                    Flag = "",
                     Callback = function() end
                 }, cfdropdown or {})
+
                 local Dropdown = MakeCardBase(SectionList, 35)
                 Dropdown.Name = "Dropdown"
                 local Title = Create("TextLabel", {
@@ -2011,6 +2056,9 @@ function Library:NewWindow(ConfigWindow)
                         SelectText.Text = table.concat(self.Value, ", ")
                     end
 
+                    if cfdropdown.Flag and cfdropdown.Flag ~= "" then
+                        Library:SetFlag(cfdropdown.Flag, cfdropdown.Multi and self.Value or (self.Value[1] or ""))
+                    end
                     if cfdropdown.Multi then
                         cfdropdown.Callback(self.Value)
                     else
@@ -2018,6 +2066,7 @@ function Library:NewWindow(ConfigWindow)
                     end
                 end
                 function DropFunc:Add(Value)
+
                     local Option = Create("Frame", {
                         Name = "Option",
                         Parent = RealList,
@@ -2100,11 +2149,18 @@ function Library:NewWindow(ConfigWindow)
                     Window:CloseOverlay(DropdownList)
                 end)
                 DropFunc.Value = NormalizeDefault(cfdropdown.Default)
+                if cfdropdown.Flag and cfdropdown.Flag ~= "" then
+                    Library:BindConfig(cfdropdown.Flag, DropFunc)
+                    if Library.Flags[cfdropdown.Flag] ~= nil then
+                        DropFunc.Value = NormalizeDefault(Library.Flags[cfdropdown.Flag])
+                    end
+                end
                 DropFunc:Refresh(cfdropdown.Values)
                 DropFunc:Set(DropFunc.Value)
                 return DropFunc
             end
             function SectionFunc:AddInput(cftextbox)
+
                 cftextbox = Library:MakeConfig({
                     Title = "Textbox",
                     Description = "",
@@ -2937,11 +2993,16 @@ function Library:NewWindow(ConfigWindow)
                 end
                 cfimage = Library:MakeConfig({
                     Image = "",
-                    Height = 200
+                    Height = 200,
+                    Button = nil,
+                    ButtonText = "Open",
+                    Callback = function() end
                 }, cfimage or {})
                 local ImageTitle = tostring(Name or "Image")
                 local ImageHeight = math.max(40, tonumber(cfimage.Height) or 200)
-                local ImageCard = MakeCardBase(SectionList, ImageHeight + 42)
+                local HasBtn = cfimage.Button ~= nil or (cfimage.ButtonText and cfimage.Callback)
+                local Extra = HasBtn and 40 or 0
+                local ImageCard = MakeCardBase(SectionList, ImageHeight + 42 + Extra)
                 ImageCard.Name = "Image"
                 local Title = Create("TextLabel", {
                     Name = "Title",
@@ -2984,6 +3045,25 @@ function Library:NewWindow(ConfigWindow)
                     Image = tostring(cfimage.Image or ""),
                     ScaleType = Enum.ScaleType.Fit
                 })
+                if HasBtn then
+                    local Btn = Create("TextButton", {
+                        Parent = ImageCard,
+                        BackgroundColor3 = Library.Theme.Background,
+                        BorderSizePixel = 0,
+                        Position = UDim2.new(0, 18, 0, 36 + ImageHeight),
+                        Size = UDim2.new(1, -36, 0, 30),
+                        Font = Enum.Font.GothamBold,
+                        Text = tostring(cfimage.Button or cfimage.ButtonText or "Open"),
+                        TextColor3 = Library.Theme.Text,
+                        TextSize = 12,
+                        AutoButtonColor = false
+                    })
+                    Create("UICorner", {CornerRadius = UDim.new(0, 4), Parent = Btn})
+                    Create("UIStroke", {Parent = Btn, Color = Library.Theme.Stroke, Transparency = 0.5})
+                    Btn.Activated:Connect(function()
+                        if cfimage.Callback then cfimage.Callback() end
+                    end)
+                end
                 local ImageFunc = {}
                 function ImageFunc:SetImage(Value)
                     ImageLabel.Image = tostring(Value or "")
@@ -2992,7 +3072,7 @@ function Library:NewWindow(ConfigWindow)
                     local NewHeight = math.max(40, tonumber(Value) or ImageHeight)
                     ImageHeight = NewHeight
                     ImageFrame.Size = UDim2.new(1, -36, 0, NewHeight)
-                    ImageCard.Size = UDim2.new(1, 0, 0, NewHeight + 42)
+                    ImageCard.Size = UDim2.new(1, 0, 0, NewHeight + 42 + Extra)
                 end
                 function ImageFunc:SetTitle(Value)
                     Title.Text = tostring(Value or "")
@@ -3002,6 +3082,102 @@ function Library:NewWindow(ConfigWindow)
                 end
                 return ImageFunc
             end
+            function SectionFunc:AddColorToggle(cfct)
+                cfct = Library:MakeConfig({
+                    Title = "Color Toggle",
+                    Description = "",
+                    Default = false,
+                    Color = Color3.fromRGB(80, 180, 255),
+                    Flag = "",
+                    Callback = function() end
+                }, cfct or {})
+                local Card = MakeCardBase(SectionList, 35)
+                Card.Name = "ColorToggle"
+                Create("TextLabel", {
+                    Name = "Title",
+                    Parent = Card,
+                    BackgroundTransparency = 1,
+                    Position = UDim2.new(0, 18, 0, 0),
+                    Size = UDim2.new(1, -100, 1, 0),
+                    Font = Enum.Font.GothamBold,
+                    Text = cfct.Title,
+                    TextColor3 = Library.Theme.Text,
+                    TextSize = 13,
+                    TextXAlignment = Enum.TextXAlignment.Left
+                })
+                local Swatch = Create("Frame", {
+                    Parent = Card,
+                    AnchorPoint = Vector2.new(1, 0.5),
+                    BackgroundColor3 = cfct.Color,
+                    BorderSizePixel = 0,
+                    Position = UDim2.new(1, -58, 0.5, 0),
+                    Size = UDim2.new(0, 18, 0, 18)
+                })
+                Create("UICorner", {CornerRadius = UDim.new(1, 0), Parent = Swatch})
+                local Track = Create("Frame", {
+                    Parent = Card,
+                    AnchorPoint = Vector2.new(1, 0.5),
+                    BackgroundColor3 = Color3.fromRGB(60, 60, 60),
+                    BorderSizePixel = 0,
+                    Position = UDim2.new(1, -12, 0.5, 0),
+                    Size = UDim2.new(0, 40, 0, 22)
+                })
+                Create("UICorner", {CornerRadius = UDim.new(1, 0), Parent = Track})
+                local Knob = Create("Frame", {
+                    Parent = Track,
+                    AnchorPoint = Vector2.new(0, 0.5),
+                    BackgroundColor3 = Color3.fromRGB(200, 200, 200),
+                    BorderSizePixel = 0,
+                    Position = UDim2.new(0, 3, 0.5, 0),
+                    Size = UDim2.new(0, 16, 0, 16)
+                })
+                Create("UICorner", {CornerRadius = UDim.new(1, 0), Parent = Knob})
+                local Click = Create("TextButton", {
+                    Parent = Card,
+                    BackgroundTransparency = 1,
+                    Size = UDim2.new(1, 0, 1, 0),
+                    Text = "",
+                    AutoButtonColor = false
+                })
+                local CTFunc = { Value = cfct.Default, Color = cfct.Color }
+                function CTFunc:Set(Boolean)
+                    self.Value = Boolean and true or false
+                    if self.Value then
+                        Library:TweenInstance(Track, 0.2, "BackgroundColor3", self.Color)
+                        Library:TweenInstance(Knob, 0.2, "Position", UDim2.new(0, 22, 0.5, 0))
+                        Library:TweenInstance(Knob, 0.2, "BackgroundColor3", Color3.new(1, 1, 1))
+                    else
+                        Library:TweenInstance(Track, 0.2, "BackgroundColor3", Color3.fromRGB(60, 60, 60))
+                        Library:TweenInstance(Knob, 0.2, "Position", UDim2.new(0, 3, 0.5, 0))
+                        Library:TweenInstance(Knob, 0.2, "BackgroundColor3", Color3.fromRGB(200, 200, 200))
+                    end
+                    if cfct.Flag and cfct.Flag ~= "" then
+                        Library:SetFlag(cfct.Flag, self.Value)
+                    end
+                    cfct.Callback(self.Value, self.Color)
+                end
+                function CTFunc:SetColor(c)
+                    if typeof(c) == "Color3" then
+                        self.Color = c
+                        Swatch.BackgroundColor3 = c
+                        if self.Value then
+                            Track.BackgroundColor3 = c
+                        end
+                    end
+                end
+                if cfct.Flag and cfct.Flag ~= "" then
+                    Library:BindConfig(cfct.Flag, CTFunc)
+                    if Library.Flags[cfct.Flag] ~= nil then
+                        CTFunc.Value = Library.Flags[cfct.Flag]
+                    end
+                end
+                CTFunc:Set(CTFunc.Value)
+                Click.Activated:Connect(function()
+                    CTFunc:Set(not CTFunc.Value)
+                end)
+                return CTFunc
+            end
+
             function SectionFunc:AddSeperator(args)
                 local Seperator = Create("Frame", {
                     Name = "Seperator",
@@ -3268,9 +3444,10 @@ function Library:NewWindow(ConfigWindow)
             function SectionFunc:AddMultiButton(cfmb)
                 cfmb = Library:MakeConfig({
                     Title = "Button Section",
+                    Opened = true,
                     Buttons = {}
                 }, cfmb or {})
-                local Opened = true
+                local Opened = cfmb.Opened ~= false
                 local Card = MakeCardBase(SectionList, 35)
                 Card.Name = "MultiButton"
                 local Header = Create("TextButton", {
@@ -3298,7 +3475,7 @@ function Library:NewWindow(ConfigWindow)
                     Position = UDim2.new(1, -28, 0, 0),
                     Size = UDim2.new(0, 20, 1, 0),
                     Font = Enum.Font.GothamBold,
-                    Text = "v",
+                    Text = Opened and "v" or ">",
                     TextColor3 = Library.Theme.TextDisabled,
                     TextSize = 12
                 })
@@ -3308,58 +3485,15 @@ function Library:NewWindow(ConfigWindow)
                     BackgroundTransparency = 1,
                     Position = UDim2.new(0, 10, 0, 34),
                     Size = UDim2.new(1, -20, 0, 0),
-                    Visible = true
+                    Visible = Opened
                 })
-                local Grid = Create("UIGridLayout", {
-                    Parent = Body,
-                    CellSize = UDim2.new(0.5, -4, 0, 30),
-                    CellPadding = UDim2.new(0, 6, 0, 6),
-                    SortOrder = Enum.SortOrder.LayoutOrder,
-                    FillDirectionMaxCells = 2
-                })
-                local function RefreshSize()
-                    if Opened then
-                        local rows = math.ceil(math.max(1, #Body:GetChildren() - 1) / 2)
-                        local h = rows * 36
-                        Body.Size = UDim2.new(1, -20, 0, h)
-                        Card.Size = UDim2.new(1, 0, 0, 38 + h)
-                        Arrow.Text = "v"
-                    else
-                        Body.Size = UDim2.new(1, -20, 0, 0)
-                        Card.Size = UDim2.new(1, 0, 0, 35)
-                        Arrow.Text = ">"
-                    end
-                end
-                for _, B in ipairs(cfmb.Buttons) do
+                local BtnList = {}
+                local function MakeBtn(parent, title, full, callback)
                     local Btn = Create("TextButton", {
-                        Parent = Body,
+                        Parent = parent,
                         BackgroundColor3 = Library.Theme.Background,
                         BorderSizePixel = 0,
-                        Size = UDim2.new(0, 100, 0, 30),
-                        Font = Enum.Font.GothamBold,
-                        Text = tostring(B.Title or "Button"),
-                        TextColor3 = Library.Theme.Text,
-                        TextSize = 12,
-                        AutoButtonColor = false
-                    })
-                    Create("UICorner", {CornerRadius = UDim.new(0, 4), Parent = Btn})
-                    Create("UIStroke", {Parent = Btn, Color = Library.Theme.Stroke, Transparency = 0.55})
-                    Btn.Activated:Connect(function()
-                        if B.Callback then B.Callback() end
-                    end)
-                end
-                Header.Activated:Connect(function()
-                    Opened = not Opened
-                    Body.Visible = Opened
-                    RefreshSize()
-                end)
-                task.defer(RefreshSize)
-                local MBFunc = {}
-                function MBFunc:AddButton(title, callback)
-                    local Btn = Create("TextButton", {
-                        Parent = Body,
-                        BackgroundColor3 = Library.Theme.Background,
-                        BorderSizePixel = 0,
+                        Size = full and UDim2.new(1, 0, 0, 30) or UDim2.new(0.5, -4, 0, 30),
                         Font = Enum.Font.GothamBold,
                         Text = tostring(title or "Button"),
                         TextColor3 = Library.Theme.Text,
@@ -3371,12 +3505,255 @@ function Library:NewWindow(ConfigWindow)
                     Btn.Activated:Connect(function()
                         if callback then callback() end
                     end)
+                    table.insert(BtnList, Btn)
+                    return Btn
+                end
+                local function RefreshSize()
+                    if not Opened then
+                        Body.Size = UDim2.new(1, -20, 0, 0)
+                        Card.Size = UDim2.new(1, 0, 0, 35)
+                        Arrow.Text = ">"
+                        return
+                    end
+                    local count = #BtnList
+                    local h = 0
+                    if count >= 1 then h = h + 36 end
+                    if count > 1 then
+                        local rows = math.ceil((count - 1) / 2)
+                        h = h + rows * 36
+                    end
+                    Body.Size = UDim2.new(1, -20, 0, h)
+                    Card.Size = UDim2.new(1, 0, 0, 38 + h)
+                    Arrow.Text = "v"
+                    for i, Btn in ipairs(BtnList) do
+                        if i == 1 then
+                            Btn.Size = UDim2.new(1, 0, 0, 30)
+                            Btn.Position = UDim2.new(0, 0, 0, 0)
+                        else
+                            local idx = i - 2
+                            local row = math.floor(idx / 2)
+                            local col = idx % 2
+                            Btn.Size = UDim2.new(0.5, -4, 0, 30)
+                            Btn.Position = UDim2.new(col * 0.5, col > 0 and 4 or 0, 0, 36 + row * 36)
+                        end
+                    end
+                end
+                for _, B in ipairs(cfmb.Buttons) do
+                    MakeBtn(Body, B.Title, false, B.Callback)
+                end
+                Header.Activated:Connect(function()
+                    Opened = not Opened
+                    Body.Visible = Opened
+                    RefreshSize()
+                end)
+                task.defer(RefreshSize)
+                local MBFunc = {}
+                function MBFunc:AddButton(title, callback)
+                    MakeBtn(Body, title, false, callback)
                     RefreshSize()
                 end
                 return MBFunc
             end
+            function SectionFunc:AddCodeBox(cfcode)
+                cfcode = Library:MakeConfig({
+                    Title = "Code",
+                    Code = "-- code",
+                    Height = 120
+                }, cfcode or {})
+                local Height = math.max(60, tonumber(cfcode.Height) or 120)
+                local Card = MakeCardBase(SectionList, Height + 42)
+                Card.Name = "CodeBox"
+                Create("TextLabel", {
+                    Name = "Title",
+                    Parent = Card,
+                    BackgroundTransparency = 1,
+                    Position = UDim2.new(0, 18, 0, 6),
+                    Size = UDim2.new(1, -90, 0, 18),
+                    Font = Enum.Font.GothamBold,
+                    Text = cfcode.Title,
+                    TextColor3 = Library.Theme.Text,
+                    TextSize = 13,
+                    TextXAlignment = Enum.TextXAlignment.Left
+                })
+                local CopyBtn = Create("TextButton", {
+                    Parent = Card,
+                    BackgroundColor3 = Library.Theme.Background,
+                    BorderSizePixel = 0,
+                    Position = UDim2.new(1, -70, 0, 6),
+                    Size = UDim2.new(0, 58, 0, 20),
+                    Font = Enum.Font.GothamBold,
+                    Text = "Copy",
+                    TextColor3 = Library.Theme.Text,
+                    TextSize = 11,
+                    AutoButtonColor = false
+                })
+                Create("UICorner", {CornerRadius = UDim.new(0, 4), Parent = CopyBtn})
+                local Box = Create("Frame", {
+                    Parent = Card,
+                    BackgroundColor3 = Color3.fromRGB(12, 12, 14),
+                    BorderSizePixel = 0,
+                    Position = UDim2.new(0, 12, 0, 30),
+                    Size = UDim2.new(1, -24, 0, Height)
+                })
+                Create("UICorner", {CornerRadius = UDim.new(0, 4), Parent = Box})
+                Create("UIStroke", {Parent = Box, Color = Library.Theme.Stroke, Transparency = 0.5})
+                local CodeLabel = Create("TextBox", {
+                    Parent = Box,
+                    BackgroundTransparency = 1,
+                    Position = UDim2.new(0, 8, 0, 6),
+                    Size = UDim2.new(1, -16, 1, -12),
+                    Font = Enum.Font.Code,
+                    Text = tostring(cfcode.Code or ""),
+                    TextColor3 = Color3.fromRGB(200, 200, 210),
+                    TextSize = 12,
+                    TextXAlignment = Enum.TextXAlignment.Left,
+                    TextYAlignment = Enum.TextYAlignment.Top,
+                    TextWrapped = true,
+                    ClearTextOnFocus = false,
+                    MultiLine = true,
+                    TextEditable = false
+                })
+                CopyBtn.Activated:Connect(function()
+                    local text = CodeLabel.Text
+                    pcall(function()
+                        if setclipboard then setclipboard(text)
+                        elseif toclipboard then toclipboard(text) end
+                    end)
+                    CopyBtn.Text = "Copied"
+                    task.delay(1.2, function()
+                        if CopyBtn and CopyBtn.Parent then CopyBtn.Text = "Copy" end
+                    end)
+                end)
+                local CodeFunc = {}
+                function CodeFunc:SetCode(v)
+                    CodeLabel.Text = tostring(v or "")
+                end
+                function CodeFunc:GetCode()
+                    return CodeLabel.Text
+                end
+                return CodeFunc
+            end
+            function SectionFunc:AddProgressBar(cfprog)
+                cfprog = Library:MakeConfig({
+                    Title = "Progress",
+                    Value = 0,
+                    Min = 0,
+                    Max = 100
+                }, cfprog or {})
+                local Card = MakeCardBase(SectionList, 48)
+                Card.Name = "ProgressBar"
+                Create("TextLabel", {
+                    Name = "Title",
+                    Parent = Card,
+                    BackgroundTransparency = 1,
+                    Position = UDim2.new(0, 18, 0, 4),
+                    Size = UDim2.new(1, -70, 0, 16),
+                    Font = Enum.Font.GothamBold,
+                    Text = cfprog.Title,
+                    TextColor3 = Library.Theme.Text,
+                    TextSize = 13,
+                    TextXAlignment = Enum.TextXAlignment.Left
+                })
+                local ValueLabel = Create("TextLabel", {
+                    Parent = Card,
+                    BackgroundTransparency = 1,
+                    Position = UDim2.new(1, -55, 0, 4),
+                    Size = UDim2.new(0, 45, 0, 16),
+                    Font = Enum.Font.GothamBold,
+                    Text = "0%",
+                    TextColor3 = Library.Theme.TextDisabled,
+                    TextSize = 12,
+                    TextXAlignment = Enum.TextXAlignment.Right
+                })
+                local Track = Create("Frame", {
+                    Parent = Card,
+                    BackgroundColor3 = Library.Theme.Background,
+                    BorderSizePixel = 0,
+                    Position = UDim2.new(0, 18, 0, 28),
+                    Size = UDim2.new(1, -36, 0, 10)
+                })
+                Create("UICorner", {CornerRadius = UDim.new(1, 0), Parent = Track})
+                local Fill = Create("Frame", {
+                    Parent = Track,
+                    BackgroundColor3 = Library.Theme.Accent,
+                    BorderSizePixel = 0,
+                    Size = UDim2.new(0, 0, 1, 0)
+                })
+                Create("UICorner", {CornerRadius = UDim.new(1, 0), Parent = Fill})
+                Library:ApplyGradient(Fill, Library:GetAccentGradient(), nil, 0)
+                local ProgFunc = {Value = cfprog.Value or 0}
+                function ProgFunc:Set(v)
+                    local min, max = cfprog.Min or 0, cfprog.Max or 100
+                    v = math.clamp(tonumber(v) or 0, min, max)
+                    self.Value = v
+                    local scale = (max == min) and 0 or ((v - min) / (max - min))
+                    Library:TweenInstance(Fill, 0.2, "Size", UDim2.new(scale, 0, 1, 0))
+                    ValueLabel.Text = math.floor(scale * 100 + 0.5) .. "%"
+                end
+                ProgFunc:Set(cfprog.Value or 0)
+                return ProgFunc
+            end
+            function SectionFunc:AddLabel(cflabel)
+                cflabel = Library:MakeConfig({
+                    Title = "Label",
+                    Content = ""
+                }, cflabel or {})
+                local Card = MakeCardBase(SectionList, 28)
+                Card.Name = "Label"
+                local Title = Create("TextLabel", {
+                    Name = "Title",
+                    Parent = Card,
+                    BackgroundTransparency = 1,
+                    Position = UDim2.new(0, 18, 0, 0),
+                    Size = UDim2.new(1, -24, 1, 0),
+                    Font = Enum.Font.GothamBold,
+                    Text = cflabel.Content ~= "" and (cflabel.Title .. ": " .. cflabel.Content) or cflabel.Title,
+                    TextColor3 = Library.Theme.TextDisabled,
+                    TextSize = 12,
+                    TextXAlignment = Enum.TextXAlignment.Left
+                })
+                local LabelFunc = {}
+                function LabelFunc:Set(text)
+                    Title.Text = tostring(text or "")
+                end
+                function LabelFunc:SetTitle(t)
+                    Title.Text = tostring(t or "")
+                end
+                return LabelFunc
+            end
+            function SectionFunc:AddPlayerDropdown(cfplay)
+                local players = {}
+                for _, p in ipairs(Players:GetPlayers()) do
+                    table.insert(players, p.Name)
+                end
+                cfplay = Library:MakeConfig({
+                    Title = "Player",
+                    Description = "",
+                    Values = players,
+                    Default = {},
+                    Multi = false,
+                    Callback = function() end
+                }, cfplay or {})
+                if not cfplay.Values or #cfplay.Values == 0 then
+                    cfplay.Values = players
+                end
+                local Drop = SectionFunc:AddDropdown(cfplay)
+                local function RefreshPlayers()
+                    local list = {}
+                    for _, p in ipairs(Players:GetPlayers()) do
+                        table.insert(list, p.Name)
+                    end
+                    if Drop and Drop.Refresh then
+                        Drop:Refresh(list)
+                    end
+                end
+                Players.PlayerAdded:Connect(RefreshPlayers)
+                Players.PlayerRemoving:Connect(RefreshPlayers)
+                return Drop
+            end
             return SectionFunc
         end
+
 
         local LeftSection = MakeGroupbox("", LeftColumn)
 
@@ -3406,11 +3783,18 @@ function Library:NewWindow(ConfigWindow)
         function TabFunc:AddKeybind(cfg) return ResolveSection(cfg):AddKeybind(cfg) end
         function TabFunc:AddTag(cfg) return ResolveSection(cfg):AddTag(cfg) end
         function TabFunc:AddMultiButton(cfg) return ResolveSection(cfg):AddMultiButton(cfg) end
+        function TabFunc:AddCodeBox(cfg) return ResolveSection(cfg):AddCodeBox(cfg) end
+        function TabFunc:AddProgressBar(cfg) return ResolveSection(cfg):AddProgressBar(cfg) end
+        function TabFunc:AddLabel(cfg) return ResolveSection(cfg):AddLabel(cfg) end
+        function TabFunc:AddPlayerDropdown(cfg) return ResolveSection(cfg):AddPlayerDropdown(cfg) end
+        function TabFunc:AddColorToggle(cfg) return ResolveSection(cfg):AddColorToggle(cfg) end
         function TabFunc:AddLeftGroupbox(SectionName) return MakeGroupbox(SectionName, LeftColumn) end
+
         function TabFunc:AddRightGroupbox(SectionName) return MakeGroupbox(SectionName, RightColumn) end
         function TabFunc:AddSection(SectionName) return MakeGroupbox(SectionName, LeftColumn) end
         return TabFunc
     end
+
 
 
 
