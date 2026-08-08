@@ -2,7 +2,7 @@
     NexxChasers UI Library - Example
 ]]
 
-local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/YOUR_REPO/NexxChasers/main/loader.lua"))()
+local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/Nail120212/NexLib/refs/heads/main/nexxchasers/loader.lua"))()
 -- For local testing you can also do:
 -- local Library = require(script.Parent.loader)  -- or load the file content
 
