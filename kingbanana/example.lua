@@ -1,5 +1,33 @@
+--[[
+  KingBanana FULL EXAMPLE
+  Upload kingbanana.lua to your raw URL first.
+]]
+
 local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/Nail120212/NexLib/refs/heads/main/kingbanana/library.lua"))()
 
+-- Optional key system (customize freely)
+--[[
+Library:KeySystem({
+    Title = "KingBanana",
+    Subtitle = "Access",
+    Note = "Verify key to continue",
+    Placeholder = "Enter your key...",
+    GetKeyText = "Get Key",
+    VerifyText = "Verify",
+    GetKeyLink = "https://example.com/getkey",
+    Key = "banana",
+    Keys = {"banana", "demo"},
+    SaveKey = true,
+    FileName = "kb_key",
+    Callback = function()
+        loadHub()
+    end,
+    OnFail = function() end
+})
+return
+]]
+
+local function loadHub()
 Library:LoadConfig("myhub")
 
 local Window = Library:NewWindow({
@@ -12,6 +40,7 @@ local Window = Library:NewWindow({
     ToggleKey = "RightControl"
 })
 
+-- Title tags
 Window:AddTag({ Title = "v1.0", Color = Color3.fromRGB(255, 200, 50), TextColor = Color3.fromRGB(20, 20, 25) })
 Window:AddTag({ Title = "UI Library", Color = Color3.fromRGB(80, 220, 120), TextColor = Color3.fromRGB(20, 20, 25) })
 
@@ -20,39 +49,63 @@ local PlayersTab = Window:T("Players", "users")
 local Visual = Window:T("Visual", "palette")
 local Misc = Window:T("Misc", "settings")
 
-Main:AddLabel({ Title = "General controls" })
+-- Labels
+Main:AddLabel({ Title = "General", Content = "All core controls" })
 
+-- Toggle + Flag + Lock
 Main:AddToggle({
     Title = "Enable Feature",
     Description = "Saved with Flag",
     Default = false,
     Flag = "EnableFeature",
     Position = "left",
-    Callback = function(v) print("Toggle:", v) end
+    Callback = function(v) print("Toggle", v) end
 })
 
+Main:AddToggle({
+    Title = "Locked Feature",
+    Description = "Premium only",
+    Default = false,
+    Locked = true,
+    Locktext = "premium",
+    Position = "left",
+    Callback = function() end
+})
+
+-- Color toggle (swatch click cycles color, track toggles on/off)
 Main:AddColorToggle({
     Title = "ESP Color Toggle",
     Color = Color3.fromRGB(80, 180, 255),
     Default = false,
     Flag = "ESPToggle",
     Position = "left",
-    Callback = function(on, color)
-        print("ColorToggle", on, color)
+    Callback = function(on, color) print(on, color) end
+})
+
+-- Keybind
+Main:AddKeybind({
+    Title = "Action Key",
+    Default = "E",
+    Locked = false,
+    Position = "left",
+    Callback = function(k)
+        Window:Notify({ Title = "Keybind", Content = "Pressed " .. tostring(k), Type = "Info", Duration = 2 })
     end
 })
 
 Main:AddKeybind({
-    Title = "Action Key",
-    Default = "E",
+    Title = "Locked Key",
+    Default = "Q",
+    Locked = true,
+    Locktext = "vip",
     Position = "left",
-    Callback = function(key)
-        Window:Notify({ Title = "Keybind", Content = "Pressed " .. tostring(key), Type = "Info", Duration = 2 })
-    end
+    Callback = function() end
 })
 
+-- Buttons
 Main:AddButton({
     Title = "Normal Button",
+    Description = "Single action",
     Position = "left",
     Callback = function()
         Window:Notify({ Title = "Button", Content = "Clicked", Type = "Success", Duration = 2 })
@@ -65,7 +118,7 @@ Main:AddMultiButton({
     Opened = true,
     Buttons = {
         { Title = "Example Single", Callback = function()
-            Window:Notify({ Title = "Single", Content = "Full width top", Type = "Info", Duration = 2 })
+            Window:Notify({ Title = "Single", Content = "Top full width", Type = "Info", Duration = 2 })
         end },
         { Title = "Example", Callback = function()
             Window:Notify({ Title = "Example", Content = "Half", Type = "Success", Duration = 2 })
@@ -76,26 +129,28 @@ Main:AddMultiButton({
     }
 })
 
+-- Slider / Dropdown / Input / Color
 Main:AddSlider({
     Title = "Speed",
     Min = 1, Max = 100, Default = 16, Increment = 1,
     Flag = "Speed",
+    Locked = false,
     Position = "right",
     Callback = function(v) Library:SetFlag("Speed", v) end
 })
 
 Main:AddDropdown({
     Title = "Mode",
-    Values = {"Normal", "Fast", "Ultra", "Custom"},
+    Values = {"Normal", "Fast", "Ultra"},
     Default = "Normal",
     Multi = false,
     Flag = "Mode",
     Position = "right",
-    Callback = function(v) print("Mode:", v) end
+    Callback = function(v) print(v) end
 })
 
 Main:AddDropdown({
-    Title = "Multi Modes",
+    Title = "Multi Select",
     Values = {"A", "B", "C"},
     Default = {},
     Multi = true,
@@ -106,31 +161,32 @@ Main:AddDropdown({
 
 Main:AddInput({
     Title = "Username",
-    PlaceHolder = "Player...",
+    PlaceHolder = "Type...",
     Flag = "Username",
     Position = "right",
     Callback = function(t) Library:SetFlag("Username", t) end
 })
 
 Main:AddColorPicker({
-    Title = "Accent Color",
+    Title = "Accent",
     Default = Color3.fromRGB(158, 158, 158),
     Position = "right",
     Callback = function(c) print(c) end
 })
 
-Main:AddProgressBar({ Title = "Load Progress", Value = 40, Position = "right" })
+Main:AddProgressBar({ Title = "Progress", Value = 45, Position = "right" })
 
+-- Dialog
 Main:AddButton({
     Title = "Open Dialog",
     Position = "left",
     Callback = function()
         Window:Dialog({
-            Title = "Confirm Action",
-            Content = "Extendable dialog with multiple buttons.",
+            Title = "Confirm",
+            Content = "Extendable dialog with any number of buttons.",
             Buttons = {
                 { Title = "Yes", Callback = function()
-                    Window:Notify({ Title = "Yes", Content = "Confirmed", Type = "Success", Duration = 2 })
+                    Window:Notify({ Title = "Yes", Content = "OK", Type = "Success", Duration = 2 })
                 end },
                 { Title = "No", Callback = function()
                     Window:Notify({ Title = "No", Content = "Cancelled", Type = "Warning", Duration = 2 })
@@ -142,57 +198,81 @@ Main:AddButton({
 })
 
 Main:AddCodeBox({
-    Title = "Snippet",
-    Code = "print(\"KingBanana\")\nlocal speed = 16",
+    Title = "Code",
+    Code = "print(\"KingBanana\")\nlocal x = 1",
     Height = 80,
     Position = "left"
 })
 
-Main:AddImage("Preview", {
+Main:AddImage("Banner", {
     Image = "rbxassetid://89646749075297",
-    Height = 100,
-    Button = "Open Link",
+    Height = 90,
+    Button = "Open",
     Position = "left",
     Callback = function()
-        Window:Notify({ Title = "Image", Content = "Button under image clicked", Type = "Info", Duration = 2 })
+        Window:Notify({ Title = "Image", Content = "Button under image", Type = "Info", Duration = 2 })
     end
 })
 
+-- Players
 PlayersTab:AddPlayerDropdown({
     Title = "Select Player",
-    Multi = false,
     Flag = "SelectedPlayer",
     Position = "left",
-    Callback = function(name)
-        Window:Notify({ Title = "Player", Content = tostring(name), Type = "Info", Duration = 2 })
+    Callback = function(n)
+        Window:Notify({ Title = "Player", Content = tostring(n), Type = "Info", Duration = 2 })
     end
 })
 
 PlayersTab:AddParagraph({
-    Title = "Note",
-    Content = "PlayerDropdown auto-refreshes. Config Flags restore toggles/dropdowns on LoadConfig.",
+    Title = "Info",
+    Content = "Drag ONLY the bottom center line. Resize from bottom-right corner. ToggleKey = RightControl.",
     Position = "left"
 })
 
-Visual:AddButton({ Title = "Dark Theme", Position = "left", Callback = function() Library:SetTheme("Dark") end })
-Visual:AddButton({ Title = "Light Theme", Position = "left", Callback = function() Library:SetTheme("Light") end })
+-- Theme
+Visual:AddButton({ Title = "Dark", Position = "left", Callback = function() Library:SetTheme("Dark") end })
+Visual:AddButton({ Title = "Light", Position = "left", Callback = function() Library:SetTheme("Light") end })
 Visual:AddSlider({ Title = "Transparency", Min = 0, Max = 50, Default = 6, Position = "left", Callback = function(v) Library:SetTransparency(v / 100) end })
-
 Visual:AddButton({
-    Title = "Success Notify",
+    Title = "Export Theme",
     Position = "right",
     Callback = function()
-        Window:Notify({ Title = "Success", Content = "OK", Type = "Success", Duration = 2 })
+        Library:ExportTheme()
+        Window:Notify({ Title = "Theme", Content = "JSON copied", Type = "Success", Duration = 2 })
     end
+})
+Visual:AddButton({
+    Title = "Custom Purple",
+    Position = "right",
+    Callback = function()
+        Library:CreateCustomTheme("Purple", {
+            Main = Color3.fromRGB(18, 12, 28),
+            Accent = Color3.fromRGB(160, 100, 255),
+            Text = Color3.fromRGB(255, 255, 255),
+            TextDisabled = Color3.fromRGB(170, 160, 190),
+            Background = Color3.fromRGB(28, 22, 40),
+            Stroke = Color3.fromRGB(100, 80, 140),
+            Card = Color3.fromRGB(255, 255, 255),
+            CardTransparency = 0.94,
+            Section = Color3.fromRGB(255, 255, 255),
+            SectionTransparency = 0.97
+        })
+        Library:SetTheme("Purple")
+    end
+})
+Visual:AddButton({
+    Title = "Success Notify",
+    Position = "left",
+    Callback = function() Window:Notify({ Title = "OK", Content = "Success", Type = "Success", Duration = 2 }) end
 })
 Visual:AddButton({
     Title = "Error Notify",
-    Position = "right",
-    Callback = function()
-        Window:Notify({ Title = "Error", Content = "Failed", Type = "Error", Duration = 2 })
-    end
+    Position = "left",
+    Callback = function() Window:Notify({ Title = "Err", Content = "Failed", Type = "Error", Duration = 2 }) end
 })
 
+-- Config groupboxes
 local LeftBox = Misc:AddLeftGroupbox("Config")
 LeftBox:AddButton({
     Title = "Save Config",
@@ -212,7 +292,7 @@ LeftBox:AddButton({
     end
 })
 
-local RightBox = Misc:AddRightGroupbox("Danger")
+local RightBox = Misc:AddRightGroupbox("System")
 RightBox:AddButton({
     Title = "Destroy UI",
     Callback = function()
@@ -227,8 +307,18 @@ RightBox:AddButton({
     end
 })
 
+Misc:AddSeperator("Notes")
 Misc:AddParagraph({
-    Title = "Flags",
-    Content = "Use Flag = \"Name\" on Toggle, Dropdown, ColorToggle, Slider. LoadConfig auto-calls :Set() on bound elements including dropdowns.",
+    Title = "Controls",
+    Content = "Bottom center line = drag only. Bottom-right square = resize. Floating logo = open/close with same scale animation. Search filters tabs + elements.",
     Position = "left"
 })
+
+-- Global keybind manager example
+Library:RegisterKeybind("F6", function()
+    Window:Notify({ Title = "F6", Content = "Global keybind fired", Type = "Info", Duration = 2 })
+end)
+
+end
+
+loadHub()

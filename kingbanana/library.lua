@@ -183,6 +183,240 @@ function Library:CreateCustomTheme(Name, Colors)
     self.Themes[Name] = Base
     return Base
 end
+function Library:ExportTheme(Name)
+    Name = Name or self.CurrentTheme
+    local t = self.Themes[Name] or self.Theme
+    local out = {}
+    for k, v in pairs(t) do
+        if typeof(v) == "Color3" then
+            out[k] = {math.floor(v.R * 255 + 0.5), math.floor(v.G * 255 + 0.5), math.floor(v.B * 255 + 0.5)}
+        else
+            out[k] = v
+        end
+    end
+    local json = game:GetService("HttpService"):JSONEncode(out)
+    pcall(function()
+        if setclipboard then setclipboard(json) elseif toclipboard then toclipboard(json) end
+    end)
+    return json
+end
+function Library:ImportTheme(Name, Data)
+    if type(Data) == "string" then
+        local ok, decoded = pcall(function()
+            return game:GetService("HttpService"):JSONDecode(Data)
+        end)
+        if ok then Data = decoded end
+    end
+    if type(Data) ~= "table" then return end
+    local colors = {}
+    for k, v in pairs(Data) do
+        if type(v) == "table" and #v >= 3 then
+            colors[k] = Color3.fromRGB(v[1], v[2], v[3])
+        else
+            colors[k] = v
+        end
+    end
+    return self:CreateCustomTheme(Name or "Imported", colors)
+end
+Library.Keybinds = {}
+function Library:RegisterKeybind(Key, Callback)
+    Key = tostring(Key)
+    self.Keybinds[Key] = Callback
+end
+function Library:UnregisterKeybind(Key)
+    self.Keybinds[tostring(Key)] = nil
+end
+UserInputService.InputBegan:Connect(function(Input, Gpe)
+    if Gpe or UserInputService:GetFocusedTextBox() then return end
+    if Input.UserInputType == Enum.UserInputType.Keyboard then
+        local cb = Library.Keybinds[Input.KeyCode.Name]
+        if cb then pcall(cb, Input.KeyCode.Name) end
+    end
+end)
+function Library:KeySystem(Config)
+    Config = self:MakeConfig({
+        Title = "KingBanana",
+        Subtitle = "Key System",
+        Note = "Enter your key to continue",
+        Placeholder = "Enter your key...",
+        GetKeyText = "Get Key",
+        VerifyText = "Verify Key",
+        GetKeyLink = "",
+        Key = "",
+        Keys = {},
+        SaveKey = true,
+        FileName = "kb_key",
+        Callback = function() end,
+        OnFail = function() end
+    }, Config or {})
+    local Gui = Create("ScreenGui", {
+        Name = "KB_KeySystem",
+        ResetOnSpawn = false,
+        IgnoreGuiInset = true,
+        ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
+        Parent = Player:WaitForChild("PlayerGui")
+    })
+    local Holder = Create("Frame", {
+        Parent = Gui,
+        AnchorPoint = Vector2.new(0.5, 0.5),
+        Position = UDim2.new(0.5, 0, 0.5, 0),
+        Size = UDim2.new(0, 0, 0, 0),
+        BackgroundColor3 = self.Theme.Main,
+        BorderSizePixel = 0
+    })
+    Create("UICorner", {CornerRadius = UDim.new(0, 8), Parent = Holder})
+    Create("UIStroke", {Parent = Holder, Color = self.Theme.Accent, Transparency = 0.4})
+    Create("TextLabel", {
+        Parent = Holder,
+        BackgroundTransparency = 1,
+        Position = UDim2.new(0, 18, 0, 14),
+        Size = UDim2.new(1, -36, 0, 22),
+        Font = Enum.Font.GothamBold,
+        Text = Config.Title,
+        TextColor3 = self.Theme.Text,
+        TextSize = 18,
+        TextXAlignment = Enum.TextXAlignment.Left
+    })
+    Create("TextLabel", {
+        Parent = Holder,
+        BackgroundTransparency = 1,
+        Position = UDim2.new(0, 18, 0, 38),
+        Size = UDim2.new(1, -36, 0, 18),
+        Font = Enum.Font.GothamBold,
+        Text = Config.Subtitle,
+        TextColor3 = self.Theme.TextDisabled,
+        TextSize = 12,
+        TextXAlignment = Enum.TextXAlignment.Left
+    })
+    Create("TextLabel", {
+        Parent = Holder,
+        BackgroundTransparency = 1,
+        Position = UDim2.new(0, 18, 0, 64),
+        Size = UDim2.new(1, -36, 0, 18),
+        Font = Enum.Font.GothamBold,
+        Text = Config.Note,
+        TextColor3 = self.Theme.Accent,
+        TextSize = 12,
+        TextXAlignment = Enum.TextXAlignment.Left
+    })
+    local BoxFrame = Create("Frame", {
+        Parent = Holder,
+        BackgroundColor3 = self.Theme.Background,
+        BorderSizePixel = 0,
+        Position = UDim2.new(0, 18, 0, 92),
+        Size = UDim2.new(1, -36, 0, 36)
+    })
+    Create("UICorner", {CornerRadius = UDim.new(0, 6), Parent = BoxFrame})
+    Create("UIStroke", {Parent = BoxFrame, Color = self.Theme.Stroke, Transparency = 0.45})
+    local KeyBox = Create("TextBox", {
+        Parent = BoxFrame,
+        BackgroundTransparency = 1,
+        Size = UDim2.new(1, -16, 1, 0),
+        Position = UDim2.new(0, 8, 0, 0),
+        Font = Enum.Font.GothamBold,
+        PlaceholderText = Config.Placeholder,
+        Text = "",
+        TextColor3 = self.Theme.Text,
+        TextSize = 13,
+        TextXAlignment = Enum.TextXAlignment.Left,
+        ClearTextOnFocus = false
+    })
+    local GetBtn = Create("TextButton", {
+        Parent = Holder,
+        BackgroundColor3 = self.Theme.Background,
+        BorderSizePixel = 0,
+        Position = UDim2.new(0, 18, 0, 140),
+        Size = UDim2.new(1, -36, 0, 34),
+        Font = Enum.Font.GothamBold,
+        Text = Config.GetKeyText,
+        TextColor3 = self.Theme.Text,
+        TextSize = 13,
+        AutoButtonColor = false
+    })
+    Create("UICorner", {CornerRadius = UDim.new(0, 6), Parent = GetBtn})
+    Create("UIStroke", {Parent = GetBtn, Color = self.Theme.Stroke, Transparency = 0.45})
+    local VerifyBtn = Create("TextButton", {
+        Parent = Holder,
+        BackgroundColor3 = self.Theme.Accent,
+        BorderSizePixel = 0,
+        Position = UDim2.new(0, 18, 0, 182),
+        Size = UDim2.new(1, -36, 0, 36),
+        Font = Enum.Font.GothamBold,
+        Text = Config.VerifyText,
+        TextColor3 = Color3.new(1, 1, 1),
+        TextSize = 14,
+        AutoButtonColor = false
+    })
+    Create("UICorner", {CornerRadius = UDim.new(0, 6), Parent = VerifyBtn})
+    local Status = Create("TextLabel", {
+        Parent = Holder,
+        BackgroundTransparency = 1,
+        Position = UDim2.new(0, 18, 0, 224),
+        Size = UDim2.new(1, -36, 0, 18),
+        Font = Enum.Font.GothamBold,
+        Text = "",
+        TextColor3 = self.Theme.TextDisabled,
+        TextSize = 12,
+        TextXAlignment = Enum.TextXAlignment.Left
+    })
+    local function ValidKey(k)
+        k = tostring(k or ""):gsub("%s+", "")
+        if k == "" then return false end
+        if Config.Key ~= "" and k == tostring(Config.Key) then return true end
+        for _, v in ipairs(Config.Keys or {}) do
+            if k == tostring(v) then return true end
+        end
+        return false
+    end
+    local function Finish()
+        Library:TweenInstance(Holder, 0.2, "Size", UDim2.new(0, 0, 0, 0), function()
+            Gui:Destroy()
+        end)
+        Config.Callback(KeyBox.Text)
+    end
+    if Config.SaveKey and isfile and readfile then
+        pcall(function()
+            if isfile(Config.FileName .. ".txt") then
+                local saved = readfile(Config.FileName .. ".txt")
+                if ValidKey(saved) then
+                    KeyBox.Text = saved
+                    Finish()
+                    return
+                end
+            end
+        end)
+    end
+    GetBtn.Activated:Connect(function()
+        if Config.GetKeyLink and Config.GetKeyLink ~= "" then
+            pcall(function()
+                if setclipboard then setclipboard(Config.GetKeyLink)
+                elseif toclipboard then toclipboard(Config.GetKeyLink) end
+            end)
+            Status.Text = "Link copied"
+            Status.TextColor3 = Color3.fromRGB(80, 200, 120)
+        else
+            Status.Text = "No get-key link set"
+            Status.TextColor3 = Color3.fromRGB(255, 190, 60)
+        end
+    end)
+    VerifyBtn.Activated:Connect(function()
+        if ValidKey(KeyBox.Text) then
+            if Config.SaveKey and writefile then
+                pcall(function() writefile(Config.FileName .. ".txt", KeyBox.Text) end)
+            end
+            Status.Text = "Verified"
+            Status.TextColor3 = Color3.fromRGB(80, 200, 120)
+            task.delay(0.35, Finish)
+        else
+            Status.Text = "Invalid key"
+            Status.TextColor3 = Color3.fromRGB(255, 80, 80)
+            Config.OnFail(KeyBox.Text)
+        end
+    end)
+    Library:TweenInstance(Holder, 0.28, "Size", UDim2.new(0, 340, 0, 260))
+    return Gui
+end
+
 
 
 local function Create(ClassName, Properties)
@@ -941,9 +1175,61 @@ function Library:NewWindow(ConfigWindow)
         Color = self.Theme.Accent,
         Parent = FloatingButton
     })
-    self:MakeDraggable(Top, DropShadowHolder)
+    local DragGrip = Create("Frame", {
+        Name = "DragGrip",
+        Parent = Main,
+        AnchorPoint = Vector2.new(0.5, 1),
+        BackgroundColor3 = Color3.fromRGB(120, 120, 128),
+        BackgroundTransparency = 0.35,
+        BorderSizePixel = 0,
+        Position = UDim2.new(0.5, 0, 1, -6),
+        Size = UDim2.new(0, 48, 0, 4),
+        ZIndex = 50
+    })
+    Create("UICorner", {CornerRadius = UDim.new(1, 0), Parent = DragGrip})
+    self:MakeDraggable(DragGrip, DropShadowHolder)
     self:MakeDraggable(FloatingButton, FloatingButton)
+    local ResizeHandle = Create("Frame", {
+        Name = "ResizeHandle",
+        Parent = Main,
+        AnchorPoint = Vector2.new(1, 1),
+        BackgroundColor3 = Color3.fromRGB(140, 140, 150),
+        BackgroundTransparency = 0.25,
+        BorderSizePixel = 0,
+        Position = UDim2.new(1, -4, 1, -4),
+        Size = UDim2.new(0, 14, 0, 14),
+        ZIndex = 50
+    })
+    Create("UICorner", {CornerRadius = UDim.new(0, 3), Parent = ResizeHandle})
+    do
+        local Resizing = false
+        local StartPos, StartSize
+        local MinW, MinH = 420, 280
+        ResizeHandle.InputBegan:Connect(function(Input)
+            if Input.UserInputType == Enum.UserInputType.MouseButton1 or Input.UserInputType == Enum.UserInputType.Touch then
+                Resizing = true
+                StartPos = Input.Position
+                StartSize = DropShadowHolder.AbsoluteSize
+                Input.Changed:Connect(function()
+                    if Input.UserInputState == Enum.UserInputState.End then
+                        Resizing = false
+                    end
+                end)
+            end
+        end)
+        UserInputService.InputChanged:Connect(function(Input)
+            if not Resizing then return end
+            if Input.UserInputType == Enum.UserInputType.MouseMovement or Input.UserInputType == Enum.UserInputType.Touch then
+                local dx = Input.Position.X - StartPos.X
+                local dy = Input.Position.Y - StartPos.Y
+                local nw = math.max(MinW, StartSize.X + dx)
+                local nh = math.max(MinH, StartSize.Y + dy)
+                DropShadowHolder.Size = UDim2.new(0, nw, 0, nh)
+            end
+        end)
+    end
     local Window = {
+
         ScreenGui = ScreenGui,
         Main = Main,
         DropShadowHolder = DropShadowHolder,
@@ -1195,12 +1481,19 @@ function Library:NewWindow(ConfigWindow)
         task.delay(cfnotify.Duration, CloseNotification)
     end
     local function ToggleWindow()
-        DropShadowHolder.Visible = not DropShadowHolder.Visible
-        if not DropShadowHolder.Visible then
-            DropdownZone.Visible = false
+        if DropShadowHolder.Visible then
+            Library:TweenInstance(DropShadowHolder, 0.2, "Size", UDim2.new(0, 0, 0, 0), function()
+                DropShadowHolder.Visible = false
+                DropdownZone.Visible = false
+            end)
+        else
+            DropShadowHolder.Visible = true
+            DropShadowHolder.Size = UDim2.new(0, 0, 0, 0)
+            Library:TweenInstance(DropShadowHolder, 0.28, "Size", ConfigWindow.Size)
         end
     end
     FloatingButton.MouseButton1Click:Connect(ToggleWindow)
+
     if ConfigWindow.ToggleKey and ConfigWindow.ToggleKey ~= "" then
         UserInputService.InputBegan:Connect(function(Input, Gpe)
             if Gpe then return end
@@ -3105,22 +3398,38 @@ function Library:NewWindow(ConfigWindow)
                     TextSize = 13,
                     TextXAlignment = Enum.TextXAlignment.Left
                 })
-                local Swatch = Create("Frame", {
+                local Presets = cfct.Presets or {
+                    Color3.fromRGB(255, 60, 60),
+                    Color3.fromRGB(255, 170, 60),
+                    Color3.fromRGB(80, 220, 120),
+                    Color3.fromRGB(80, 180, 255),
+                    Color3.fromRGB(160, 100, 255),
+                    Color3.fromRGB(255, 95, 200),
+                    Color3.fromRGB(255, 255, 255)
+                }
+                local Swatch = Create("TextButton", {
                     Parent = Card,
                     AnchorPoint = Vector2.new(1, 0.5),
                     BackgroundColor3 = cfct.Color,
                     BorderSizePixel = 0,
                     Position = UDim2.new(1, -58, 0.5, 0),
-                    Size = UDim2.new(0, 18, 0, 18)
+                    Size = UDim2.new(0, 18, 0, 18),
+                    Text = "",
+                    AutoButtonColor = false,
+                    ZIndex = 6
                 })
                 Create("UICorner", {CornerRadius = UDim.new(1, 0), Parent = Swatch})
-                local Track = Create("Frame", {
+                Create("UIStroke", {Parent = Swatch, Color = Color3.fromRGB(255, 255, 255), Transparency = 0.6, Thickness = 1})
+                local Track = Create("TextButton", {
                     Parent = Card,
                     AnchorPoint = Vector2.new(1, 0.5),
                     BackgroundColor3 = Color3.fromRGB(60, 60, 60),
                     BorderSizePixel = 0,
                     Position = UDim2.new(1, -12, 0.5, 0),
-                    Size = UDim2.new(0, 40, 0, 22)
+                    Size = UDim2.new(0, 40, 0, 22),
+                    Text = "",
+                    AutoButtonColor = false,
+                    ZIndex = 6
                 })
                 Create("UICorner", {CornerRadius = UDim.new(1, 0), Parent = Track})
                 local Knob = Create("Frame", {
@@ -3129,17 +3438,19 @@ function Library:NewWindow(ConfigWindow)
                     BackgroundColor3 = Color3.fromRGB(200, 200, 200),
                     BorderSizePixel = 0,
                     Position = UDim2.new(0, 3, 0.5, 0),
-                    Size = UDim2.new(0, 16, 0, 16)
+                    Size = UDim2.new(0, 16, 0, 16),
+                    ZIndex = 7
                 })
                 Create("UICorner", {CornerRadius = UDim.new(1, 0), Parent = Knob})
                 local Click = Create("TextButton", {
                     Parent = Card,
                     BackgroundTransparency = 1,
-                    Size = UDim2.new(1, 0, 1, 0),
+                    Size = UDim2.new(1, -90, 1, 0),
                     Text = "",
-                    AutoButtonColor = false
+                    AutoButtonColor = false,
+                    ZIndex = 5
                 })
-                local CTFunc = { Value = cfct.Default, Color = cfct.Color }
+                local CTFunc = { Value = cfct.Default, Color = cfct.Color, PresetIndex = 1 }
                 function CTFunc:Set(Boolean)
                     self.Value = Boolean and true or false
                     if self.Value then
@@ -3163,6 +3474,7 @@ function Library:NewWindow(ConfigWindow)
                         if self.Value then
                             Track.BackgroundColor3 = c
                         end
+                        cfct.Callback(self.Value, self.Color)
                     end
                 end
                 if cfct.Flag and cfct.Flag ~= "" then
@@ -3172,11 +3484,18 @@ function Library:NewWindow(ConfigWindow)
                     end
                 end
                 CTFunc:Set(CTFunc.Value)
-                Click.Activated:Connect(function()
+                local function ToggleOnly()
                     CTFunc:Set(not CTFunc.Value)
+                end
+                Click.Activated:Connect(ToggleOnly)
+                Track.Activated:Connect(ToggleOnly)
+                Swatch.Activated:Connect(function()
+                    CTFunc.PresetIndex = (CTFunc.PresetIndex % #Presets) + 1
+                    CTFunc:SetColor(Presets[CTFunc.PresetIndex])
                 end)
                 return CTFunc
             end
+
 
             function SectionFunc:AddSeperator(args)
                 local Seperator = Create("Frame", {
