@@ -93,6 +93,8 @@ local Library = {
     __flags = {},
     __config_folder = "NexxChasers",
     __themed_objects = {},
+    __auto_save_enabled = false,
+    __auto_save_name = "autosave",
 }
 
 Library.__index = Library
@@ -222,7 +224,7 @@ function Library:__spawn_notification()
     title.BackgroundTransparency = 1
     title.Text = data.title
     title.TextColor3 = theme.Text
-    title.TextSize = 14
+    title.TextSize = 15
     title.Font = Enum.Font.GothamMedium
     title.TextXAlignment = Enum.TextXAlignment.Left
     title.ZIndex = 301
@@ -234,7 +236,7 @@ function Library:__spawn_notification()
     content.BackgroundTransparency = 1
     content.Text = data.content
     content.TextColor3 = theme.TextDim
-    content.TextSize = 12
+    content.TextSize = 14
     content.Font = Enum.Font.Gotham
     content.TextXAlignment = Enum.TextXAlignment.Left
     content.TextYAlignment = Enum.TextYAlignment.Top
@@ -311,7 +313,7 @@ function Library:Dialog(index)
     title.BackgroundTransparency = 1
     title.Text = index.Title or "Dialog"
     title.TextColor3 = theme.Text
-    title.TextSize = 16
+    title.TextSize = 17
     title.Font = Enum.Font.GothamBold
     title.TextXAlignment = Enum.TextXAlignment.Left
     title.ZIndex = 402
@@ -323,7 +325,7 @@ function Library:Dialog(index)
     content.BackgroundTransparency = 1
     content.Text = index.Content or ""
     content.TextColor3 = theme.TextDim
-    content.TextSize = 13
+    content.TextSize = 14
     content.Font = Enum.Font.Gotham
     content.TextXAlignment = Enum.TextXAlignment.Left
     content.TextYAlignment = Enum.TextYAlignment.Top
@@ -486,7 +488,7 @@ function Library:Open()
     main.ClipsDescendants = true
     local ts = self.__window.__target_size or UDim2.new(0, 700, 0, 460)
     local tp = self.__window.__target_pos or UDim2.new(0.5, 0, 0.5, 0)
-    Tween(main, { Size = ts, Position = tp, BackgroundTransparency = self.__transparency }, 0.38, Enum.EasingStyle.Back).Completed:Connect(function()
+    Tween(main, { Size = ts, Position = tp, BackgroundTransparency = self.__transparency }, 0.45, Enum.EasingStyle.Back).Completed:Connect(function()
         main.ClipsDescendants = false
     end)
 end
@@ -517,9 +519,11 @@ end
 function Library:__set_flag(flag, value)
     if not flag then return end
     self.__flags[flag] = value
-    task.defer(function()
-        self:SaveConfig("autosave")
-    end)
+    if self.__auto_save_enabled then
+        task.defer(function()
+            self:SaveConfig(self.__auto_save_name or "autosave")
+        end)
+    end
 end
 
 function Library:SaveConfig(name)
@@ -528,6 +532,22 @@ function Library:SaveConfig(name)
         if not isfolder(self.__config_folder) then makefolder(self.__config_folder) end
         writefile(self.__config_folder .. "/" .. (name or "config") .. ".json", HttpService:JSONEncode(self.__flags))
     end)
+end
+
+
+function Library:__auto_save()
+    if self.__auto_save_enabled then
+        self:SaveConfig(self.__auto_save_name or "autosave")
+    end
+end
+
+function Library:EnableAutoSave(name)
+    self.__auto_save_enabled = true
+    self.__auto_save_name = name or "autosave"
+end
+
+function Library:DisableAutoSave()
+    self.__auto_save_enabled = false
 end
 
 function Library:LoadConfig(name)
@@ -656,7 +676,7 @@ function Library:ThemeEditor()
     title.BackgroundTransparency = 1
     title.Text = "Theme Editor"
     title.TextColor3 = theme.Text
-    title.TextSize = 16
+    title.TextSize = 17
     title.Font = Enum.Font.GothamBold
     title.TextXAlignment = Enum.TextXAlignment.Left
     title.ZIndex = 452
@@ -792,8 +812,16 @@ function Library:CreateWindow(config)
     local themeName = config.Theme or "Dark"
     local transparency = config.Transparency or 0.06
     local logo = config.Logo
-    if type(logo) == "string" and not tostring(logo):find("rbxasset") then
-        logo = GetLucide(logo) or logo
+    if type(logo) == "number" then
+        logo = "rbxassetid://" .. tostring(logo)
+    elseif type(logo) == "string" then
+        if logo:match("^%d+$") then
+            logo = "rbxassetid://" .. logo
+        elseif logo:find("rbxassetid://") or logo:find("rbxasset://") or logo:find("http") then
+            logo = logo
+        else
+            logo = GetLucide(logo) or logo
+        end
     end
     logo = logo or GetLucide("layout-dashboard") or "rbxassetid://10734943674"
     local toggleKey = config.ToggleKeybind or Enum.KeyCode.RightShift
@@ -849,7 +877,7 @@ function Library:CreateWindow(config)
 
     local header = Instance.new("Frame")
     header.Name = "Header"
-    header.Size = UDim2.new(1, 0, 0, 54)
+    header.Size = UDim2.new(1, 0, 0, 56)
     header.BackgroundColor3 = theme.BackgroundSecondary
     header.BackgroundTransparency = transparency
     header.BorderSizePixel = 0
@@ -883,7 +911,7 @@ function Library:CreateWindow(config)
     titleLabel.BackgroundTransparency = 1
     titleLabel.Text = title
     titleLabel.TextColor3 = theme.Text
-    titleLabel.TextSize = 15
+    titleLabel.TextSize = 16
     titleLabel.Font = Enum.Font.GothamBold
     titleLabel.TextXAlignment = Enum.TextXAlignment.Left
     titleLabel.ZIndex = 7
@@ -962,7 +990,7 @@ function Library:CreateWindow(config)
     searchBox.PlaceholderText = "Search..."
     searchBox.TextColor3 = theme.Text
     searchBox.PlaceholderColor3 = theme.TextMuted
-    searchBox.TextSize = 12
+    searchBox.TextSize = 13
     searchBox.Font = Enum.Font.Gotham
     searchBox.TextXAlignment = Enum.TextXAlignment.Left
     searchBox.ClearTextOnFocus = false
@@ -975,23 +1003,16 @@ function Library:CreateWindow(config)
         for _, el in pairs(self.__all_elements) do
             local isDiv = el.frame.Name == "Divider" or el.frame.Name == "DividerItem"
             local titleLbl = nil
-            for _, d in ipairs(el.frame:GetDescendants()) do
-                if d:IsA("TextLabel") and d.Text == el.name then
+            for _, d in ipairs(el.frame:GetChildren()) do
+                if d:IsA("TextLabel") then
                     titleLbl = d
                     break
-                end
-            end
-            if not titleLbl then
-                for _, d in ipairs(el.frame:GetChildren()) do
-                    if d:IsA("TextLabel") then titleLbl = d break end
                 end
             end
             if q == "" then
                 el.frame.Visible = true
                 if titleLbl then
                     titleLbl.TextColor3 = self.__theme.Text
-                    titleLbl.RichText = false
-                    titleLbl.Text = el.name
                 end
             else
                 if isDiv then
@@ -999,16 +1020,11 @@ function Library:CreateWindow(config)
                 else
                     local matched = el.name:lower():find(q, 1, true) ~= nil
                     el.frame.Visible = matched
-                    if matched and titleLbl then
-                        local name = el.name
-                        local lower = name:lower()
-                        local s, e = lower:find(q, 1, true)
-                        if s then
-                            local before = name:sub(1, s - 1)
-                            local mid = name:sub(s, e)
-                            local after = name:sub(e + 1)
-                            titleLbl.RichText = true
-                            titleLbl.Text = before .. '<font color="rgb(255,220,50)">' .. mid .. '</font>' .. after
+                    if titleLbl then
+                        if matched then
+                            titleLbl.TextColor3 = Color3.fromRGB(255, 220, 80)
+                        else
+                            titleLbl.TextColor3 = self.__theme.Text
                         end
                     end
                 end
@@ -1079,9 +1095,7 @@ function Library:CreateWindow(config)
     UserInputService.InputChanged:Connect(function(input)
         if input == dragInput and self.__dragging then
             local delta = input.Position - self.__drag_start
-            Tween(main, {
-                Position = UDim2.new(self.__start_pos.X.Scale, self.__start_pos.X.Offset + delta.X, self.__start_pos.Y.Scale, self.__start_pos.Y.Offset + delta.Y)
-            }, 0.08, Enum.EasingStyle.Quad)
+            main.Position = UDim2.new(self.__start_pos.X.Scale, self.__start_pos.X.Offset + delta.X, self.__start_pos.Y.Scale, self.__start_pos.Y.Offset + delta.Y)
         end
     end)
     dragLine.MouseEnter:Connect(function()
@@ -1132,8 +1146,8 @@ function Library:CreateWindow(config)
         if not self.__resizing then return end
         if input.UserInputType ~= Enum.UserInputType.MouseMovement and input.UserInputType ~= Enum.UserInputType.Touch then return end
         local delta = Vector2.new(input.Position.X, input.Position.Y) - self.__resize_start
-        local newW = math.max(440, self.__size_start.X.Offset + delta.X)
-        local newH = math.max(320, self.__size_start.Y.Offset + delta.Y)
+        local newW = math.max(480, self.__size_start.X.Offset + delta.X)
+        local newH = math.max(360, self.__size_start.Y.Offset + delta.Y)
         main.Size = UDim2.new(0, newW, 0, newH)
     end)
     UserInputService.InputEnded:Connect(function(input)
@@ -1151,8 +1165,8 @@ function Library:CreateWindow(config)
 
     task.spawn(function()
         task.wait(0.04)
-        local tw = self.__device == "mobile" and math.floor(Camera.ViewportSize.X * 0.9) or 700
-        local th = self.__device == "mobile" and math.floor(Camera.ViewportSize.Y * 0.72) or 460
+        local tw = self.__device == "mobile" and math.floor(Camera.ViewportSize.X * 0.9) or 780
+        local th = self.__device == "mobile" and math.floor(Camera.ViewportSize.Y * 0.72) or 520
         self.__window.__target_size = UDim2.new(0, tw, 0, th)
         self.__window.__target_pos = UDim2.new(0.5, 0, 0.5, 0)
         main.AnchorPoint = Vector2.new(0.5, 0.5)
@@ -1160,7 +1174,7 @@ function Library:CreateWindow(config)
             Size = self.__window.__target_size,
             Position = self.__window.__target_pos,
             BackgroundTransparency = transparency
-        }, 0.42, Enum.EasingStyle.Back).Completed:Connect(function()
+        }, 0.45, Enum.EasingStyle.Back).Completed:Connect(function()
             main.ClipsDescendants = false
         end)
         self.__is_open = true
@@ -1171,7 +1185,7 @@ function Library:CreateWindow(config)
         local theme = self.__theme
 
         local tabBtn = Instance.new("TextButton")
-        tabBtn.Size = UDim2.new(1, -8, 0, 38)
+        tabBtn.Size = UDim2.new(1, -8, 0, 40)
         tabBtn.BackgroundColor3 = theme.Element
         tabBtn.BackgroundTransparency = 1
         tabBtn.BorderSizePixel = 0
@@ -1215,7 +1229,7 @@ function Library:CreateWindow(config)
         tabLabel.BackgroundTransparency = 1
         tabLabel.Text = name
         tabLabel.TextColor3 = theme.TextMuted
-        tabLabel.TextSize = 13
+        tabLabel.TextSize = 14
         tabLabel.Font = Enum.Font.GothamMedium
         tabLabel.TextXAlignment = Enum.TextXAlignment.Left
         tabLabel.ZIndex = 6
@@ -1325,7 +1339,7 @@ function Library:CreateWindow(config)
             lockLbl.BackgroundTransparency = 1
             lockLbl.Text = lockedText or "Locked"
             lockLbl.TextColor3 = Color3.fromRGB(255, 255, 255)
-            lockLbl.TextSize = 11
+            lockLbl.TextSize = 12
             lockLbl.Font = Enum.Font.GothamMedium
             lockLbl.ZIndex = 21
             lockLbl.Parent = overlay
@@ -1337,22 +1351,32 @@ function Library:CreateWindow(config)
             local lockedText = index.LockedText or "Locked"
             local frame = Instance.new("Frame")
             frame.Name = "Button"
-            frame.Size = UDim2.new(1, 0, 0, 42)
+            frame.Size = UDim2.new(1, 0, 0, 46)
             frame.BackgroundColor3 = theme.Element
-            frame.BackgroundTransparency = 0.2
+            frame.BackgroundTransparency = 0.12
             frame.BorderSizePixel = 0
             frame.ZIndex = 4
             frame.Parent = container
             Round(frame, 10)
             Stroke(frame, theme.Stroke, 1)
             TrackTheme(frame, "BackgroundColor3", "Element")
+            local accent = Instance.new("Frame")
+            accent.Size = UDim2.new(0, 3, 0.55, 0)
+            accent.Position = UDim2.new(0, 8, 0.225, 0)
+            accent.BackgroundColor3 = theme.Accent
+            accent.BackgroundTransparency = 0.5
+            accent.BorderSizePixel = 0
+            accent.ZIndex = 5
+            accent.Parent = frame
+            Round(accent, 2)
+            TrackTheme(accent, "BackgroundColor3", "Accent")
             local lbl = Instance.new("TextLabel")
-            lbl.Size = UDim2.new(1, -48, 1, 0)
-            lbl.Position = UDim2.new(0, 14, 0, 0)
+            lbl.Size = UDim2.new(1, -56, 1, 0)
+            lbl.Position = UDim2.new(0, 20, 0, 0)
             lbl.BackgroundTransparency = 1
             lbl.Text = index.title or index.Title or "Button"
             lbl.TextColor3 = theme.Text
-            lbl.TextSize = 14
+            lbl.TextSize = 15
             lbl.Font = Enum.Font.Gotham
             lbl.TextXAlignment = Enum.TextXAlignment.Left
             lbl.ZIndex = 5
@@ -1413,7 +1437,7 @@ function Library:CreateWindow(config)
             local callback = index.callback or index.Callback or function() end
             local frame = Instance.new("Frame")
             frame.Name = "Toggle"
-            frame.Size = UDim2.new(1, 0, 0, 42)
+            frame.Size = UDim2.new(1, 0, 0, 44)
             frame.BackgroundColor3 = theme.Element
             frame.BackgroundTransparency = 0.2
             frame.BorderSizePixel = 0
@@ -1428,14 +1452,14 @@ function Library:CreateWindow(config)
             lbl.BackgroundTransparency = 1
             lbl.Text = index.title or index.Title or "Toggle"
             lbl.TextColor3 = theme.Text
-            lbl.TextSize = 14
+            lbl.TextSize = 15
             lbl.Font = Enum.Font.Gotham
             lbl.TextXAlignment = Enum.TextXAlignment.Left
             lbl.ZIndex = 5
             lbl.Parent = frame
             TrackTheme(lbl, "TextColor3", "Text")
             local track = Instance.new("Frame")
-            track.Size = UDim2.new(0, 46, 0, 26)
+            track.Size = UDim2.new(0, 48, 0, 28)
             track.Position = UDim2.new(1, -58, 0.5, -13)
             track.BackgroundColor3 = toggled and theme.ToggleOn or theme.ToggleOff
             track.BorderSizePixel = 0
@@ -1444,7 +1468,7 @@ function Library:CreateWindow(config)
             Round(track, 13)
             Stroke(track, theme.Stroke, 1)
             local knob = Instance.new("Frame")
-            knob.Size = UDim2.new(0, 20, 0, 20)
+            knob.Size = UDim2.new(0, 22, 0, 22)
             knob.Position = toggled and UDim2.new(1, -23, 0.5, -10) or UDim2.new(0, 3, 0.5, -10)
             knob.BackgroundColor3 = toggled and theme.AccentDark or theme.Text
             knob.BorderSizePixel = 0
@@ -1539,7 +1563,7 @@ function Library:CreateWindow(config)
             title.BackgroundTransparency = 1
             title.Text = index.title or index.Title or ""
             title.TextColor3 = theme.Text
-            title.TextSize = 14
+            title.TextSize = 15
             title.Font = Enum.Font.GothamMedium
             title.TextXAlignment = Enum.TextXAlignment.Left
             title.ZIndex = 5
@@ -1552,7 +1576,7 @@ function Library:CreateWindow(config)
             content.BackgroundTransparency = 1
             content.Text = index.content or index.Content or index.Desc or ""
             content.TextColor3 = theme.TextDim
-            content.TextSize = 12
+            content.TextSize = 14
             content.Font = Enum.Font.Gotham
             content.TextXAlignment = Enum.TextXAlignment.Left
             content.TextYAlignment = Enum.TextYAlignment.Top
@@ -1597,7 +1621,7 @@ function Library:CreateWindow(config)
             title.BackgroundTransparency = 1
             title.Text = index.title or index.Title or ""
             title.TextColor3 = theme.Text
-            title.TextSize = 14
+            title.TextSize = 15
             title.Font = Enum.Font.GothamMedium
             title.TextXAlignment = Enum.TextXAlignment.Left
             title.ZIndex = 5
@@ -1610,7 +1634,7 @@ function Library:CreateWindow(config)
             content.BackgroundTransparency = 1
             content.Text = index.content or index.Content or index.Desc or ""
             content.TextColor3 = theme.TextDim
-            content.TextSize = 12
+            content.TextSize = 14
             content.Font = Enum.Font.Gotham
             content.TextXAlignment = Enum.TextXAlignment.Left
             content.TextYAlignment = Enum.TextYAlignment.Top
@@ -1633,7 +1657,7 @@ function Library:CreateWindow(config)
             local callback = index.callback or index.Callback or function() end
             local frame = Instance.new("Frame")
             frame.Name = "Slider"
-            frame.Size = UDim2.new(1, 0, 0, 54)
+            frame.Size = UDim2.new(1, 0, 0, 56)
             frame.BackgroundColor3 = theme.Element
             frame.BackgroundTransparency = 0.2
             frame.BorderSizePixel = 0
@@ -1648,7 +1672,7 @@ function Library:CreateWindow(config)
             lbl.BackgroundTransparency = 1
             lbl.Text = index.title or index.Title or "Slider"
             lbl.TextColor3 = theme.Text
-            lbl.TextSize = 14
+            lbl.TextSize = 15
             lbl.Font = Enum.Font.Gotham
             lbl.TextXAlignment = Enum.TextXAlignment.Left
             lbl.ZIndex = 5
@@ -1660,7 +1684,7 @@ function Library:CreateWindow(config)
             valLbl.BackgroundTransparency = 1
             valLbl.Text = tostring(value)
             valLbl.TextColor3 = theme.TextDim
-            valLbl.TextSize = 13
+            valLbl.TextSize = 14
             valLbl.Font = Enum.Font.GothamMedium
             valLbl.TextXAlignment = Enum.TextXAlignment.Right
             valLbl.ZIndex = 5
@@ -1758,7 +1782,7 @@ function Library:CreateWindow(config)
             local locked = index.Locked or false
             local frame = Instance.new("Frame")
             frame.Name = "Textbox"
-            frame.Size = UDim2.new(1, 0, 0, 42)
+            frame.Size = UDim2.new(1, 0, 0, 44)
             frame.BackgroundColor3 = theme.Element
             frame.BackgroundTransparency = 0.2
             frame.BorderSizePixel = 0
@@ -1773,7 +1797,7 @@ function Library:CreateWindow(config)
             lbl.BackgroundTransparency = 1
             lbl.Text = index.title or index.Title or "Input"
             lbl.TextColor3 = theme.Text
-            lbl.TextSize = 14
+            lbl.TextSize = 15
             lbl.Font = Enum.Font.Gotham
             lbl.TextXAlignment = Enum.TextXAlignment.Left
             lbl.ZIndex = 5
@@ -1838,7 +1862,7 @@ function Library:CreateWindow(config)
             local opened = false
             local frame = Instance.new("Frame")
             frame.Name = "Dropdown"
-            frame.Size = UDim2.new(1, 0, 0, 42)
+            frame.Size = UDim2.new(1, 0, 0, 44)
             frame.BackgroundColor3 = theme.Element
             frame.BackgroundTransparency = 0.2
             frame.BorderSizePixel = 0
@@ -1854,7 +1878,7 @@ function Library:CreateWindow(config)
             lbl.BackgroundTransparency = 1
             lbl.Text = index.title or index.Title or "Dropdown"
             lbl.TextColor3 = theme.Text
-            lbl.TextSize = 14
+            lbl.TextSize = 15
             lbl.Font = Enum.Font.Gotham
             lbl.TextXAlignment = Enum.TextXAlignment.Left
             lbl.ZIndex = 11
@@ -1990,7 +2014,7 @@ function Library:CreateWindow(config)
             local flag = index.Flag
             local frame = Instance.new("Frame")
             frame.Name = "Keybind"
-            frame.Size = UDim2.new(1, 0, 0, 42)
+            frame.Size = UDim2.new(1, 0, 0, 44)
             frame.BackgroundColor3 = theme.Element
             frame.BackgroundTransparency = 0.2
             frame.BorderSizePixel = 0
@@ -2005,7 +2029,7 @@ function Library:CreateWindow(config)
             lbl.BackgroundTransparency = 1
             lbl.Text = index.title or index.Title or "Keybind"
             lbl.TextColor3 = theme.Text
-            lbl.TextSize = 14
+            lbl.TextSize = 15
             lbl.Font = Enum.Font.Gotham
             lbl.TextXAlignment = Enum.TextXAlignment.Left
             lbl.ZIndex = 5
@@ -2034,7 +2058,7 @@ function Library:CreateWindow(config)
                     if input.UserInputType == Enum.UserInputType.Keyboard then
                         current = input.KeyCode
                         keyBtn.Text = current.Name
-                        if flag then self.__library.__flags[flag] = current.Name end
+                        if flag then self.__library:__set_flag(flag, current.Name) end
                         callback(current)
                         conn:Disconnect()
                     end
@@ -2066,7 +2090,7 @@ function Library:CreateWindow(config)
 
             local frame = Instance.new("Frame")
             frame.Name = "Colorpicker"
-            frame.Size = UDim2.new(1, 0, 0, 42)
+            frame.Size = UDim2.new(1, 0, 0, 44)
             frame.BackgroundColor3 = theme.Element
             frame.BackgroundTransparency = 0.2
             frame.BorderSizePixel = 0
@@ -2083,7 +2107,7 @@ function Library:CreateWindow(config)
             lbl.BackgroundTransparency = 1
             lbl.Text = index.title or index.Title or "Color"
             lbl.TextColor3 = theme.Text
-            lbl.TextSize = 14
+            lbl.TextSize = 15
             lbl.Font = Enum.Font.Gotham
             lbl.TextXAlignment = Enum.TextXAlignment.Left
             lbl.ZIndex = 5
@@ -2221,13 +2245,171 @@ function Library:CreateWindow(config)
             return api
         end
 
+        
+        function tab:create_codebox(index)
+            local code = index.Code or index.code or index.Content or "-- code"
+            local title = index.Title or index.title or "Code"
+            local runnable = index.Runnable ~= false
+            local copyable = index.Copyable ~= false
+
+            local frame = Instance.new("Frame")
+            frame.Name = "Codebox"
+            frame.Size = UDim2.new(1, 0, 0, 160)
+            frame.BackgroundColor3 = Color3.fromRGB(18, 18, 22)
+            frame.BackgroundTransparency = 0.05
+            frame.BorderSizePixel = 0
+            frame.ZIndex = 4
+            frame.Parent = container
+            Round(frame, 10)
+            Stroke(frame, theme.Stroke, 1)
+
+            local topBar = Instance.new("Frame")
+            topBar.Size = UDim2.new(1, 0, 0, 32)
+            topBar.BackgroundColor3 = Color3.fromRGB(28, 28, 34)
+            topBar.BackgroundTransparency = 0.1
+            topBar.BorderSizePixel = 0
+            topBar.ZIndex = 5
+            topBar.Parent = frame
+            Round(topBar, 10)
+
+            local c1 = Instance.new("Frame")
+            c1.Size = UDim2.new(0, 10, 0, 10)
+            c1.Position = UDim2.new(0, 12, 0.5, -5)
+            c1.BackgroundColor3 = Color3.fromRGB(255, 95, 87)
+            c1.BorderSizePixel = 0
+            c1.ZIndex = 6
+            c1.Parent = topBar
+            Round(c1, 5)
+
+            local c2 = Instance.new("Frame")
+            c2.Size = UDim2.new(0, 10, 0, 10)
+            c2.Position = UDim2.new(0, 28, 0.5, -5)
+            c2.BackgroundColor3 = Color3.fromRGB(255, 189, 46)
+            c2.BorderSizePixel = 0
+            c2.ZIndex = 6
+            c2.Parent = topBar
+            Round(c2, 5)
+
+            local c3 = Instance.new("Frame")
+            c3.Size = UDim2.new(0, 10, 0, 10)
+            c3.Position = UDim2.new(0, 44, 0.5, -5)
+            c3.BackgroundColor3 = Color3.fromRGB(39, 201, 63)
+            c3.BorderSizePixel = 0
+            c3.ZIndex = 6
+            c3.Parent = topBar
+            Round(c3, 5)
+
+            local titleLbl = Instance.new("TextLabel")
+            titleLbl.Size = UDim2.new(1, -160, 1, 0)
+            titleLbl.Position = UDim2.new(0, 64, 0, 0)
+            titleLbl.BackgroundTransparency = 1
+            titleLbl.Text = title
+            titleLbl.TextColor3 = theme.TextDim
+            titleLbl.TextSize = 12
+            titleLbl.Font = Enum.Font.GothamMedium
+            titleLbl.TextXAlignment = Enum.TextXAlignment.Left
+            titleLbl.ZIndex = 6
+            titleLbl.Parent = topBar
+
+            if copyable then
+                local copyBtn = Instance.new("TextButton")
+                copyBtn.Size = UDim2.new(0, 52, 0, 22)
+                copyBtn.Position = UDim2.new(1, -120, 0.5, -11)
+                copyBtn.BackgroundColor3 = theme.Element
+                copyBtn.BorderSizePixel = 0
+                copyBtn.Text = "Copy"
+                copyBtn.TextColor3 = theme.Text
+                copyBtn.TextSize = 11
+                copyBtn.Font = Enum.Font.GothamMedium
+                copyBtn.ZIndex = 7
+                copyBtn.Parent = topBar
+                Round(copyBtn, 6)
+                Stroke(copyBtn, theme.Stroke, 1)
+                copyBtn.MouseButton1Click:Connect(function()
+                    if setclipboard then
+                        setclipboard(code)
+                    elseif toclipboard then
+                        toclipboard(code)
+                    end
+                    copyBtn.Text = "Copied"
+                    task.delay(1.2, function()
+                        if copyBtn and copyBtn.Parent then copyBtn.Text = "Copy" end
+                    end)
+                end)
+            end
+
+            if runnable then
+                local runBtn = Instance.new("TextButton")
+                runBtn.Size = UDim2.new(0, 52, 0, 22)
+                runBtn.Position = UDim2.new(1, -60, 0.5, -11)
+                runBtn.BackgroundColor3 = theme.Element
+                runBtn.BorderSizePixel = 0
+                runBtn.Text = "Run"
+                runBtn.TextColor3 = theme.Text
+                runBtn.TextSize = 11
+                runBtn.Font = Enum.Font.GothamMedium
+                runBtn.ZIndex = 7
+                runBtn.Parent = topBar
+                Round(runBtn, 6)
+                Stroke(runBtn, theme.Stroke, 1)
+                runBtn.MouseButton1Click:Connect(function()
+                    local fn, err = loadstring(code)
+                    if fn then
+                        task.spawn(fn)
+                        if index.OnRun then index.OnRun() end
+                    else
+                        Library:notify({ title = "Code Error", content = tostring(err), duration = 4, notify_type = "error" })
+                    end
+                end)
+            end
+
+            local codeScroll = Instance.new("ScrollingFrame")
+            codeScroll.Size = UDim2.new(1, -16, 1, -40)
+            codeScroll.Position = UDim2.new(0, 8, 0, 36)
+            codeScroll.BackgroundTransparency = 1
+            codeScroll.BorderSizePixel = 0
+            codeScroll.ScrollBarThickness = 3
+            codeScroll.CanvasSize = UDim2.new(0, 0, 0, 0)
+            codeScroll.ZIndex = 5
+            codeScroll.Parent = frame
+
+            local codeLbl = Instance.new("TextLabel")
+            codeLbl.Size = UDim2.new(1, -8, 0, 0)
+            codeLbl.AutomaticSize = Enum.AutomaticSize.Y
+            codeLbl.BackgroundTransparency = 1
+            codeLbl.Text = code
+            codeLbl.TextColor3 = Color3.fromRGB(200, 210, 220)
+            codeLbl.TextSize = 13
+            codeLbl.Font = Enum.Font.Code
+            codeLbl.TextXAlignment = Enum.TextXAlignment.Left
+            codeLbl.TextYAlignment = Enum.TextYAlignment.Top
+            codeLbl.TextWrapped = true
+            codeLbl.ZIndex = 6
+            codeLbl.Parent = codeScroll
+
+            codeLbl:GetPropertyChangedSignal("AbsoluteSize"):Connect(function()
+                codeScroll.CanvasSize = UDim2.new(0, 0, 0, codeLbl.AbsoluteSize.Y + 8)
+            end)
+
+            local api = {}
+            function api:Set(c)
+                code = c
+                codeLbl.Text = c
+            end
+            function api:Get()
+                return code
+            end
+            table.insert(self.__library.__all_elements, { name = title, frame = frame })
+            return api
+        end
+
         function tab:create_module(index)
             local toggled = index.default or false
             local callback = index.callback or function() end
             local module = { __elements = {}, __library = self.__library }
             local frame = Instance.new("Frame")
             frame.Name = "Module"
-            frame.Size = UDim2.new(1, 0, 0, 42)
+            frame.Size = UDim2.new(1, 0, 0, 44)
             frame.BackgroundColor3 = theme.Element
             frame.BackgroundTransparency = 0.2
             frame.BorderSizePixel = 0
@@ -2243,14 +2425,14 @@ function Library:CreateWindow(config)
             lbl.BackgroundTransparency = 1
             lbl.Text = index.title or "Module"
             lbl.TextColor3 = theme.Text
-            lbl.TextSize = 14
+            lbl.TextSize = 15
             lbl.Font = Enum.Font.Gotham
             lbl.TextXAlignment = Enum.TextXAlignment.Left
             lbl.ZIndex = 5
             lbl.Parent = frame
             TrackTheme(lbl, "TextColor3", "Text")
             local track = Instance.new("Frame")
-            track.Size = UDim2.new(0, 46, 0, 26)
+            track.Size = UDim2.new(0, 48, 0, 28)
             track.Position = UDim2.new(1, -58, 0, 8)
             track.BackgroundColor3 = toggled and theme.ToggleOn or theme.ToggleOff
             track.BorderSizePixel = 0
@@ -2259,7 +2441,7 @@ function Library:CreateWindow(config)
             Round(track, 13)
             Stroke(track, theme.Stroke, 1)
             local knob = Instance.new("Frame")
-            knob.Size = UDim2.new(0, 20, 0, 20)
+            knob.Size = UDim2.new(0, 22, 0, 22)
             knob.Position = toggled and UDim2.new(1, -23, 0.5, -10) or UDim2.new(0, 3, 0.5, -10)
             knob.BackgroundColor3 = toggled and theme.AccentDark or theme.Text
             knob.BorderSizePixel = 0
@@ -2371,6 +2553,244 @@ function Library:CreateWindow(config)
 
     return self
 end
+
+
+function Library:CreateMultiButton(parent, index)
+    local theme = self.__theme
+    local frame = Instance.new("Frame")
+    frame.Name = "MultiButton"
+    frame.Size = UDim2.new(1, 0, 0, 88)
+    frame.BackgroundTransparency = 1
+    frame.ZIndex = 5
+    frame.Parent = parent
+
+    local buttons = index.Buttons or {}
+    local primary = buttons[1]
+    local secondary = buttons[2]
+    local tertiary = buttons[3]
+
+    local function styleBtn(btn, text)
+        btn.BackgroundColor3 = theme.Element
+        btn.BorderSizePixel = 0
+        btn.Text = text or ""
+        btn.TextColor3 = theme.Text
+        btn.TextSize = 13
+        btn.Font = Enum.Font.GothamMedium
+        btn.AutoButtonColor = false
+        Round(btn, 9)
+        Stroke(btn, theme.Stroke, 1)
+        btn.MouseEnter:Connect(function()
+            Tween(btn, { BackgroundColor3 = theme.ElementHover }, 0.15)
+        end)
+        btn.MouseLeave:Connect(function()
+            Tween(btn, { BackgroundColor3 = theme.Element }, 0.15)
+        end)
+    end
+
+    if primary then
+        local b1 = Instance.new("TextButton")
+        b1.Size = UDim2.new(1, 0, 0, 38)
+        b1.Position = UDim2.new(0, 0, 0, 0)
+        b1.ZIndex = 6
+        b1.Parent = frame
+        styleBtn(b1, primary.Title or primary.Text or "Button")
+        b1.MouseButton1Click:Connect(function()
+            if primary.Callback then primary.Callback() end
+        end)
+    end
+
+    if secondary then
+        local b2 = Instance.new("TextButton")
+        b2.Size = UDim2.new(0.5, -4, 0, 38)
+        b2.Position = UDim2.new(0, 0, 0, 46)
+        b2.ZIndex = 6
+        b2.Parent = frame
+        styleBtn(b2, secondary.Title or secondary.Text or "Button")
+        b2.MouseButton1Click:Connect(function()
+            if secondary.Callback then secondary.Callback() end
+        end)
+    end
+
+    if tertiary then
+        local b3 = Instance.new("TextButton")
+        b3.Size = UDim2.new(0.5, -4, 0, 38)
+        b3.Position = UDim2.new(0.5, 4, 0, 46)
+        b3.ZIndex = 6
+        b3.Parent = frame
+        styleBtn(b3, tertiary.Title or tertiary.Text or "Button")
+        b3.MouseButton1Click:Connect(function()
+            if tertiary.Callback then tertiary.Callback() end
+        end)
+    end
+
+    return frame
+end
+
+function Library:OpenThemeEditor()
+    local theme = self.__theme
+    local gui = self.__window.euphoria
+    if not gui then return end
+
+    local overlay = Instance.new("Frame")
+    overlay.Size = UDim2.new(1, 0, 1, 0)
+    overlay.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+    overlay.BackgroundTransparency = 1
+    overlay.ZIndex = 450
+    overlay.Parent = gui
+
+    local dialog = Instance.new("Frame")
+    dialog.Size = UDim2.new(0, 0, 0, 0)
+    dialog.Position = UDim2.new(0.5, 0, 0.5, 0)
+    dialog.AnchorPoint = Vector2.new(0.5, 0.5)
+    dialog.BackgroundColor3 = theme.BackgroundSecondary
+    dialog.BackgroundTransparency = self.__transparency
+    dialog.BorderSizePixel = 0
+    dialog.ZIndex = 451
+    dialog.ClipsDescendants = true
+    dialog.Parent = overlay
+    Round(dialog, 14)
+    Stroke(dialog, Color3.fromRGB(255, 255, 255), 1)
+
+    local title = Instance.new("TextLabel")
+    title.Size = UDim2.new(1, -40, 0, 28)
+    title.Position = UDim2.new(0, 20, 0, 14)
+    title.BackgroundTransparency = 1
+    title.Text = "Theme Editor"
+    title.TextColor3 = theme.Text
+    title.TextSize = 17
+    title.Font = Enum.Font.GothamBold
+    title.TextXAlignment = Enum.TextXAlignment.Left
+    title.ZIndex = 452
+    title.Parent = dialog
+
+    local scroll = Instance.new("ScrollingFrame")
+    scroll.Size = UDim2.new(1, -40, 0, 280)
+    scroll.Position = UDim2.new(0, 20, 0, 48)
+    scroll.BackgroundTransparency = 1
+    scroll.BorderSizePixel = 0
+    scroll.ScrollBarThickness = 3
+    scroll.CanvasSize = UDim2.new(0, 0, 0, 0)
+    scroll.ZIndex = 452
+    scroll.Parent = dialog
+
+    local list = Instance.new("UIListLayout")
+    list.Padding = UDim.new(0, 8)
+    list.Parent = scroll
+    list:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+        scroll.CanvasSize = UDim2.new(0, 0, 0, list.AbsoluteContentSize.Y + 10)
+    end)
+
+    local tokens = {
+        { key = "Background", label = "Background" },
+        { key = "BackgroundSecondary", label = "Secondary" },
+        { key = "Element", label = "Element" },
+        { key = "ElementHover", label = "Element Hover" },
+        { key = "Stroke", label = "Stroke" },
+        { key = "Text", label = "Text" },
+        { key = "TextDim", label = "Text Dim" },
+        { key = "Accent", label = "Accent" },
+        { key = "ToggleOn", label = "Toggle On" },
+        { key = "ToggleOff", label = "Toggle Off" },
+        { key = "Slider", label = "Slider" },
+    }
+
+    local edits = {}
+    for _, tok in ipairs(tokens) do
+        local row = Instance.new("Frame")
+        row.Size = UDim2.new(1, 0, 0, 36)
+        row.BackgroundColor3 = theme.Element
+        row.BackgroundTransparency = 0.2
+        row.BorderSizePixel = 0
+        row.ZIndex = 453
+        row.Parent = scroll
+        Round(row, 8)
+        Stroke(row, theme.Stroke, 1)
+
+        local lbl = Instance.new("TextLabel")
+        lbl.Size = UDim2.new(0.5, 0, 1, 0)
+        lbl.Position = UDim2.new(0, 12, 0, 0)
+        lbl.BackgroundTransparency = 1
+        lbl.Text = tok.label
+        lbl.TextColor3 = theme.Text
+        lbl.TextSize = 14
+        lbl.Font = Enum.Font.Gotham
+        lbl.TextXAlignment = Enum.TextXAlignment.Left
+        lbl.ZIndex = 454
+        lbl.Parent = row
+
+        local swatch = Instance.new("TextButton")
+        swatch.Size = UDim2.new(0, 28, 0, 28)
+        swatch.Position = UDim2.new(1, -40, 0.5, -14)
+        swatch.BackgroundColor3 = theme[tok.key] or Color3.fromRGB(255, 255, 255)
+        swatch.Text = ""
+        swatch.ZIndex = 454
+        swatch.Parent = row
+        Round(swatch, 6)
+        Stroke(swatch, Color3.fromRGB(255, 255, 255), 1)
+        edits[tok.key] = swatch
+
+        swatch.MouseButton1Click:Connect(function()
+            local h, s, v = Color3.toHSV(swatch.BackgroundColor3)
+            h = (h + 0.08) % 1
+            local nc = Color3.fromHSV(h, math.max(s, 0.4), math.max(v, 0.5))
+            swatch.BackgroundColor3 = nc
+        end)
+    end
+
+    local btnArea = Instance.new("Frame")
+    btnArea.Size = UDim2.new(1, -40, 0, 88)
+    btnArea.Position = UDim2.new(0, 20, 1, -100)
+    btnArea.BackgroundTransparency = 1
+    btnArea.ZIndex = 452
+    btnArea.Parent = dialog
+
+    local function close()
+        Tween(overlay, { BackgroundTransparency = 1 }, 0.2)
+        Tween(dialog, { Size = UDim2.new(0, 0, 0, 0) }, 0.25).Completed:Connect(function()
+            overlay:Destroy()
+        end)
+    end
+
+    self:CreateMultiButton(btnArea, {
+        Buttons = {
+            {
+                Title = "Apply Theme",
+                Callback = function()
+                    local custom = {}
+                    for k, v in pairs(theme) do
+                        custom[k] = v
+                    end
+                    custom.Name = "Custom"
+                    for key, swatch in pairs(edits) do
+                        custom[key] = swatch.BackgroundColor3
+                    end
+                    Themes["Custom"] = custom
+                    self:ApplyTheme("Custom")
+                    self:notify({ title = "Theme", content = "Custom theme applied", duration = 2 })
+                    close()
+                end,
+            },
+            {
+                Title = "Reset Dark",
+                Callback = function()
+                    self:ApplyTheme("Dark")
+                    close()
+                end,
+            },
+            {
+                Title = "Reset Light",
+                Callback = function()
+                    self:ApplyTheme("Light")
+                    close()
+                end,
+            },
+        },
+    })
+
+    Tween(overlay, { BackgroundTransparency = 0.5 }, 0.25)
+    Tween(dialog, { Size = UDim2.new(0, 400, 0, 460) }, 0.35, Enum.EasingStyle.Back)
+end
+
 
 Library.init = Library.CreateWindow
 return Library

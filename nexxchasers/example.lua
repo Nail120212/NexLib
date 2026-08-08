@@ -5,10 +5,13 @@ local Window = Library:CreateWindow({
     Author = "by Nexx • Chasers",
     Theme = "Dark",
     Transparency = 0.08,
-    Logo = "layout-dashboard",
+    Logo = 10734943674,
     ToggleKeybind = Enum.KeyCode.RightShift,
     Folder = "NexxChasers",
 })
+
+Library:EnableAutoSave("main")
+Library:LoadConfig("main")
 
 local MainTab = Window:create_tab("Main", "home")
 local CombatTab = Window:create_tab("Combat", "swords")
@@ -17,13 +20,7 @@ local SettingsTab = Window:create_tab("Settings", "settings")
 
 MainTab:create_paragraph({
     Title = "Welcome",
-    Content = "NexxChasers UI. RightShift toggles. Drag bottom bar to move. Flags auto-save.",
-})
-
-MainTab:create_imageparagraph({
-    Title = "Features",
-    Content = "Live themes, locked badges, config autosave, colorpicker, theme editor.",
-    Image = "sparkles",
+    Content = "Larger text, WindUI-style buttons with accent bar. Logo accepts rbxassetid numbers.",
 })
 
 MainTab:create_divider("Player")
@@ -57,29 +54,13 @@ MainTab:create_button({
     end,
 })
 
-MainTab:create_textbox({
-    Title = "Custom Name",
-    Placeholder = "Enter name...",
-    callback = function(text)
-        print("Name:", text)
-    end,
-})
-
-MainTab:create_dropdown({
-    Title = "Teleport",
-    options = { "Spawn", "Bank", "Shop", "Safezone" },
-    default = "Spawn",
-    callback = function(value)
-        print("Teleport:", value)
-    end,
-})
-
-MainTab:create_keybind({
-    Title = "Panic Key",
-    default = Enum.KeyCode.P,
-    callback = function(key)
-        print("Panic:", key.Name)
-    end,
+MainTab:create_codebox({
+    Title = "Example Script",
+    Code = [[print("Hello from NexxChasers")
+local p = game.Players.LocalPlayer
+print(p.Name)]],
+    Runnable = true,
+    Copyable = true,
 })
 
 MainTab:create_colorpicker({
@@ -100,15 +81,6 @@ CombatTab:create_toggle({
     callback = function(s) print("Aimbot", s) end,
 })
 
-CombatTab:create_slider({
-    Title = "FOV",
-    Flag = "FOV",
-    Min = 10,
-    Max = 360,
-    default = 90,
-    callback = function(v) print("FOV", v) end,
-})
-
 local lockedToggle = CombatTab:create_toggle({
     Title = "Premium Aim",
     Locked = true,
@@ -125,8 +97,6 @@ CombatTab:create_button({
     end,
 })
 
-VisualsTab:create_divider("ESP")
-
 VisualsTab:create_toggle({
     Title = "Box ESP",
     Flag = "BoxESP",
@@ -134,18 +104,11 @@ VisualsTab:create_toggle({
     callback = function(s) print("Box", s) end,
 })
 
-VisualsTab:create_toggle({
-    Title = "Name ESP",
-    Flag = "NameESP",
-    default = false,
-    callback = function(s) print("Name", s) end,
-})
-
 VisualsTab:create_colorpicker({
     Title = "ESP Color",
     Flag = "ESPColor",
-    default = Color3.fromRGB(0, 255, 128),
-    callback = function(c) print("ESP", c) end,
+    default = Color3.fromRGB(255, 50, 50),
+    callback = function(c) print(c) end,
 })
 
 SettingsTab:create_divider("UI")
@@ -156,7 +119,7 @@ SettingsTab:create_dropdown({
     default = "Dark",
     callback = function(value)
         if value == "Custom" then
-            Library:ThemeEditor()
+            Library:OpenThemeEditor()
         else
             Library:SetTheme(value)
             Library:notify({ title = "Theme", content = "Switched to " .. value, duration = 2 })
@@ -167,7 +130,7 @@ SettingsTab:create_dropdown({
 SettingsTab:create_button({
     Title = "Open Theme Editor",
     callback = function()
-        Library:ThemeEditor()
+        Library:OpenThemeEditor()
     end,
 })
 
@@ -176,30 +139,6 @@ SettingsTab:create_button({
     callback = function()
         Library:SaveConfig("main")
         Library:notify({ title = "Config", content = "Saved", duration = 2 })
-    end,
-})
-
-SettingsTab:create_button({
-    Title = "Load Config",
-    callback = function()
-        Library:LoadConfig("main")
-        Library:notify({ title = "Config", content = "Loaded", duration = 2 })
-    end,
-})
-
-SettingsTab:create_button({
-    Title = "Open Dialog",
-    callback = function()
-        Library:Dialog({
-            Title = "Confirm",
-            Content = "Do you want to continue?",
-            Buttons = {
-                { Title = "Cancel" },
-                { Title = "Yes", Callback = function()
-                    Library:notify({ title = "OK", content = "Confirmed", duration = 2 })
-                end },
-            },
-        })
     end,
 })
 
@@ -213,6 +152,6 @@ SettingsTab:create_button({
 task.wait(0.5)
 Library:notify({
     title = "NexxChasers UI",
-    content = "Loaded • RightShift to toggle • Flags auto-save",
+    content = "Loaded • RightShift to toggle",
     duration = 4,
 })
