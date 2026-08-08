@@ -233,6 +233,34 @@ UserInputService.InputBegan:Connect(function(Input, Gpe)
         if cb then pcall(cb, Input.KeyCode.Name) end
     end
 end)
+local function Create(ClassName, Properties)
+    local Object = Instance.new(ClassName)
+    for Property, Value in pairs(Properties or {}) do
+        Object[Property] = Value
+    end
+    return Object
+end
+function Library:TweenInstance(Instance, Time, Property, TargetValue, Callback)
+    local Tween = TweenService:Create(
+        Instance,
+        TweenInfo.new(Time, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+        { [Property] = TargetValue }
+    )
+    if Callback then
+        Tween.Completed:Connect(Callback)
+    end
+    Tween:Play()
+    return Tween
+end
+function Library:MakeConfig(DefaultConfig, UserConfig)
+    UserConfig = UserConfig or {}
+    local Config = {}
+    for Key, Value in pairs(DefaultConfig) do
+        Config[Key] = UserConfig[Key] ~= nil and UserConfig[Key] or Value
+    end
+    return Config
+end
+
 function Library:KeySystem(Config)
     Config = self:MakeConfig({
         Title = "KingBanana",
@@ -361,11 +389,11 @@ function Library:KeySystem(Config)
         TextXAlignment = Enum.TextXAlignment.Left
     })
     local function ValidKey(k)
-        k = tostring(k or ""):gsub("%s+", "")
+        k = tostring(k or ""):gsub("%s+", ""):lower()
         if k == "" then return false end
-        if Config.Key ~= "" and k == tostring(Config.Key) then return true end
+        if Config.Key ~= "" and k == tostring(Config.Key):lower() then return true end
         for _, v in ipairs(Config.Keys or {}) do
-            if k == tostring(v) then return true end
+            if k == tostring(v):lower() then return true end
         end
         return false
     end
@@ -375,6 +403,7 @@ function Library:KeySystem(Config)
         end)
         Config.Callback(KeyBox.Text)
     end
+
     if Config.SaveKey and isfile and readfile then
         pcall(function()
             if isfile(Config.FileName .. ".txt") then
@@ -420,33 +449,6 @@ end
 
 
 
-local function Create(ClassName, Properties)
-    local Object = Instance.new(ClassName)
-    for Property, Value in pairs(Properties or {}) do
-        Object[Property] = Value
-    end
-    return Object
-end
-function Library:TweenInstance(Instance, Time, Property, TargetValue, Callback)
-    local Tween = TweenService:Create(
-        Instance,
-        TweenInfo.new(Time, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
-        { [Property] = TargetValue }
-    )
-    if Callback then
-        Tween.Completed:Connect(Callback)
-    end
-    Tween:Play()
-    return Tween
-end
-function Library:MakeConfig(DefaultConfig, UserConfig)
-    UserConfig = UserConfig or {}
-    local Config = {}
-    for Key, Value in pairs(DefaultConfig) do
-        Config[Key] = UserConfig[Key] ~= nil and UserConfig[Key] or Value
-    end
-    return Config
-end
 function Library:GetTitleGradient()
     return ColorSequence.new({
         ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 255, 255)),
