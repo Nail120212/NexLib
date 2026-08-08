@@ -238,17 +238,18 @@ function Library:KeySystem(Config)
         Title = "KingBanana",
         Subtitle = "Key System",
         Note = "Enter your key to continue",
-        Placeholder = "Enter your key...",
+        Placeholder = "Banana",
         GetKeyText = "Get Key",
         VerifyText = "Verify Key",
         GetKeyLink = "",
-        Key = "",
-        Keys = {},
+        Key = "Banana",
+        Keys = {"Banana"},
         SaveKey = true,
         FileName = "kb_key",
         Callback = function() end,
         OnFail = function() end
     }, Config or {})
+
     local Gui = Create("ScreenGui", {
         Name = "KB_KeySystem",
         ResetOnSpawn = false,
