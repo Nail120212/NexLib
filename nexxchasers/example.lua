@@ -1,208 +1,190 @@
---[[
-    NexxChasers UI Library - Example
-]]
-
-local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/Nail120212/NexLib/refs/heads/main/nexxchasers/loader.lua"))()
--- For local testing you can also do:
--- local Library = require(script.Parent.loader)  -- or load the file content
+local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/YOUR_REPO/NexxChasers/main/loader.lua"))()
 
 local Window = Library:CreateWindow({
     Title = "NexxChasers",
     Author = "by Nexx • Chasers",
-    Theme = "Dark",          -- "Dark" or "Light"
-    Transparency = 0.08,     -- 0 = solid, 1 = fully transparent
-    Logo = nil,              -- nil = default lucide icon, or pass rbxassetid / lucide name
+    Theme = "Dark",
+    Transparency = 0.08,
+    Logo = "layout-dashboard",
     ToggleKeybind = Enum.KeyCode.RightShift,
+    Folder = "NexxChasers",
 })
 
--- Tabs (icon name from Lucide)
 local MainTab = Window:create_tab("Main", "home")
 local CombatTab = Window:create_tab("Combat", "swords")
 local VisualsTab = Window:create_tab("Visuals", "eye")
 local SettingsTab = Window:create_tab("Settings", "settings")
 
--- ========== MAIN TAB ==========
+MainTab:create_paragraph({
+    Title = "Welcome",
+    Content = "NexxChasers UI Library. Use RightShift to toggle. Drag the bottom bar to move. Resize from the corner handle.",
+})
+
+MainTab:create_imageparagraph({
+    Title = "Features",
+    Content = "Live themes, locked elements, config system, real toggle knobs, floating button.",
+    Image = "sparkles",
+})
+
 MainTab:create_divider("Player")
 
-MainTab:create_checkbox({
-    title = "Speed Hack",
+local speedToggle = MainTab:create_toggle({
+    Title = "Speed Hack",
+    Flag = "SpeedHack",
     default = false,
     callback = function(state)
         print("Speed:", state)
-    end
+    end,
 })
 
 MainTab:create_slider({
-    title = "WalkSpeed",
-    minimum = 16,
-    maximum = 200,
+    Title = "WalkSpeed",
+    Flag = "WalkSpeed",
+    Min = 16,
+    Max = 200,
     default = 16,
-    rounding = 1,
+    Step = 1,
     callback = function(value)
         print("WalkSpeed =", value)
-    end
+    end,
 })
-
-MainTab:create_slider({
-    title = "JumpPower",
-    minimum = 50,
-    maximum = 300,
-    default = 50,
-    rounding = 1,
-    callback = function(value)
-        print("JumpPower =", value)
-    end
-})
-
-MainTab:create_divider("Actions")
 
 MainTab:create_button({
-    title = "Reset Character",
+    Title = "Reset Character",
     callback = function()
         local char = game.Players.LocalPlayer.Character
         if char then char:BreakJoints() end
-    end
+    end,
 })
 
 MainTab:create_textbox({
-    title = "Custom Name",
-    placeholder = "Enter name...",
+    Title = "Custom Name",
+    Placeholder = "Enter name...",
     callback = function(text)
-        print("Name set to:", text)
-    end
+        print("Name:", text)
+    end,
 })
 
 MainTab:create_dropdown({
-    title = "Teleport",
+    Title = "Teleport",
     options = { "Spawn", "Bank", "Shop", "Safezone" },
     default = "Spawn",
-    multi_selection = false,
     callback = function(value)
-        print("Teleport to:", value)
-    end
+        print("Teleport:", value)
+    end,
 })
 
--- ========== COMBAT TAB ==========
+MainTab:create_keybind({
+    Title = "Panic Key",
+    default = Enum.KeyCode.P,
+    callback = function(key)
+        print("Panic:", key.Name)
+    end,
+})
+
 CombatTab:create_divider("Aimbot")
 
-CombatTab:create_checkbox({
-    title = "Enable Aimbot",
+CombatTab:create_toggle({
+    Title = "Enable Aimbot",
+    Flag = "Aimbot",
     default = false,
-    callback = function(state)
-        print("Aimbot:", state)
-    end
+    callback = function(s) print("Aimbot", s) end,
 })
 
 CombatTab:create_slider({
-    title = "FOV",
-    minimum = 10,
-    maximum = 360,
+    Title = "FOV",
+    Min = 10,
+    Max = 360,
     default = 90,
-    rounding = 1,
-    callback = function(v) print("FOV", v) end
+    callback = function(v) print("FOV", v) end,
 })
 
-CombatTab:create_dropdown({
-    title = "Target Part",
-    options = { "Head", "Torso", "HumanoidRootPart" },
-    default = "Head",
-    callback = function(v) print("Part:", v) end
-})
-
-CombatTab:create_divider("Silent Aim")
-
-local silentModule = CombatTab:create_module({
-    title = "Silent Aim",
+local lockedToggle = CombatTab:create_toggle({
+    Title = "Premium Aim",
+    Locked = true,
+    LockedText = "VIP Only",
     default = false,
-    callback = function(state)
-        print("Silent Aim module:", state)
-    end
+    callback = function() end,
 })
 
-silentModule:create_checkbox({
-    title = "Visible Check",
-    default = true,
-    callback = function(s) print("Vis check", s) end
+CombatTab:create_button({
+    Title = "Unlock Premium (demo)",
+    callback = function()
+        lockedToggle:Unlock()
+        Library:notify({ title = "Unlocked", content = "Premium Aim is now available", duration = 3 })
+    end,
 })
 
-silentModule:create_button({
-    title = "Force Hit",
-    callback = function() print("Force hit!") end
-})
-
--- ========== VISUALS TAB ==========
 VisualsTab:create_divider("ESP")
 
-VisualsTab:create_checkbox({
-    title = "Box ESP",
+VisualsTab:create_toggle({
+    Title = "Box ESP",
+    Flag = "BoxESP",
     default = false,
-    callback = function(s) print("Box ESP", s) end
+    callback = function(s) print("Box", s) end,
 })
 
-VisualsTab:create_checkbox({
-    title = "Name ESP",
+VisualsTab:create_toggle({
+    Title = "Name ESP",
+    Flag = "NameESP",
     default = false,
-    callback = function(s) print("Name ESP", s) end
+    callback = function(s) print("Name", s) end,
 })
 
-VisualsTab:create_checkbox({
-    title = "Tracer ESP",
-    default = false,
-    callback = function(s) print("Tracer", s) end
-})
-
-VisualsTab:create_slider({
-    title = "ESP Distance",
-    minimum = 100,
-    maximum = 5000,
-    default = 1000,
-    rounding = 50,
-    callback = function(v) print("Dist", v) end
-})
-
--- ========== SETTINGS TAB ==========
 SettingsTab:create_divider("UI")
 
 SettingsTab:create_dropdown({
-    title = "Theme",
+    Title = "Theme",
     options = { "Dark", "Light" },
     default = "Dark",
     callback = function(value)
-        -- Theme switching would require re-creating or a SetTheme method
-        -- For now just notify
-        Library:notify({
-            title = "Theme",
-            content = "Selected " .. value .. " (restart to apply fully)",
-            duration = 3
-        })
-    end
+        Library:SetTheme(value)
+        Library:notify({ title = "Theme", content = "Switched to " .. value, duration = 2 })
+    end,
 })
 
 SettingsTab:create_button({
-    title = "Test Notification",
+    Title = "Save Config",
     callback = function()
-        Library:notify({
-            title = "NexxChasers",
-            content = "Everything is working smoothly!",
-            duration = 4,
-            notify_type = "normal"
-        })
-    end
+        Library:SaveConfig("main")
+        Library:notify({ title = "Config", content = "Saved successfully", duration = 2 })
+    end,
 })
 
 SettingsTab:create_button({
-    title = "Close UI",
+    Title = "Load Config",
+    callback = function()
+        Library:LoadConfig("main")
+        Library:notify({ title = "Config", content = "Loaded", duration = 2 })
+    end,
+})
+
+SettingsTab:create_button({
+    Title = "Open Dialog",
+    callback = function()
+        Library:Dialog({
+            Title = "Confirm",
+            Content = "Do you want to continue?",
+            Buttons = {
+                { Title = "Cancel" },
+                { Title = "Yes", Callback = function()
+                    Library:notify({ title = "OK", content = "Confirmed", duration = 2 })
+                end },
+            },
+        })
+    end,
+})
+
+SettingsTab:create_button({
+    Title = "Close UI",
     callback = function()
         Library:Close()
-    end
+    end,
 })
 
--- Welcome notification
-task.wait(0.6)
+task.wait(0.5)
 Library:notify({
     title = "NexxChasers UI",
-    content = "Loaded successfully • Press RightShift to toggle",
-    duration = 4
+    content = "Loaded • RightShift to toggle",
+    duration = 4,
 })
-
-print("[NexxChasers] Example loaded")
