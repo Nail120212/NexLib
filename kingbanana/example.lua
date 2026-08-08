@@ -1,12 +1,6 @@
---[[
-  KingBanana FULL EXAMPLE
-  Upload kingbanana.lua to your raw URL first.
-]]
-
 local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/Nail120212/NexLib/refs/heads/main/kingbanana/library.lua"))()
 
 -- Optional key system (customize freely)
---[[
 Library:KeySystem({
     Title = "KingBanana",
     Subtitle = "Access",
@@ -25,7 +19,6 @@ Library:KeySystem({
     OnFail = function() end
 })
 return
-]]
 
 local function loadHub()
 Library:LoadConfig("myhub")
