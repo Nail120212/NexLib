@@ -2,7 +2,7 @@ local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/Nail1
 
 local Window = Library:NewWindow({
     Title = "KingBanana Hub",
-    Description = "Simple Example",
+    Description = "Full API Example",
     Icon = "rbxassetid://89646749075297",
     Size = UDim2.new(0, 555, 0, 350),
     Theme = "Dark",
@@ -10,25 +10,27 @@ local Window = Library:NewWindow({
     ToggleKey = "RightControl"
 })
 
-local Main = Window:T("Main", "home")
-local Misc = Window:T("Misc", "settings")
-
-Main:AddTag({
+Window:AddTag({
     Title = "v1.0",
     Color = Color3.fromRGB(255, 200, 50),
     TextColor = Color3.fromRGB(20, 20, 25)
 })
 
-Main:AddTag({
+Window:AddTag({
     Title = "UI Library",
     Color = Color3.fromRGB(80, 220, 120),
     TextColor = Color3.fromRGB(20, 20, 25)
 })
 
+local Main = Window:T("Main", "home")
+local Misc = Window:T("Misc", "settings")
+local ThemeTab = Window:T("Theme", "palette")
+
 Main:AddToggle({
     Title = "Enable Feature",
-    Description = "Turns the main feature on or off",
+    Description = "Left side by default",
     Default = false,
+    Position = "left",
     Callback = function(Value)
         Library:SetFlag("EnableFeature", Value)
         print("Toggle:", Value)
@@ -37,20 +39,22 @@ Main:AddToggle({
 
 Main:AddKeybind({
     Title = "Action Key",
-    Description = "Press to trigger action",
+    Description = "Press to trigger",
     Default = "E",
+    Position = "left",
     Callback = function(Key)
-        print("Keybind pressed:", Key)
+        print("Keybind:", Key)
     end
 })
 
 Main:AddButton({
     Title = "Execute",
-    Description = "Runs the selected action",
+    Description = "Runs action",
+    Position = "left",
     Callback = function()
         Window:Notify({
             Title = "Executed",
-            Content = "Action completed successfully",
+            Content = "Action completed",
             Duration = 3
         })
     end
@@ -58,11 +62,12 @@ Main:AddButton({
 
 Main:AddSlider({
     Title = "Speed",
-    Description = "Adjust the speed value",
+    Description = "Adjust speed",
     Min = 1,
     Max = 100,
     Default = 50,
     Increment = 1,
+    Position = "left",
     Callback = function(Value)
         Library:SetFlag("Speed", Value)
         print("Speed:", Value)
@@ -71,10 +76,10 @@ Main:AddSlider({
 
 Main:AddDropdown({
     Title = "Mode",
-    Description = "Choose operating mode",
-    Values = {"Normal", "Fast", "Ultra", "Custom"},
+    Description = "Choose mode",
+    Values = {"Normal", "Fast", "Ultra"},
     Default = "Normal",
-    Multi = false,
+    Position = "right",
     Callback = function(Value)
         Library:SetFlag("Mode", Value)
         print("Mode:", Value)
@@ -83,41 +88,73 @@ Main:AddDropdown({
 
 Main:AddInput({
     Title = "Username",
-    Description = "Enter target name",
-    PlaceHolder = "Player name...",
+    Description = "Enter name",
+    PlaceHolder = "Player...",
     Default = "",
+    Position = "right",
     Callback = function(Text)
+        Library:SetFlag("Username", Text)
         print("Input:", Text)
     end
 })
 
-Misc:AddSeperator("Extra")
-
-Misc:AddToggle({
-    Title = "Show FPS",
-    Default = true,
-    Locked = true,
-    Locktext = "premium",
-    Callback = function(v)
-        print("FPS:", v)
+Main:AddColorPicker({
+    Title = "Accent",
+    Description = "Pick color",
+    Default = Color3.fromRGB(158, 158, 158),
+    Position = "right",
+    Callback = function(Color)
+        print("Color:", Color)
     end
 })
 
-Misc:AddKeybind({
-    Title = "Locked Key",
+Misc:AddSeperator("Groupbox API")
+
+local LeftBox = Misc:AddLeftGroupbox("Left Box")
+LeftBox:AddToggle({
+    Title = "Left Only",
+    Default = true,
+    Callback = function(v) print(v) end
+})
+LeftBox:AddSlider({
+    Title = "Value",
+    Min = 0,
+    Max = 10,
+    Default = 5,
+    Callback = function(v) print(v) end
+})
+
+local RightBox = Misc:AddRightGroupbox("Right Box")
+RightBox:AddButton({
+    Title = "Right Button",
+    Callback = function()
+        Window:Notify({Title = "Right", Content = "From right groupbox", Duration = 2})
+    end
+})
+RightBox:AddKeybind({
+    Title = "Hotkey",
     Default = "Q",
-    Locked = true,
-    Locktext = "vip",
-    Callback = function() end
+    Callback = function(k) print(k) end
 })
 
 Misc:AddParagraph({
     Title = "Info",
-    Content = "ToggleKey opens/closes the UI. Tags, Keybinds, Lock and Config are available."
+    Content = "Position = left/right on components. Tags on window title. ToggleKey opens UI. Live theme switch below.",
+    Position = "left"
+})
+
+Misc:AddToggle({
+    Title = "Locked Feature",
+    Default = false,
+    Locked = true,
+    Locktext = "premium",
+    Position = "right",
+    Callback = function() end
 })
 
 Misc:AddButton({
     Title = "Save Config",
+    Position = "left",
     Callback = function()
         if Library:SaveConfig("myhub") then
             Window:Notify({Title = "Config", Content = "Saved", Duration = 2})
@@ -127,6 +164,7 @@ Misc:AddButton({
 
 Misc:AddButton({
     Title = "Load Config",
+    Position = "left",
     Callback = function()
         if Library:LoadConfig("myhub") then
             Window:Notify({Title = "Config", Content = "Loaded", Duration = 2})
@@ -134,13 +172,59 @@ Misc:AddButton({
     end
 })
 
-Misc:AddButton({
-    Title = "Notify Test",
+Misc:AddImage("Banner", {
+    Image = "rbxassetid://89646749075297",
+    Height = 100,
+    Position = "right"
+})
+
+ThemeTab:AddButton({
+    Title = "Dark Theme",
+    Position = "left",
     Callback = function()
-        Window:Notify({
-            Title = "Test",
-            Content = "Notification system is working",
-            Duration = 4
+        Library:SetTheme("Dark")
+        Window:Notify({Title = "Theme", Content = "Switched to Dark", Duration = 2})
+    end
+})
+
+ThemeTab:AddButton({
+    Title = "Light Theme",
+    Position = "left",
+    Callback = function()
+        Library:SetTheme("Light")
+        Window:Notify({Title = "Theme", Content = "Switched to Light", Duration = 2})
+    end
+})
+
+ThemeTab:AddSlider({
+    Title = "Transparency",
+    Min = 0,
+    Max = 50,
+    Default = 6,
+    Increment = 1,
+    Position = "left",
+    Callback = function(v)
+        Library:SetTransparency(v / 100)
+    end
+})
+
+ThemeTab:AddButton({
+    Title = "Custom Purple Theme",
+    Position = "right",
+    Callback = function()
+        Library:CreateCustomTheme("Purple", {
+            Main = Color3.fromRGB(18, 12, 28),
+            Accent = Color3.fromRGB(160, 100, 255),
+            Text = Color3.fromRGB(255, 255, 255),
+            TextDisabled = Color3.fromRGB(170, 160, 190),
+            Background = Color3.fromRGB(28, 22, 40),
+            Stroke = Color3.fromRGB(100, 80, 140),
+            Card = Color3.fromRGB(255, 255, 255),
+            CardTransparency = 0.94,
+            Section = Color3.fromRGB(255, 255, 255),
+            SectionTransparency = 0.97
         })
+        Library:SetTheme("Purple")
+        Window:Notify({Title = "Theme", Content = "Custom Purple applied", Duration = 2})
     end
 })

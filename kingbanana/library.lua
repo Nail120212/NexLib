@@ -48,6 +48,20 @@ Library.Themes = {
 Library.Theme = Library.Themes.Dark
 Library.CurrentTheme = "Dark"
 Library.Transparency = 0.06
+Library.ThemeObjects = {}
+Library.ActiveWindows = {}
+function Library:RegisterThemeObject(Object, Property, ThemeKey)
+    if not Object or not Property or not ThemeKey then return end
+    table.insert(self.ThemeObjects, {Object = Object, Property = Property, ThemeKey = ThemeKey})
+end
+function Library:ApplyThemeToObject(Entry)
+    if not Entry or not Entry.Object or not Entry.Object.Parent then return end
+    local Value = self.Theme[Entry.ThemeKey]
+    if Value == nil then return end
+    pcall(function()
+        Entry.Object[Entry.Property] = Value
+    end)
+end
 function Library:SetTheme(Name)
     Name = tostring(Name or "Dark")
     if not self.Themes[Name] then
@@ -55,11 +69,45 @@ function Library:SetTheme(Name)
     end
     self.CurrentTheme = Name
     self.Theme = self.Themes[Name]
+    for i = #self.ThemeObjects, 1, -1 do
+        local Entry = self.ThemeObjects[i]
+        if not Entry.Object or not Entry.Object.Parent then
+            table.remove(self.ThemeObjects, i)
+        else
+            self:ApplyThemeToObject(Entry)
+        end
+    end
+    for _, Win in ipairs(self.ActiveWindows) do
+        if Win and Win.Main and Win.Main.Parent then
+            pcall(function()
+                Win.Main.BackgroundColor3 = self.Theme.Main
+                Win.Main.BackgroundTransparency = self.Transparency
+            end)
+            if Win.FloatingButton and Win.FloatingButton.Parent then
+                pcall(function()
+                    Win.FloatingButton.BackgroundColor3 = self.Theme.Main
+                    Win.FloatingButton.BackgroundTransparency = self.Transparency
+                end)
+            end
+        end
+    end
     return self.Theme
 end
 function Library:SetTransparency(Value)
     Value = math.clamp(tonumber(Value) or 0.06, 0, 0.9)
     self.Transparency = Value
+    for _, Win in ipairs(self.ActiveWindows) do
+        if Win and Win.Main and Win.Main.Parent then
+            pcall(function()
+                Win.Main.BackgroundTransparency = Value
+            end)
+            if Win.FloatingButton and Win.FloatingButton.Parent then
+                pcall(function()
+                    Win.FloatingButton.BackgroundTransparency = Value
+                end)
+            end
+        end
+    end
     return Value
 end
 function Library:GetTheme()
@@ -76,7 +124,7 @@ function Library:GetFlag(Name, Default)
 end
 function Library:SaveConfig(FileName)
     FileName = tostring(FileName or "kingbanana_config")
-    local ok, err = pcall(function()
+    local ok = pcall(function()
         if writefile then
             writefile(FileName .. ".json", game:GetService("HttpService"):JSONEncode(self.Flags))
         end
@@ -99,6 +147,19 @@ function Library:LoadConfig(FileName)
     end
     return false
 end
+function Library:CreateCustomTheme(Name, Colors)
+    if type(Name) ~= "string" or type(Colors) ~= "table" then return end
+    local Base = {}
+    for k, v in pairs(self.Themes.Dark) do
+        Base[k] = v
+    end
+    for k, v in pairs(Colors) do
+        Base[k] = v
+    end
+    self.Themes[Name] = Base
+    return Base
+end
+
 
 local function Create(ClassName, Properties)
     local Object = Instance.new(ClassName)
@@ -585,11 +646,14 @@ function Library:NewWindow(ConfigWindow)
         CornerRadius = UDim.new(0, 6),
         Parent = Main
     })
-    Create("UIStroke", {
+    local MainStroke = Create("UIStroke", {
         Color = self.Theme.Accent,
         Transparency = 0.45,
         Parent = Main
     })
+    self:RegisterThemeObject(Main, "BackgroundColor3", "Main")
+    self:RegisterThemeObject(MainStroke, "Color", "Accent")
+
     local Top = Create("Frame", {
         Name = "Top",
         Parent = Main,
@@ -610,7 +674,8 @@ function Library:NewWindow(ConfigWindow)
         BackgroundTransparency = 1,
         BorderSizePixel = 0,
         Position = UDim2.new(0, 18, 0, 8),
-        Size = UDim2.new(1, -28, 0, 20),
+        Size = UDim2.new(0, 0, 0, 20),
+        AutomaticSize = Enum.AutomaticSize.X,
         Font = Enum.Font.GothamBold,
         Text = ConfigWindow.Title,
         TextColor3 = self.Theme.Text,
@@ -618,6 +683,32 @@ function Library:NewWindow(ConfigWindow)
         TextXAlignment = Enum.TextXAlignment.Left
     })
     self:ApplyGradient(NameHub)
+    local TitleTags = Create("Frame", {
+        Name = "TitleTags",
+        Parent = Left,
+        BackgroundTransparency = 1,
+        BorderSizePixel = 0,
+        Position = UDim2.new(0, 18, 0, 6),
+        Size = UDim2.new(1, -40, 0, 22)
+    })
+    Create("UIListLayout", {
+        Parent = TitleTags,
+        FillDirection = Enum.FillDirection.Horizontal,
+        VerticalAlignment = Enum.VerticalAlignment.Center,
+        Padding = UDim.new(0, 6),
+        SortOrder = Enum.SortOrder.LayoutOrder
+    })
+    Create("UIPadding", {
+        Parent = TitleTags,
+        PaddingLeft = UDim.new(0, 0)
+    })
+    task.defer(function()
+        local titleW = NameHub.TextBounds.X
+        TitleTags.Position = UDim2.new(0, 18 + titleW + 10, 0, 6)
+    end)
+    NameHub:GetPropertyChangedSignal("TextBounds"):Connect(function()
+        TitleTags.Position = UDim2.new(0, 18 + NameHub.TextBounds.X + 10, 0, 6)
+    end)
     Create("TextLabel", {
         Name = "Desc",
         Parent = Left,
@@ -640,6 +731,7 @@ function Library:NewWindow(ConfigWindow)
         Position = UDim2.new(1, -74, 0, 0),
         Size = UDim2.new(0, 74, 1, 0)
     })
+
     Create("UIListLayout", {
         Parent = Right,
         FillDirection = Enum.FillDirection.Horizontal,
@@ -834,9 +926,55 @@ function Library:NewWindow(ConfigWindow)
         NotifyHolder = NotifyHolder,
         FloatingButton = FloatingButton,
         Tabs = {},
-        CurrentTab = nil
+        CurrentTab = nil,
+        TitleTags = TitleTags
     }
+    table.insert(self.ActiveWindows, Window)
+    self:RegisterThemeObject(NameHub, "TextColor3", "Text")
+
+    function Window:AddTag(cftag)
+        cftag = Library:MakeConfig({
+            Title = "Tag",
+            Color = Color3.fromRGB(80, 200, 120),
+            TextColor = Color3.fromRGB(20, 20, 25)
+        }, cftag or {})
+        local TagText = tostring(cftag.Title or "Tag")
+        local TextWidth = TextService:GetTextSize(TagText, 11, Enum.Font.GothamBold, Vector2.new(1000, 22)).X
+        local Tag = Create("Frame", {
+            Name = "Tag",
+            Parent = TitleTags,
+            BackgroundColor3 = cftag.Color,
+            BorderSizePixel = 0,
+            Size = UDim2.new(0, math.max(40, TextWidth + 16), 0, 18),
+            LayoutOrder = #TitleTags:GetChildren()
+        })
+        Create("UICorner", {CornerRadius = UDim.new(1, 0), Parent = Tag})
+        Create("TextLabel", {
+            Parent = Tag,
+            BackgroundTransparency = 1,
+            Size = UDim2.new(1, 0, 1, 0),
+            Font = Enum.Font.GothamBold,
+            Text = TagText,
+            TextColor3 = cftag.TextColor,
+            TextSize = 11
+        })
+        local TagFunc = {}
+        function TagFunc:SetTitle(v)
+            local t = tostring(v or "")
+            Tag:FindFirstChildOfClass("TextLabel").Text = t
+            local w = TextService:GetTextSize(t, 11, Enum.Font.GothamBold, Vector2.new(1000, 22)).X
+            Tag.Size = UDim2.new(0, math.max(40, w + 16), 0, 18)
+        end
+        function TagFunc:SetColor(c)
+            if typeof(c) == "Color3" then Tag.BackgroundColor3 = c end
+        end
+        function TagFunc:Destroy()
+            Tag:Destroy()
+        end
+        return TagFunc
+    end
     function Window:OpenOverlay(ContentFrame)
+
         for _, Child in ipairs(DropdownZone:GetChildren()) do
             if Child ~= ContentFrame and Child:IsA("GuiObject") then
                 Child.Visible = false
@@ -1327,6 +1465,7 @@ function Library:NewWindow(ConfigWindow)
                 Parent = Card
             })
             Library:CreateAccentBar(Card, 7)
+            Library:RegisterThemeObject(Card, "BackgroundColor3", "Card")
             return Card
         end
         local function MakeGroupbox(RealNameSection, ParentColumn)
@@ -1339,6 +1478,8 @@ function Library:NewWindow(ConfigWindow)
                 BorderSizePixel = 0,
                 Size = UDim2.new(1, 0, 0, NoHeader and 20 or 55)
             })
+            Library:RegisterThemeObject(Section, "BackgroundColor3", "Section")
+
             Create("UICorner", {
                 CornerRadius = UDim.new(0, 4),
                 Parent = Section
@@ -3105,30 +3246,39 @@ function Library:NewWindow(ConfigWindow)
             end
             return SectionFunc
         end
-        function TabFunc:AddLeftGroupbox(SectionName)
-            return MakeGroupbox(SectionName, LeftColumn)
+        local LeftSection = MakeGroupbox("", LeftColumn)
+
+        local RightSection = MakeGroupbox("", RightColumn)
+        local function ResolveSection(cfg)
+            cfg = cfg or {}
+            local pos = string.lower(tostring(cfg.Position or "left"))
+            if pos == "right" then return RightSection end
+            return LeftSection
         end
-        function TabFunc:AddRightGroupbox(SectionName)
-            return MakeGroupbox(SectionName, RightColumn)
+        function TabFunc:AddToggle(cfg) return ResolveSection(cfg):AddToggle(cfg) end
+        function TabFunc:AddButton(cfg) return ResolveSection(cfg):AddButton(cfg) end
+        function TabFunc:AddDropdown(cfg) return ResolveSection(cfg):AddDropdown(cfg) end
+        function TabFunc:AddInput(cfg) return ResolveSection(cfg):AddInput(cfg) end
+        function TabFunc:AddSlider(cfg) return ResolveSection(cfg):AddSlider(cfg) end
+        function TabFunc:AddColorPicker(cfg) return ResolveSection(cfg):AddColorPicker(cfg) end
+        function TabFunc:AddImage(name, cfg)
+            if typeof(name) == "table" then cfg = name end
+            return ResolveSection(cfg):AddImage(name, cfg)
         end
-        function TabFunc:AddSection(SectionName)
-            return MakeGroupbox(SectionName, LeftColumn)
+        function TabFunc:AddSeperator(args)
+            if typeof(args) == "table" then return ResolveSection(args):AddSeperator(args.Title or args.Text or "") end
+            return LeftSection:AddSeperator(args)
         end
-        local DefaultSection = MakeGroupbox("", LeftColumn)
-        function TabFunc:AddToggle(cfg) return DefaultSection:AddToggle(cfg) end
-        function TabFunc:AddButton(cfg) return DefaultSection:AddButton(cfg) end
-        function TabFunc:AddDropdown(cfg) return DefaultSection:AddDropdown(cfg) end
-        function TabFunc:AddInput(cfg) return DefaultSection:AddInput(cfg) end
-        function TabFunc:AddSlider(cfg) return DefaultSection:AddSlider(cfg) end
-        function TabFunc:AddColorPicker(cfg) return DefaultSection:AddColorPicker(cfg) end
-        function TabFunc:AddImage(name, cfg) return DefaultSection:AddImage(name, cfg) end
-        function TabFunc:AddSeperator(args) return DefaultSection:AddSeperator(args) end
-        function TabFunc:AddDivider(args) return DefaultSection:AddDivider(args) end
-        function TabFunc:AddParagraph(cfg) return DefaultSection:AddParagraph(cfg) end
-        function TabFunc:AddKeybind(cfg) return DefaultSection:AddKeybind(cfg) end
-        function TabFunc:AddTag(cfg) return DefaultSection:AddTag(cfg) end
+        function TabFunc:AddDivider(args) return TabFunc:AddSeperator(args) end
+        function TabFunc:AddParagraph(cfg) return ResolveSection(cfg):AddParagraph(cfg) end
+        function TabFunc:AddKeybind(cfg) return ResolveSection(cfg):AddKeybind(cfg) end
+        function TabFunc:AddTag(cfg) return ResolveSection(cfg):AddTag(cfg) end
+        function TabFunc:AddLeftGroupbox(SectionName) return MakeGroupbox(SectionName, LeftColumn) end
+        function TabFunc:AddRightGroupbox(SectionName) return MakeGroupbox(SectionName, RightColumn) end
+        function TabFunc:AddSection(SectionName) return MakeGroupbox(SectionName, LeftColumn) end
         return TabFunc
     end
+
 
 
     SearchBox:GetPropertyChangedSignal("Text"):Connect(function()
