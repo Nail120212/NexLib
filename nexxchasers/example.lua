@@ -17,18 +17,18 @@ local SettingsTab = Window:create_tab("Settings", "settings")
 
 MainTab:create_paragraph({
     Title = "Welcome",
-    Content = "NexxChasers UI Library. Use RightShift to toggle. Drag the bottom bar to move. Resize from the corner handle.",
+    Content = "NexxChasers UI. RightShift toggles. Drag bottom bar to move. Flags auto-save.",
 })
 
 MainTab:create_imageparagraph({
     Title = "Features",
-    Content = "Live themes, locked elements, config system, real toggle knobs, floating button.",
+    Content = "Live themes, locked badges, config autosave, colorpicker, theme editor.",
     Image = "sparkles",
 })
 
 MainTab:create_divider("Player")
 
-local speedToggle = MainTab:create_toggle({
+MainTab:create_toggle({
     Title = "Speed Hack",
     Flag = "SpeedHack",
     default = false,
@@ -82,6 +82,15 @@ MainTab:create_keybind({
     end,
 })
 
+MainTab:create_colorpicker({
+    Title = "Accent Color",
+    Flag = "AccentColor",
+    default = Color3.fromRGB(255, 255, 255),
+    callback = function(c)
+        print("Color", c)
+    end,
+})
+
 CombatTab:create_divider("Aimbot")
 
 CombatTab:create_toggle({
@@ -93,6 +102,7 @@ CombatTab:create_toggle({
 
 CombatTab:create_slider({
     Title = "FOV",
+    Flag = "FOV",
     Min = 10,
     Max = 360,
     default = 90,
@@ -108,10 +118,10 @@ local lockedToggle = CombatTab:create_toggle({
 })
 
 CombatTab:create_button({
-    Title = "Unlock Premium (demo)",
+    Title = "Unlock Premium",
     callback = function()
         lockedToggle:Unlock()
-        Library:notify({ title = "Unlocked", content = "Premium Aim is now available", duration = 3 })
+        Library:notify({ title = "Unlocked", content = "Premium Aim available", duration = 3 })
     end,
 })
 
@@ -131,15 +141,33 @@ VisualsTab:create_toggle({
     callback = function(s) print("Name", s) end,
 })
 
+VisualsTab:create_colorpicker({
+    Title = "ESP Color",
+    Flag = "ESPColor",
+    default = Color3.fromRGB(0, 255, 128),
+    callback = function(c) print("ESP", c) end,
+})
+
 SettingsTab:create_divider("UI")
 
 SettingsTab:create_dropdown({
     Title = "Theme",
-    options = { "Dark", "Light" },
+    options = { "Dark", "Light", "Custom" },
     default = "Dark",
     callback = function(value)
-        Library:SetTheme(value)
-        Library:notify({ title = "Theme", content = "Switched to " .. value, duration = 2 })
+        if value == "Custom" then
+            Library:ThemeEditor()
+        else
+            Library:SetTheme(value)
+            Library:notify({ title = "Theme", content = "Switched to " .. value, duration = 2 })
+        end
+    end,
+})
+
+SettingsTab:create_button({
+    Title = "Open Theme Editor",
+    callback = function()
+        Library:ThemeEditor()
     end,
 })
 
@@ -147,7 +175,7 @@ SettingsTab:create_button({
     Title = "Save Config",
     callback = function()
         Library:SaveConfig("main")
-        Library:notify({ title = "Config", content = "Saved successfully", duration = 2 })
+        Library:notify({ title = "Config", content = "Saved", duration = 2 })
     end,
 })
 
@@ -185,6 +213,6 @@ SettingsTab:create_button({
 task.wait(0.5)
 Library:notify({
     title = "NexxChasers UI",
-    content = "Loaded • RightShift to toggle",
+    content = "Loaded • RightShift to toggle • Flags auto-save",
     duration = 4,
 })
