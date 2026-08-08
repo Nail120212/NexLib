@@ -1,4 +1,4 @@
-local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/Nail120212/NexLib/refs/heads/main/kingbanana/library.lua"))()
+local Library = loadstring(game:HttpGet("YOUR_RAW_KINGBANANA_URL_HERE"))()
 
 local Window = Library:NewWindow({
     Title = "KingBanana Hub",
@@ -7,18 +7,40 @@ local Window = Library:NewWindow({
     Size = UDim2.new(0, 555, 0, 350),
     Theme = "Dark",
     Transparency = 0.06,
-    Color = Color3.fromRGB(158, 158, 158)
+    ToggleKey = "RightControl"
 })
 
 local Main = Window:T("Main", "home")
 local Misc = Window:T("Misc", "settings")
+
+Main:AddTag({
+    Title = "v1.0",
+    Color = Color3.fromRGB(255, 200, 50),
+    TextColor = Color3.fromRGB(20, 20, 25)
+})
+
+Main:AddTag({
+    Title = "UI Library",
+    Color = Color3.fromRGB(80, 220, 120),
+    TextColor = Color3.fromRGB(20, 20, 25)
+})
 
 Main:AddToggle({
     Title = "Enable Feature",
     Description = "Turns the main feature on or off",
     Default = false,
     Callback = function(Value)
+        Library:SetFlag("EnableFeature", Value)
         print("Toggle:", Value)
+    end
+})
+
+Main:AddKeybind({
+    Title = "Action Key",
+    Description = "Press to trigger action",
+    Default = "E",
+    Callback = function(Key)
+        print("Keybind pressed:", Key)
     end
 })
 
@@ -42,6 +64,7 @@ Main:AddSlider({
     Default = 50,
     Increment = 1,
     Callback = function(Value)
+        Library:SetFlag("Speed", Value)
         print("Speed:", Value)
     end
 })
@@ -53,6 +76,7 @@ Main:AddDropdown({
     Default = "Normal",
     Multi = false,
     Callback = function(Value)
+        Library:SetFlag("Mode", Value)
         print("Mode:", Value)
     end
 })
@@ -67,28 +91,47 @@ Main:AddInput({
     end
 })
 
-Main:AddColorPicker({
-    Title = "Accent Color",
-    Description = "Change highlight color",
-    Default = Color3.fromRGB(158, 158, 158),
-    Callback = function(Color)
-        print("Color:", Color)
-    end
-})
-
 Misc:AddSeperator("Extra")
 
 Misc:AddToggle({
     Title = "Show FPS",
     Default = true,
+    Locked = true,
+    Locktext = "premium",
     Callback = function(v)
         print("FPS:", v)
     end
 })
 
+Misc:AddKeybind({
+    Title = "Locked Key",
+    Default = "Q",
+    Locked = true,
+    Locktext = "vip",
+    Callback = function() end
+})
+
 Misc:AddParagraph({
     Title = "Info",
-    Content = "Simple API: create tab then call AddToggle / AddButton / etc directly on it."
+    Content = "ToggleKey opens/closes the UI. Tags, Keybinds, Lock and Config are available."
+})
+
+Misc:AddButton({
+    Title = "Save Config",
+    Callback = function()
+        if Library:SaveConfig("myhub") then
+            Window:Notify({Title = "Config", Content = "Saved", Duration = 2})
+        end
+    end
+})
+
+Misc:AddButton({
+    Title = "Load Config",
+    Callback = function()
+        if Library:LoadConfig("myhub") then
+            Window:Notify({Title = "Config", Content = "Loaded", Duration = 2})
+        end
+    end
 })
 
 Misc:AddButton({

@@ -65,6 +65,41 @@ end
 function Library:GetTheme()
     return self.CurrentTheme, self.Theme
 end
+Library.Flags = {}
+function Library:SetFlag(Name, Value)
+    self.Flags[tostring(Name)] = Value
+end
+function Library:GetFlag(Name, Default)
+    local v = self.Flags[tostring(Name)]
+    if v == nil then return Default end
+    return v
+end
+function Library:SaveConfig(FileName)
+    FileName = tostring(FileName or "kingbanana_config")
+    local ok, err = pcall(function()
+        if writefile then
+            writefile(FileName .. ".json", game:GetService("HttpService"):JSONEncode(self.Flags))
+        end
+    end)
+    return ok
+end
+function Library:LoadConfig(FileName)
+    FileName = tostring(FileName or "kingbanana_config")
+    local ok, data = pcall(function()
+        if isfile and isfile(FileName .. ".json") and readfile then
+            return game:GetService("HttpService"):JSONDecode(readfile(FileName .. ".json"))
+        end
+        return nil
+    end)
+    if ok and typeof(data) == "table" then
+        for k, v in pairs(data) do
+            self.Flags[k] = v
+        end
+        return true
+    end
+    return false
+end
+
 local function Create(ClassName, Properties)
     local Object = Instance.new(ClassName)
     for Property, Value in pairs(Properties or {}) do
@@ -495,12 +530,14 @@ function Library:NewWindow(ConfigWindow)
         Size = UDim2.new(0, 555, 0, 350),
         Theme = "Dark",
         Transparency = 0.06,
+        ToggleKey = "RightControl",
     }, ConfigWindow or {})
     self:SetTheme(ConfigWindow.Theme)
     self:SetTransparency(ConfigWindow.Transparency)
     if ConfigWindow.Color then
         self.Theme.Accent = ConfigWindow.Color
     end
+
     local ScreenGui = Create("ScreenGui", {
         Name = "QuantumUI_V5",
         ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
@@ -982,12 +1019,22 @@ function Library:NewWindow(ConfigWindow)
         ProgressTween:Play()
         task.delay(cfnotify.Duration, CloseNotification)
     end
-    FloatingButton.MouseButton1Click:Connect(function()
+    local function ToggleWindow()
         DropShadowHolder.Visible = not DropShadowHolder.Visible
         if not DropShadowHolder.Visible then
             DropdownZone.Visible = false
         end
-    end)
+    end
+    FloatingButton.MouseButton1Click:Connect(ToggleWindow)
+    if ConfigWindow.ToggleKey and ConfigWindow.ToggleKey ~= "" then
+        UserInputService.InputBegan:Connect(function(Input, Gpe)
+            if Gpe then return end
+            if UserInputService:GetFocusedTextBox() then return end
+            if Input.UserInputType == Enum.UserInputType.Keyboard and Input.KeyCode.Name == tostring(ConfigWindow.ToggleKey) then
+                ToggleWindow()
+            end
+        end)
+    end
     Large.MouseButton1Click:Connect(function()
         if DropShadowHolder.Size == ConfigWindow.Size then
             DropShadowHolder.Size = UDim2.new(0, 700, 0, 430)
@@ -995,6 +1042,7 @@ function Library:NewWindow(ConfigWindow)
             DropShadowHolder.Size = ConfigWindow.Size
         end
     end)
+
     local CloseDialog = Create("Frame", {
         Parent = DropdownZone,
         AnchorPoint = Vector2.new(0.5, 0.5),
@@ -2892,6 +2940,169 @@ function Library:NewWindow(ConfigWindow)
                 end
                 return ParaFunc
             end
+            function SectionFunc:AddKeybind(cfkey)
+                cfkey = Library:MakeConfig({
+                    Title = "Keybind",
+                    Description = "",
+                    Default = "F",
+                    Locked = false,
+                    Locktext = "premium",
+                    Lockicon = "lock",
+                    Callback = function() end
+                }, cfkey or {})
+                local KeyLock = Library:ResolveLockConfig(cfkey)
+                local Keybind = MakeCardBase(SectionList, 35)
+                Keybind.Name = "Keybind"
+                local RightOffset = KeyLock.Locked and 150 or 90
+                local Title = Create("TextLabel", {
+                    Name = "Title",
+                    Parent = Keybind,
+                    BackgroundTransparency = 1,
+                    BorderSizePixel = 0,
+                    Position = UDim2.new(0, 18, 0, 0),
+                    Size = UDim2.new(1, -RightOffset, 1, 0),
+                    Font = Enum.Font.GothamBold,
+                    Text = cfkey.Title,
+                    TextColor3 = Library.Theme.Text,
+                    TextSize = 13,
+                    TextXAlignment = Enum.TextXAlignment.Left
+                })
+                local Content = Create("TextLabel", {
+                    Name = "Content",
+                    Parent = Keybind,
+                    BackgroundTransparency = 1,
+                    BorderSizePixel = 0,
+                    Position = UDim2.new(0, 18, 0, 22),
+                    Size = UDim2.new(1, -RightOffset, 1, 0),
+                    Font = Enum.Font.GothamBold,
+                    Text = cfkey.Description,
+                    TextColor3 = Library.Theme.TextDisabled,
+                    TextSize = 12,
+                    TextXAlignment = Enum.TextXAlignment.Left,
+                    TextYAlignment = Enum.TextYAlignment.Top
+                })
+                local KeyBox = Create("TextButton", {
+                    Name = "KeyBox",
+                    Parent = Keybind,
+                    AnchorPoint = Vector2.new(1, 0.5),
+                    BackgroundColor3 = Library.Theme.Background,
+                    BorderSizePixel = 0,
+                    Position = UDim2.new(1, -12, 0.5, 0),
+                    Size = UDim2.new(0, 70, 0, 24),
+                    Text = "",
+                    AutoButtonColor = false
+                })
+                Create("UICorner", {CornerRadius = UDim.new(0, 5), Parent = KeyBox})
+                Create("UIStroke", {Parent = KeyBox, Color = Library.Theme.Stroke, Transparency = 0.5})
+                local KeyText = Create("TextLabel", {
+                    Parent = KeyBox,
+                    BackgroundTransparency = 1,
+                    Size = UDim2.new(1, 0, 1, 0),
+                    Font = Enum.Font.GothamBold,
+                    Text = tostring(cfkey.Default),
+                    TextColor3 = Library.Theme.Text,
+                    TextSize = 12
+                })
+                local LockBadge = Library:CreateLockBadge(Keybind, KeyLock, {
+                    Position = UDim2.new(1, -90, 0.5, 0),
+                    AnchorPoint = Vector2.new(1, 0.5),
+                    Height = 18,
+                    TextSize = 10,
+                    IconSize = 12
+                })
+                task.defer(function()
+                    Library:UpdateContent(Content, Title, Keybind, 18, RightOffset)
+                end)
+                local KeyFunc = {Value = tostring(cfkey.Default), Picking = false, Locked = KeyLock.Locked}
+                function KeyFunc:Set(Value)
+                    self.Value = tostring(Value)
+                    KeyText.Text = self.Value
+                end
+                KeyBox.Activated:Connect(function()
+                    if KeyLock.Locked then
+                        Library:PulseLockBadge(LockBadge)
+                        return
+                    end
+                    if KeyFunc.Picking then return end
+                    KeyFunc.Picking = true
+                    KeyText.Text = "..."
+                    local Conn
+                    Conn = UserInputService.InputBegan:Connect(function(Input, Gpe)
+                        if Gpe then return end
+                        if Input.UserInputType == Enum.UserInputType.Keyboard then
+                            if Input.KeyCode == Enum.KeyCode.Escape then
+                                KeyText.Text = KeyFunc.Value
+                                KeyFunc.Picking = false
+                                Conn:Disconnect()
+                                return
+                            end
+                            KeyFunc:Set(Input.KeyCode.Name)
+                            KeyFunc.Picking = false
+                            Conn:Disconnect()
+                            cfkey.Callback(KeyFunc.Value)
+                        end
+                    end)
+                end)
+                UserInputService.InputBegan:Connect(function(Input, Gpe)
+                    if Gpe or KeyFunc.Picking or KeyLock.Locked then return end
+                    if UserInputService:GetFocusedTextBox() then return end
+                    if Input.UserInputType == Enum.UserInputType.Keyboard and Input.KeyCode.Name == KeyFunc.Value then
+                        cfkey.Callback(KeyFunc.Value)
+                    end
+                end)
+                return KeyFunc
+            end
+            function SectionFunc:AddTag(cftag)
+                cftag = Library:MakeConfig({
+                    Title = "Tag",
+                    Color = Color3.fromRGB(80, 200, 120),
+                    TextColor = Color3.fromRGB(20, 20, 25)
+                }, cftag or {})
+                local TagHolder = Create("Frame", {
+                    Name = "TagHolder",
+                    Parent = SectionList,
+                    BackgroundTransparency = 1,
+                    BorderSizePixel = 0,
+                    Size = UDim2.new(1, 0, 0, 28)
+                })
+                local TagText = tostring(cftag.Title or "Tag")
+                local TextWidth = TextService:GetTextSize(TagText, 12, Enum.Font.GothamBold, Vector2.new(1000, 28)).X
+                local Tag = Create("Frame", {
+                    Name = "Tag",
+                    Parent = TagHolder,
+                    BackgroundColor3 = cftag.Color,
+                    BorderSizePixel = 0,
+                    Size = UDim2.new(0, math.max(48, TextWidth + 22), 0, 24),
+                    Position = UDim2.new(0, 10, 0.5, 0),
+                    AnchorPoint = Vector2.new(0, 0.5)
+                })
+                Create("UICorner", {CornerRadius = UDim.new(1, 0), Parent = Tag})
+                Create("TextLabel", {
+                    Parent = Tag,
+                    BackgroundTransparency = 1,
+                    Size = UDim2.new(1, 0, 1, 0),
+                    Font = Enum.Font.GothamBold,
+                    Text = TagText,
+                    TextColor3 = cftag.TextColor,
+                    TextSize = 12
+                })
+                local TagFunc = {}
+                function TagFunc:SetTitle(v)
+                    local t = tostring(v or "")
+                    Tag:FindFirstChildOfClass("TextLabel").Text = t
+                    local w = TextService:GetTextSize(t, 12, Enum.Font.GothamBold, Vector2.new(1000, 28)).X
+                    Tag.Size = UDim2.new(0, math.max(48, w + 22), 0, 24)
+                end
+                function TagFunc:SetColor(c)
+                    if typeof(c) == "Color3" then
+                        Tag.BackgroundColor3 = c
+                    end
+                end
+                function TagFunc:Destroy()
+                    TagHolder:Destroy()
+                end
+                return TagFunc
+            end
             return SectionFunc
         end
         function TabFunc:AddLeftGroupbox(SectionName)
@@ -2914,8 +3125,11 @@ function Library:NewWindow(ConfigWindow)
         function TabFunc:AddSeperator(args) return DefaultSection:AddSeperator(args) end
         function TabFunc:AddDivider(args) return DefaultSection:AddDivider(args) end
         function TabFunc:AddParagraph(cfg) return DefaultSection:AddParagraph(cfg) end
+        function TabFunc:AddKeybind(cfg) return DefaultSection:AddKeybind(cfg) end
+        function TabFunc:AddTag(cfg) return DefaultSection:AddTag(cfg) end
         return TabFunc
     end
+
 
     SearchBox:GetPropertyChangedSignal("Text"):Connect(function()
         local Query = SearchBox.Text:lower()
