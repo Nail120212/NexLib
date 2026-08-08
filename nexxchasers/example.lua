@@ -1,4 +1,4 @@
-local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/YOUR_REPO/NexxChasers/main/loader.lua"))()
+local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/Nail120212/NexLib/refs/heads/main/nexxchasers/loader.lua"))()
 
 local Window = Library:CreateWindow({
     Title = "NexxChasers",
