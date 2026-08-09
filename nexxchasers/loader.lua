@@ -1,3 +1,5 @@
+local loadstring = loadstring or load
+
 Library = {}
 SaveTheme = {}
 
