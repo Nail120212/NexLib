@@ -751,11 +751,25 @@ do
 		end
 	end
 
-	local IconList = loadstring(game:HttpGet('https://raw.githubusercontent.com/Dummyrme/Library/refs/heads/main/Icon.lua'))()
+	local IconList = { Icons = {}, Spritesheets = {} }
+	pcall(function()
+		local src = game:HttpGet('https://raw.githubusercontent.com/Dummyrme/Library/refs/heads/main/Icon.lua')
+		local fn = loadstring(src)
+		if fn then
+			local ok, res = pcall(fn)
+			if ok and type(res) == "table" then
+				IconList = res
+			end
+		end
+	end)
 	function gl(i)
-		local iconData = IconList.Icons[i]
-		if iconData then
-			local spriteSheet = IconList.Spritesheets[tostring(iconData.Image)]
+		if type(i) == "table" then
+			return i
+		end
+		local icons = IconList and IconList.Icons
+		if icons and icons[i] then
+			local iconData = icons[i]
+			local spriteSheet = IconList.Spritesheets and IconList.Spritesheets[tostring(iconData.Image)]
 			if spriteSheet then
 				return {
 					Image = spriteSheet,
@@ -764,20 +778,37 @@ do
 				}
 			end
 		end
-		if type(i) == 'string' and not i:find('rbxassetid://') then
+		if type(i) == 'string' and not tostring(i):find('rbxassetid://') then
+			if tonumber(i) then
+				return {
+					Image = "rbxassetid://".. tostring(i),
+					ImageRectSize = Vector2.new(0, 0),
+					ImageRectPosition = Vector2.new(0, 0),
+				}
+			end
 			return {
-				Image = "rbxassetid://".. i,
+				Image = "rbxassetid://10734943674",
 				ImageRectSize = Vector2.new(0, 0),
 				ImageRectPosition = Vector2.new(0, 0),
 			}
 		elseif type(i) == 'number' then
 			return {
-				Image = "rbxassetid://".. i,
+				Image = "rbxassetid://".. tostring(i),
+				ImageRectSize = Vector2.new(0, 0),
+				ImageRectPosition = Vector2.new(0, 0),
+			}
+		elseif type(i) == 'string' then
+			return {
+				Image = i,
 				ImageRectSize = Vector2.new(0, 0),
 				ImageRectPosition = Vector2.new(0, 0),
 			}
 		else
-			return i
+			return {
+				Image = "rbxassetid://10734943674",
+				ImageRectSize = Vector2.new(0, 0),
+				ImageRectPosition = Vector2.new(0, 0),
+			}
 		end
 	end
 	function tw(info)
@@ -3302,7 +3333,8 @@ function Library:Window(p)
 					local inComment = false
 					local commentPersist = false
 
-					for i = 1, #source do
+					local i = 1
+					while i <= #source do
 						local character = source:sub(i, i)
 
 						if inComment then
@@ -3321,7 +3353,7 @@ function Library:Window(p)
 								currentToken = currentToken .. character
 							end
 						elseif inString then
-							if character == inString and source:sub(i - 1, i - 1) ~= "\\" or character == "\n" then
+							if (character == inString and source:sub(i - 1, i - 1) ~= "\\") or character == "\n" then
 								currentToken = currentToken .. character
 								inString = false
 							else
@@ -3337,7 +3369,7 @@ function Library:Window(p)
 								currentToken = "-"
 								inComment = true
 								commentPersist = source:sub(i + 2, i + 3) == "[["
-							elseif character == "\"" or character == "\'" then
+							elseif character == '"' or character == "'" then
 								table.insert(tokens, currentToken)
 								currentToken = character
 								inString = character
@@ -3353,8 +3385,8 @@ function Library:Window(p)
 								currentToken = ""
 							end
 						end
+						i = i + 1
 					end
-
 					table.insert(tokens, currentToken)
 
 					local highlighted = {}
