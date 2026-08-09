@@ -1,5 +1,3 @@
-local loadstring = loadstring or load
-
 Library = {}
 SaveTheme = {}
 
@@ -85,7 +83,7 @@ local themes = {
 		}
 	},
 
-	Clover = {
+Clover = {
 		['Shadow'] = Color3.fromRGB(0, 40, 20),
 		['Background'] = Color3.fromRGB(10, 30, 15),
 		['Page'] = Color3.fromRGB(15, 45, 25),
@@ -164,6 +162,85 @@ local themes = {
 			}
 		}
 	},
+	Galaxy = {
+		['Shadow'] = Color3.fromRGB(40, 0, 60),
+		['Background'] = Color3.fromRGB(20, 10, 30),
+		['Page'] = Color3.fromRGB(30, 15, 45),
+		['Main'] = Color3.fromRGB(108, 0, 200),
+		['Text & Icon'] = Color3.fromRGB(220, 220, 255),
+		['Function'] = {
+			['Toggle'] = {
+				['Background'] = Color3.fromRGB(30, 15, 45),
+				['True'] = {
+					['Toggle Background'] = Color3.fromRGB(144, 0, 255),
+					['Toggle Value'] = Color3.fromRGB(255, 255, 255),
+				},
+				['False'] = {
+					['Toggle Background'] = Color3.fromRGB(60, 30, 80),
+					['Toggle Value'] = Color3.fromRGB(120, 100, 180),
+				}
+			},
+			['Label'] = {
+				['Background'] = Color3.fromRGB(30, 15, 45),
+			},
+			['Dropdown'] = {
+				['Background'] = Color3.fromRGB(30, 15, 45),
+				['Value Background'] = Color3.fromRGB(40, 20, 60),
+				['Value Stroke'] = Color3.fromRGB(120, 60, 160),
+				['Dropdown Select'] = {
+					['Background'] = Color3.fromRGB(35, 20, 50),
+					['Search'] = Color3.fromRGB(50, 30, 70),
+					['Item Background'] = Color3.fromRGB(45, 25, 65),
+				}
+			},
+			['Slider'] = {
+				['Background'] = Color3.fromRGB(30, 15, 45),
+				['Value Background'] = Color3.fromRGB(40, 20, 60),
+				['Value Stroke'] = Color3.fromRGB(100, 60, 150),
+				['Slider Bar'] = Color3.fromRGB(144, 0, 255),
+				['Slider Bar Value'] = Color3.fromRGB(0, 255, 255),
+				['Circle Value'] = Color3.fromRGB(255, 255, 255)
+			},
+			['Code'] = {
+				['Background'] = ColorSequence.new{
+					ColorSequenceKeypoint.new(0, Color3.fromRGB(25, 15, 35)),
+					ColorSequenceKeypoint.new(1, Color3.fromRGB(35, 20, 55))
+				},
+				['Background Code'] = Color3.fromRGB(40, 25, 60),
+				['Background Code Value'] = Color3.fromRGB(60, 35, 85),
+				['ScrollingFrame Code'] = Color3.fromRGB(160, 100, 255)
+			},
+			['Button'] = {
+				['Background'] = Color3.fromRGB(30, 15, 45),
+				['Click'] = Color3.fromRGB(144, 0, 255)
+			},
+			['Textbox'] = {
+				['Background'] = Color3.fromRGB(30, 15, 45),
+				['Value Background'] = Color3.fromRGB(40, 20, 60),
+				['Value Stroke'] = Color3.fromRGB(120, 60, 160),
+			},
+			['Keybind'] = {
+				['Background'] = Color3.fromRGB(30, 15, 45),
+				['Value Background'] = Color3.fromRGB(40, 20, 60),
+				['Value Stroke'] = Color3.fromRGB(120, 60, 160),
+				['True'] = {
+					['Toggle Background'] = Color3.fromRGB(144, 0, 255),
+					['Toggle Value'] = Color3.fromRGB(255, 255, 255),
+				},
+				['False'] = {
+					['Toggle Background'] = Color3.fromRGB(60, 30, 80),
+					['Toggle Value'] = Color3.fromRGB(120, 100, 180),
+				}
+			},
+			['Color Picker'] = {
+				['Background'] = Color3.fromRGB(30, 15, 45),
+				['Color Select'] = {
+					['Background'] = Color3.fromRGB(40, 20, 60),
+					['UIStroke'] = Color3.fromRGB(120, 60, 160),
+				}
+			}
+		}
+	},	
 	Ocean = {
 		['Shadow'] = Color3.fromRGB(60, 90, 120),
 		['Background'] = Color3.fromRGB(220, 240, 255),
@@ -472,6 +549,82 @@ local themes = {
 		}
 	},
 
+	Rose = {
+		['Shadow'] = Color3.fromRGB(200, 180, 190),
+		['Background'] = Color3.fromRGB(255, 240, 245),
+		['Page'] = Color3.fromRGB(255, 250, 252),
+		['Main'] = Color3.fromRGB(255, 105, 180),
+		['Text & Icon'] = Color3.fromRGB(60, 60, 60),
+		['Function'] = {
+			['Toggle'] = {
+				['Background'] = Color3.fromRGB(250, 230, 235),
+				['True'] = {
+					['Toggle Background'] = Color3.fromRGB(255, 200, 220),
+					['Toggle Value'] = Color3.fromRGB(255, 105, 180),
+				},
+				['False'] = {
+					['Toggle Background'] = Color3.fromRGB(245, 220, 225),
+					['Toggle Value'] = Color3.fromRGB(180, 180, 180),
+				}
+			},
+			['Label'] = {
+				['Background'] = Color3.fromRGB(250, 230, 235),
+			},
+			['Dropdown'] = {
+				['Background'] = Color3.fromRGB(250, 230, 235),
+				['Value Background'] = Color3.fromRGB(255, 250, 252),
+				['Value Stroke'] = Color3.fromRGB(220, 200, 210),
+				['Dropdown Select'] = {
+					['Background'] = Color3.fromRGB(255, 250, 252),
+					['Search'] = Color3.fromRGB(250, 240, 245),
+					['Item Background'] = Color3.fromRGB(250, 230, 235),
+				}
+			},
+			['Slider'] = {
+				['Background'] = Color3.fromRGB(250, 230, 235),
+				['Value Background'] = Color3.fromRGB(255, 250, 252),
+				['Value Stroke'] = Color3.fromRGB(220, 200, 210),
+				['Slider Bar'] = Color3.fromRGB(255, 200, 220),
+				['Slider Bar Value'] = Color3.fromRGB(255, 105, 180),
+				['Circle Value'] = Color3.fromRGB(255, 255, 255)
+			},
+			['Code'] = {
+				['Background'] = ColorSequence.new{ColorSequenceKeypoint.new(0, Color3.fromRGB(250, 230, 235)), ColorSequenceKeypoint.new(1, Color3.fromRGB(250, 230, 235))},
+				['Background Code'] = Color3.fromRGB(255, 240, 245),
+				['Background Code Value'] = Color3.fromRGB(250, 220, 230),
+				['ScrollingFrame Code'] = Color3.fromRGB(140, 100, 110)
+			},
+			['Button'] = {
+				['Background'] = Color3.fromRGB(250, 230, 235),
+				['Click'] = Color3.fromRGB(255, 105, 180)
+			},
+			['Textbox'] = {
+				['Background'] = Color3.fromRGB(250, 230, 235),
+				['Value Background'] = Color3.fromRGB(255, 250, 252),
+				['Value Stroke'] = Color3.fromRGB(220, 200, 210),
+			},
+			['Keybind'] = {
+				['Background'] = Color3.fromRGB(250, 230, 235),
+				['Value Background'] = Color3.fromRGB(255, 250, 252),
+				['Value Stroke'] = Color3.fromRGB(220, 200, 210),
+				['True'] = {
+					['Toggle Background'] = Color3.fromRGB(255, 200, 220),
+					['Toggle Value'] = Color3.fromRGB(255, 105, 180),
+				},
+				['False'] = {
+					['Toggle Background'] = Color3.fromRGB(245, 220, 225),
+					['Toggle Value'] = Color3.fromRGB(180, 180, 180),
+				}
+			},
+			['Color Picker'] = {
+				['Background'] = Color3.fromRGB(250, 230, 235),
+				['Color Select'] = {
+					['Background'] = Color3.fromRGB(255, 250, 252),
+					['UIStroke'] = Color3.fromRGB(220, 200, 210),
+				}
+			}
+		}
+	},
 	Dark = {
 		['Shadow'] = Color3.fromRGB(15, 15, 15),
 		['Background'] = Color3.fromRGB(20, 20, 20),
@@ -552,9 +705,7 @@ local themes = {
 
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "Dummy Kawaii"
-pcall(function()
-	ScreenGui.Parent = (not game:GetService("RunService"):IsStudio() and game:GetService("CoreGui")) or game:GetService("Players").LocalPlayer:WaitForChild("PlayerGui")
-end)
+ScreenGui.Parent = not game:GetService("RunService"):IsStudio() and game:GetService("CoreGui") or game:GetService("Players").LocalPlayer.PlayerGui
 ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 
 local U, Tw = game:GetService("UserInputService"), game:GetService("TweenService")
@@ -568,11 +719,7 @@ do
 	end
 	function getColorFromPath(tbl, path)
 		local result = tbl
-		local parts = {}
-		for part in string.gmatch(path, "[^.]+") do
-			table.insert(parts, part)
-		end
-		for _, part in ipairs(parts) do
+		for _, part in ipairs(string.split(path, ".")) do
 			result = result and result[part]
 		end
 		return result
@@ -606,23 +753,20 @@ do
 
 	local IconList = { Icons = {}, Spritesheets = {} }
 	pcall(function()
-		local src = game:HttpGet('https://raw.githubusercontent.com/Dummyrme/Library/refs/heads/main/Icon.lua')
-		local fn = loadstring(src)
+		local raw = game:HttpGet('https://raw.githubusercontent.com/Dummyrme/Library/refs/heads/main/Icon.lua')
+		local fn = loadstring(raw)
 		if fn then
 			local ok, res = pcall(fn)
-			if ok and type(res) == "table" then
-				IconList = res
-			end
+			if ok and type(res) == "table" then IconList = res end
 		end
 	end)
 	function gl(i)
-		if type(i) == "table" then
-			return i
-		end
+		if type(i) == "table" then return i end
 		local icons = IconList and IconList.Icons
 		if icons and icons[i] then
 			local iconData = icons[i]
-			local spriteSheet = IconList.Spritesheets and IconList.Spritesheets[tostring(iconData.Image)]
+			local sheets = IconList.Spritesheets
+			local spriteSheet = sheets and sheets[tostring(iconData.Image)]
 			if spriteSheet then
 				return {
 					Image = spriteSheet,
@@ -631,38 +775,18 @@ do
 				}
 			end
 		end
-		if type(i) == 'string' and not tostring(i):find('rbxassetid://') then
-			if tonumber(i) then
-				return {
-					Image = "rbxassetid://".. tostring(i),
-					ImageRectSize = Vector2.new(0, 0),
-					ImageRectPosition = Vector2.new(0, 0),
-				}
-			end
-			return {
-				Image = "rbxassetid://10734943674",
-				ImageRectSize = Vector2.new(0, 0),
-				ImageRectPosition = Vector2.new(0, 0),
-			}
-		elseif type(i) == 'number' then
-			return {
-				Image = "rbxassetid://".. tostring(i),
-				ImageRectSize = Vector2.new(0, 0),
-				ImageRectPosition = Vector2.new(0, 0),
-			}
-		elseif type(i) == 'string' then
-			return {
-				Image = i,
-				ImageRectSize = Vector2.new(0, 0),
-				ImageRectPosition = Vector2.new(0, 0),
-			}
-		else
-			return {
-				Image = "rbxassetid://10734943674",
-				ImageRectSize = Vector2.new(0, 0),
-				ImageRectPosition = Vector2.new(0, 0),
-			}
+		if type(i) == "number" then
+			return { Image = "rbxassetid://" .. tostring(i), ImageRectSize = Vector2.new(0, 0), ImageRectPosition = Vector2.new(0, 0) }
 		end
+		if type(i) == "string" then
+			if i:find("rbxassetid://") or i:find("rbxasset://") then
+				return { Image = i, ImageRectSize = Vector2.new(0, 0), ImageRectPosition = Vector2.new(0, 0) }
+			end
+			if tonumber(i) then
+				return { Image = "rbxassetid://" .. i, ImageRectSize = Vector2.new(0, 0), ImageRectPosition = Vector2.new(0, 0) }
+			end
+		end
+		return { Image = "rbxassetid://10734943674", ImageRectSize = Vector2.new(0, 0), ImageRectPosition = Vector2.new(0, 0) }
 	end
 	function tw(info)
 		return Tw:Create(info.v,TweenInfo.new(info.t, info.s, Enum.EasingDirection[info.d]),info.g)
@@ -1479,18 +1603,21 @@ function Library:Window(p)
 	local Desc = p.Desc or ''
 	local Icon = p.Icon or 'door-open'
 	local Theme = p.Theme or 'Dark'
-	local Keybind = (p.Config and p.Config.Keybind) or Enum.KeyCode.LeftControl
-	local AutoScale = p.Config and p.Config.AutoScale
-	local Transparency = (p.Config and p.Config.Transparency) or p.Transparency or 0
-	local Size = (p.Config and p.Config.Size) or UDim2.new(0, 530,0, 400)
+	local cfg = p.Config or {}
+	local Keybind = cfg.Keybind or Enum.KeyCode.LeftControl
+	local Size = cfg.Size or UDim2.new(0, 530, 0, 400)
+	local Transparency = cfg.Transparency or p.Transparency or 0
+	local AutoScale = cfg.AutoScale
+	local Anonymous = cfg.Anonymous or false
+	local WindowTags = cfg.Tags or p.Tags or {}
 	if AutoScale then
 		local cam = workspace.CurrentCamera
 		local vx, vy = cam.ViewportSize.X, cam.ViewportSize.Y
-		local scale = math.clamp(math.min(vx/1280, vy/720), 0.55, 1.1)
 		if U.TouchEnabled then
-			Size = UDim2.new(0, math.floor(vx * 0.9), 0, math.floor(vy * 0.7))
+			Size = UDim2.new(0, math.floor(vx * 0.9), 0, math.floor(vy * 0.72))
 		else
-			Size = UDim2.new(0, math.floor(530 * scale), 0, math.floor(400 * scale))
+			local sc = math.clamp(math.min(vx / 1280, vy / 720), 0.7, 1.1)
+			Size = UDim2.new(0, math.floor(530 * sc), 0, math.floor(400 * sc))
 		end
 	end
 
@@ -1655,7 +1782,6 @@ function Library:Window(p)
 	Close_1.Image = "rbxassetid://15082305656"
 
 	ChSize_1.Name = "Size"
-		Size_1.Visible = false
 	ChSize_1.Parent = Ct_1
 	ChSize_1.Active = true
 	ChSize_1.BackgroundColor3 = Color3.fromRGB(255,255,255)
@@ -1691,9 +1817,7 @@ function Library:Window(p)
 	FpsTag.TextXAlignment = Enum.TextXAlignment.Right
 	FpsTag.ZIndex = 10
 	task.spawn(function()
-		local last = tick()
-		local frames = 0
-		local fps = 60
+		local last, frames, fps = tick(), 0, 60
 		game:GetService("RunService").RenderStepped:Connect(function()
 			frames = frames + 1
 			local now = tick()
@@ -2074,30 +2198,30 @@ function Library:Window(p)
 		end
 
 		local function chg()
-			for _, item in pairs(self.List) do
-				item.Page.Visible = false
-			end
-			InPage_1.Visible = true
-			for _, child in pairs(ScrollingFrame_1:GetChildren()) do
-				if child:IsA('Frame') and child:FindFirstChild('Background') then
-					child.Background.Position = UDim2.new(0, 0, 0, 0)
-					child.Background.AnchorPoint = Vector2.new(1, 0)
-				end
-			end
-			task.spawn(function()
-				for _, child in next, ScrollingFrame_1:GetChildren() do
-					if child:IsA('Frame') and child:FindFirstChild('Background') then
-						tw({
-							v = child.Background,
-							t = 0.3,
-							s = Enum.EasingStyle.Exponential,
-							d = "InOut",
-							g = {AnchorPoint = Vector2.new(0, 0)}
-						}):Play()
-						task.wait(.05)
+			for i, v in pairs(self.List) do
+				v.Page.Visible = false
+				for i, v in pairs(ScrollingFrame_1:GetChildren()) do
+					if v:IsA('Frame') and v:FindFirstChild('Background') then
+						v.Background.Position = UDim2.new(0, 0, 0,0)
+						v.Background.AnchorPoint = Vector2.new(1 ,0)
 					end
 				end
-			end)
+				task.spawn(function()
+					for i, v in next, ScrollingFrame_1:GetChildren() do
+						if v:IsA('Frame') and v:FindFirstChild('Background') then
+							tw({
+								v = v.Background,
+								t = 0.3,
+								s = Enum.EasingStyle.Exponential,
+								d = "InOut",
+								g = {AnchorPoint = Vector2.new(0 ,0)}
+							}):Play()
+							task.wait(.05)
+						end
+					end
+				end)
+				InPage_1.Visible = true
+			end
 			for i, v in pairs(TabList_1:GetChildren()) do
 				if v:IsA('Frame') and v.Name ~= 'Line' then
 					tw({
@@ -2138,16 +2262,19 @@ function Library:Window(p)
 
 		changecanvas(ScrollingFrame_1, UIListLayout_1, 5)
 
-		task.defer(function()
-			task.wait(0.15)
-			local total = #self.List
-			local index = self.DefaultIndex
-			if type(index) ~= "number" or index < 1 or index > total then
-				index = 1
-			end
-			if MyIndex == index then
-				chg()
-				self.Value = true
+		delay(.1, function()
+			if not self.Value then
+				local total = #self.List
+				local index = self.DefaultIndex
+
+				if type(index) ~= "number" or index < 1 or index > total then
+					index = 1
+				end
+
+				if MyIndex == index then
+					chg()
+					self.Value = true
+				end
 			end
 		end)
 
@@ -2218,48 +2345,19 @@ function Library:Window(p)
 			local LockBadge = Instance.new("Frame")
 			LockBadge.Name = "LockBadge"
 			LockBadge.AutomaticSize = Enum.AutomaticSize.X
-			LockBadge.Size = UDim2.new(0, 0, 0, 22)
-			LockBadge.Position = UDim2.new(0, 0, 0, 0)
+			LockBadge.Size = UDim2.new(0, 0, 0, 20)
 			LockBadge.BackgroundColor3 = Color3.fromRGB(20, 20, 28)
 			LockBadge.BackgroundTransparency = 0.15
 			LockBadge.BorderSizePixel = 0
 			LockBadge.Visible = Locked
-			LockBadge.ZIndex = 20
+			LockBadge.ZIndex = 25
 			LockBadge.Parent = Toggle
-			local LockCorner = Instance.new("UICorner")
-			LockCorner.CornerRadius = UDim.new(0, 6)
-			LockCorner.Parent = LockBadge
-			local LockStroke = Instance.new("UIStroke")
-			LockStroke.Color = Color3.fromRGB(255, 255, 255)
-			LockStroke.Thickness = 1
-			LockStroke.Transparency = 0.35
-			LockStroke.Parent = LockBadge
-			local LockPad = Instance.new("UIPadding")
-			LockPad.PaddingLeft = UDim.new(0, 8)
-			LockPad.PaddingRight = UDim.new(0, 10)
-			LockPad.Parent = LockBadge
-			local LockLay = Instance.new("UIListLayout")
-			LockLay.FillDirection = Enum.FillDirection.Horizontal
-			LockLay.VerticalAlignment = Enum.VerticalAlignment.Center
-			LockLay.Padding = UDim.new(0, 5)
-			LockLay.Parent = LockBadge
-			local LockIcon = Instance.new("ImageLabel")
-			LockIcon.Size = UDim2.new(0, 12, 0, 12)
-			LockIcon.BackgroundTransparency = 1
-			LockIcon.Image = "rbxassetid://10734943674"
-			LockIcon.ImageColor3 = Color3.fromRGB(255, 255, 255)
-			LockIcon.ZIndex = 21
-			LockIcon.Parent = LockBadge
-			local LockLbl = Instance.new("TextLabel")
-			LockLbl.AutomaticSize = Enum.AutomaticSize.X
-			LockLbl.Size = UDim2.new(0, 0, 0, 16)
-			LockLbl.BackgroundTransparency = 1
-			LockLbl.Text = LockedText
-			LockLbl.TextColor3 = Color3.fromRGB(255, 255, 255)
-			LockLbl.TextSize = 12
-			LockLbl.Font = Enum.Font.GothamMedium
-			LockLbl.ZIndex = 21
-			LockLbl.Parent = LockBadge
+			local _c = Instance.new("UICorner") _c.CornerRadius = UDim.new(0, 6) _c.Parent = LockBadge
+			local _s = Instance.new("UIStroke") _s.Color = Color3.fromRGB(255,255,255) _s.Thickness = 1 _s.Transparency = 0.35 _s.Parent = LockBadge
+			local _p = Instance.new("UIPadding") _p.PaddingLeft = UDim.new(0, 8) _p.PaddingRight = UDim.new(0, 10) _p.Parent = LockBadge
+			local _l = Instance.new("UIListLayout") _l.FillDirection = Enum.FillDirection.Horizontal _l.VerticalAlignment = Enum.VerticalAlignment.Center _l.Padding = UDim.new(0, 5) _l.Parent = LockBadge
+			local _i = Instance.new("ImageLabel") _i.Size = UDim2.new(0, 11, 0, 11) _i.BackgroundTransparency = 1 _i.Image = "rbxassetid://10734943674" _i.ImageColor3 = Color3.fromRGB(255,255,255) _i.ZIndex = 26 _i.Parent = LockBadge
+			local LockLbl = Instance.new("TextLabel") LockLbl.AutomaticSize = Enum.AutomaticSize.X LockLbl.Size = UDim2.new(0, 0, 0, 14) LockLbl.BackgroundTransparency = 1 LockLbl.Text = LockedText LockLbl.TextColor3 = Color3.fromRGB(255,255,255) LockLbl.TextSize = 11 LockLbl.Font = Enum.Font.GothamMedium LockLbl.ZIndex = 26 LockLbl.Parent = LockBadge
 
 			local F_1 = Instance.new("Frame")
 			local UIListLayout_1 = Instance.new("UIListLayout")
@@ -2382,24 +2480,14 @@ function Library:Window(p)
 				Value = not t
 				change()
 			end
-
 			function New:SetLocked(v, text)
 				Locked = v and true or false
 				LockBadge.Visible = Locked
 				if text then LockLbl.Text = text end
 			end
-
-			function New:Lock(text)
-				New:SetLocked(true, text)
-			end
-
-			function New:Unlock()
-				New:SetLocked(false)
-			end
-
-			function New:IsLocked()
-				return Locked
-			end
+			function New:Lock(text) New:SetLocked(true, text) end
+			function New:Unlock() New:SetLocked(false) end
+			function New:IsLocked() return Locked end
 
 			return New
 		end
@@ -2436,8 +2524,27 @@ function Library:Window(p)
 			local Desc = p.Desc or ''
 			local Image = p.Image or ''
 			local Callback = p.Callback or function() end
+			local Locked = p.Locked or false
+			local LockedText = p.LockedText or "Locked"
 
 			local Button, Config = background(ScrollingFrame_1, Title, Desc, Image, 'Button')
+
+			local LockBadge = Instance.new("Frame")
+			LockBadge.Name = "LockBadge"
+			LockBadge.AutomaticSize = Enum.AutomaticSize.X
+			LockBadge.Size = UDim2.new(0, 0, 0, 20)
+			LockBadge.BackgroundColor3 = Color3.fromRGB(20, 20, 28)
+			LockBadge.BackgroundTransparency = 0.15
+			LockBadge.BorderSizePixel = 0
+			LockBadge.Visible = Locked
+			LockBadge.ZIndex = 25
+			LockBadge.Parent = Button
+			local _c = Instance.new("UICorner") _c.CornerRadius = UDim.new(0, 6) _c.Parent = LockBadge
+			local _s = Instance.new("UIStroke") _s.Color = Color3.fromRGB(255,255,255) _s.Thickness = 1 _s.Transparency = 0.35 _s.Parent = LockBadge
+			local _p = Instance.new("UIPadding") _p.PaddingLeft = UDim.new(0, 8) _p.PaddingRight = UDim.new(0, 10) _p.Parent = LockBadge
+			local _l = Instance.new("UIListLayout") _l.FillDirection = Enum.FillDirection.Horizontal _l.VerticalAlignment = Enum.VerticalAlignment.Center _l.Padding = UDim.new(0, 5) _l.Parent = LockBadge
+			local _i = Instance.new("ImageLabel") _i.Size = UDim2.new(0, 11, 0, 11) _i.BackgroundTransparency = 1 _i.Image = "rbxassetid://10734943674" _i.ImageColor3 = Color3.fromRGB(255,255,255) _i.ZIndex = 26 _i.Parent = LockBadge
+			local LockLbl = Instance.new("TextLabel") LockLbl.AutomaticSize = Enum.AutomaticSize.X LockLbl.Size = UDim2.new(0, 0, 0, 14) LockLbl.BackgroundTransparency = 1 LockLbl.Text = LockedText LockLbl.TextColor3 = Color3.fromRGB(255,255,255) LockLbl.TextSize = 11 LockLbl.Font = Enum.Font.GothamMedium LockLbl.ZIndex = 26 LockLbl.Parent = LockBadge
 
 			Config:SetTextTransparencyTitle(0)
 			Config:SetSizeT(50)
@@ -2493,12 +2600,11 @@ function Library:Window(p)
 				end)
 				pcall(Callback)
 			end)
-
 			local New = {}
 			function New:SetLocked(v, text)
 				Locked = v and true or false
 				LockBadge.Visible = Locked
-				if text then LT.Text = text end
+				if text then LockLbl.Text = text end
 			end
 			function New:Lock(text) New:SetLocked(true, text) end
 			function New:Unlock() New:SetLocked(false) end
@@ -2515,28 +2621,8 @@ function Library:Window(p)
 			local Value = p.Value or Min + 1
 			local Rounding = p.Rounding or 2
 			local Callback = p.Callback or function() end
-			local Locked = p.Locked or false
-			local LockedText = p.LockedText or "Locked"
-			local Flag = p.Flag
 
 			local Slider, Config = background(ScrollingFrame_1, Title, Desc, Image, 'Slider')
-
-			local LockBadge = Instance.new("Frame")
-			LockBadge.Name = "LockBadge"
-			LockBadge.AutomaticSize = Enum.AutomaticSize.X
-			LockBadge.Size = UDim2.new(0, 0, 0, 22)
-			LockBadge.BackgroundColor3 = Color3.fromRGB(20, 20, 28)
-			LockBadge.BackgroundTransparency = 0.15
-			LockBadge.BorderSizePixel = 0
-			LockBadge.Visible = Locked
-			LockBadge.ZIndex = 20
-			LockBadge.Parent = Slider
-			local _lc = Instance.new("UICorner") _lc.CornerRadius = UDim.new(0,6) _lc.Parent = LockBadge
-			local _ls = Instance.new("UIStroke") _ls.Color = Color3.fromRGB(255,255,255) _ls.Thickness = 1 _ls.Transparency = 0.35 _ls.Parent = LockBadge
-			local _lp = Instance.new("UIPadding") _lp.PaddingLeft = UDim.new(0,8) _lp.PaddingRight = UDim.new(0,10) _lp.Parent = LockBadge
-			local _ll = Instance.new("UIListLayout") _ll.FillDirection = Enum.FillDirection.Horizontal _ll.VerticalAlignment = Enum.VerticalAlignment.Center _ll.Padding = UDim.new(0,5) _ll.Parent = LockBadge
-			local _li = Instance.new("ImageLabel") _li.Size = UDim2.new(0,12,0,12) _li.BackgroundTransparency = 1 _li.Image = "rbxassetid://10734943674" _li.ImageColor3 = Color3.fromRGB(255,255,255) _li.ZIndex = 21 _li.Parent = LockBadge
-			local LockLbl = Instance.new("TextLabel") LockLbl.AutomaticSize = Enum.AutomaticSize.X LockLbl.Size = UDim2.new(0,0,0,16) LockLbl.BackgroundTransparency = 1 LockLbl.Text = LockedText LockLbl.TextColor3 = Color3.fromRGB(255,255,255) LockLbl.TextSize = 12 LockLbl.Font = Enum.Font.GothamMedium LockLbl.ZIndex = 21 LockLbl.Parent = LockBadge
 
 			Config:SetTextTransparencyTitle(0)
 			Config:SetSizeT(200)
@@ -2673,7 +2759,6 @@ function Library:Window(p)
 			end
 
 			local function updateSlider(value)
-				if Locked then return end
 				value = math.clamp(value, Min, Max)
 				value = roundToDecimal(value, Rounding)
 				Value = value
@@ -2733,12 +2818,10 @@ function Library:Window(p)
 			end
 
 			function New:SetValue(t)
-				if Locked then return end
 				updateSlider(t)
 			end
 
 			function New:SetMin(t)
-				if Locked then return end
 				Min = t
 				if Value < t then
 					updateSlider(t)
@@ -2746,21 +2829,11 @@ function Library:Window(p)
 			end
 
 			function New:SetMax(t)
-				if Locked then return end
 				Max = t
 				if Value > t then
 					updateSlider(t)
 				end
 			end
-
-			function New:SetLocked(v, text)
-				Locked = v and true or false
-				LockBadge.Visible = Locked
-				if text then LockLbl.Text = text end
-			end
-			function New:Lock(text) New:SetLocked(true, text) end
-			function New:Unlock() New:SetLocked(false) end
-			function New:IsLocked() return Locked end
 
 			return New
 		end
@@ -3186,8 +3259,7 @@ function Library:Window(p)
 					local inComment = false
 					local commentPersist = false
 
-					local i = 1
-					while i <= #source do
+					for i = 1, #source do
 						local character = source:sub(i, i)
 
 						if inComment then
@@ -3206,7 +3278,7 @@ function Library:Window(p)
 								currentToken = currentToken .. character
 							end
 						elseif inString then
-							if (character == inString and source:sub(i - 1, i - 1) ~= "\\") or character == "\n" then
+							if character == inString and source:sub(i - 1, i - 1) ~= "\\" or character == "\n" then
 								currentToken = currentToken .. character
 								inString = false
 							else
@@ -3222,7 +3294,7 @@ function Library:Window(p)
 								currentToken = "-"
 								inComment = true
 								commentPersist = source:sub(i + 2, i + 3) == "[["
-							elseif character == '"' or character == "'" then
+							elseif character == "\"" or character == "\'" then
 								table.insert(tokens, currentToken)
 								currentToken = character
 								inString = character
@@ -3238,8 +3310,8 @@ function Library:Window(p)
 								currentToken = ""
 							end
 						end
-						i = i + 1
 					end
+
 					table.insert(tokens, currentToken)
 
 					local highlighted = {}
@@ -4538,160 +4610,6 @@ function Library:Window(p)
 			UICorner_1.CornerRadius = UDim.new(0,3)
 		end
 
-
-		function Func:Segmented(p)
-			local Title = p.Title or "Mode"
-			local Options = p.Options or {"A", "B"}
-			local Value = p.Value or Options[1]
-			local Callback = p.Callback or function() end
-			local Seg, Config = background(ScrollingFrame_1, Title, p.Desc or "", p.Image or "", "Label")
-			Config:SetTextTransparencyTitle(0)
-			local hold = Instance.new("Frame")
-			hold.Size = UDim2.new(0, math.min(220, #Options * 70), 0, 28)
-			hold.Position = UDim2.new(1, -10, 0.5, -14)
-			hold.AnchorPoint = Vector2.new(1, 0)
-			hold.BackgroundColor3 = Color3.fromRGB(24, 24, 31)
-			hold.BorderSizePixel = 0
-			hold.Parent = Seg
-			Instance.new("UICorner", hold).CornerRadius = UDim.new(0, 8)
-			local lay = Instance.new("UIListLayout")
-			lay.FillDirection = Enum.FillDirection.Horizontal
-			lay.Parent = hold
-			local btns = {}
-			local function select(opt)
-				Value = opt
-				for name, b in pairs(btns) do
-					b.BackgroundTransparency = name == opt and 0.3 or 1
-					b.TextColor3 = name == opt and Color3.fromRGB(255,255,255) or Color3.fromRGB(160,160,180)
-				end
-				Callback(opt)
-			end
-			for _, opt in ipairs(Options) do
-				local b = Instance.new("TextButton")
-				b.Size = UDim2.new(1/#Options, 0, 1, 0)
-				b.BackgroundColor3 = Color3.fromRGB(80, 80, 100)
-				b.BackgroundTransparency = opt == Value and 0.3 or 1
-				b.Text = opt
-				b.TextColor3 = opt == Value and Color3.fromRGB(255,255,255) or Color3.fromRGB(160,160,180)
-				b.TextSize = 12
-				b.Font = Enum.Font.GothamMedium
-				b.Parent = hold
-				Instance.new("UICorner", b).CornerRadius = UDim.new(0, 6)
-				btns[opt] = b
-				b.MouseButton1Click:Connect(function() select(opt) end)
-			end
-			local New = {}
-			function New:Set(v) select(v) end
-			function New:Get() return Value end
-			return New
-		end
-
-		function Func:Stepper(p)
-			local Title = p.Title or "Value"
-			local Min = p.Min or 0
-			local Max = p.Max or 100
-			local Value = p.Value or Min
-			local Step = p.Step or 1
-			local Callback = p.Callback or function() end
-			local St, Config = background(ScrollingFrame_1, Title, p.Desc or "", p.Image or "", "Label")
-			Config:SetTextTransparencyTitle(0)
-			local hold = Instance.new("Frame")
-			hold.Size = UDim2.new(0, 120, 0, 28)
-			hold.Position = UDim2.new(1, -10, 0.5, -14)
-			hold.AnchorPoint = Vector2.new(1, 0)
-			hold.BackgroundTransparency = 1
-			hold.Parent = St
-			local minus = Instance.new("TextButton")
-			minus.Size = UDim2.new(0, 28, 0, 28)
-			minus.BackgroundColor3 = Color3.fromRGB(40, 40, 55)
-			minus.Text = "-"
-			minus.TextColor3 = Color3.fromRGB(255,255,255)
-			minus.TextSize = 16
-			minus.Font = Enum.Font.GothamBold
-			minus.Parent = hold
-			Instance.new("UICorner", minus).CornerRadius = UDim.new(0, 6)
-			local val = Instance.new("TextLabel")
-			val.Size = UDim2.new(0, 56, 0, 28)
-			val.Position = UDim2.new(0, 32, 0, 0)
-			val.BackgroundTransparency = 1
-			val.Text = tostring(Value)
-			val.TextColor3 = Color3.fromRGB(255,255,255)
-			val.TextSize = 14
-			val.Font = Enum.Font.GothamMedium
-			val.Parent = hold
-			local plus = Instance.new("TextButton")
-			plus.Size = UDim2.new(0, 28, 0, 28)
-			plus.Position = UDim2.new(0, 92, 0, 0)
-			plus.BackgroundColor3 = Color3.fromRGB(40, 40, 55)
-			plus.Text = "+"
-			plus.TextColor3 = Color3.fromRGB(255,255,255)
-			plus.TextSize = 16
-			plus.Font = Enum.Font.GothamBold
-			plus.Parent = hold
-			Instance.new("UICorner", plus).CornerRadius = UDim.new(0, 6)
-			local function set(v)
-				Value = math.clamp(v, Min, Max)
-				val.Text = tostring(Value)
-				Callback(Value)
-			end
-			minus.MouseButton1Click:Connect(function() set(Value - Step) end)
-			plus.MouseButton1Click:Connect(function() set(Value + Step) end)
-			local New = {}
-			function New:Set(v) set(v) end
-			function New:Get() return Value end
-			return New
-		end
-
-		function Func:RangeSlider(p)
-			local Title = p.Title or "Range"
-			local Min = p.Min or 0
-			local Max = p.Max or 100
-			local ValueMin = p.ValueMin or Min
-			local ValueMax = p.ValueMax or Max
-			local Callback = p.Callback or function() end
-			local Rs, Config = background(ScrollingFrame_1, Title, p.Desc or "", p.Image or "", "Slider")
-			Config:SetTextTransparencyTitle(0)
-			local lbl = Instance.new("TextLabel")
-			lbl.Size = UDim2.new(0, 80, 0, 20)
-			lbl.Position = UDim2.new(1, -90, 0, 4)
-			lbl.BackgroundTransparency = 1
-			lbl.Text = tostring(ValueMin) .. " - " .. tostring(ValueMax)
-			lbl.TextColor3 = Color3.fromRGB(200,200,220)
-			lbl.TextSize = 12
-			lbl.Font = Enum.Font.Gotham
-			lbl.Parent = Rs
-			local New = {}
-			function New:Set(a,b)
-				ValueMin, ValueMax = a, b
-				lbl.Text = tostring(a) .. " - " .. tostring(b)
-				Callback(a, b)
-			end
-			function New:Get() return ValueMin, ValueMax end
-			return New
-		end
-
-		function Func:Tag(p)
-			local text = p.Text or p.Title or "TAG"
-			local color = p.Color or Color3.fromRGB(255, 200, 50)
-			local tag = Instance.new("TextLabel")
-			tag.AutomaticSize = Enum.AutomaticSize.X
-			tag.Size = UDim2.new(0, 0, 0, 22)
-			tag.BackgroundColor3 = color
-			tag.BackgroundTransparency = 0.85
-			tag.Text = "  " .. text .. "  "
-			tag.TextColor3 = color
-			tag.TextSize = 11
-			tag.Font = Enum.Font.GothamBold
-			tag.Parent = ScrollingFrame_1
-			Instance.new("UICorner", tag).CornerRadius = UDim.new(0, 6)
-			local s = Instance.new("UIStroke")
-			s.Color = color
-			s.Thickness = 1
-			s.Transparency = 0.5
-			s.Parent = tag
-			return tag
-		end
-
 		return Func
 	end
 
@@ -5375,7 +5293,7 @@ function Library:Window(p)
 			})
 		end)
 
-		
+
 	do
 		local CloseUI = p.CloseUIButton or { Enabled = true, Text = "UI" }
 		local float = Instance.new("Frame")
@@ -5395,13 +5313,14 @@ function Library:Window(p)
 		fs.Thickness = 1.5
 		fs.Transparency = 0.25
 		fs.Parent = float
+		local ico = gl(p.Icon or "house")
 		local fbtn = Instance.new("ImageButton")
 		fbtn.Size = UDim2.new(1, 0, 1, 0)
 		fbtn.BackgroundTransparency = 1
-		fbtn.Image = gl(p.Icon or "layout-dashboard").Image
-		fbtn.ImageRectSize = gl(p.Icon or "layout-dashboard").ImageRectSize
-		fbtn.ImageRectOffset = gl(p.Icon or "layout-dashboard").ImageRectPosition
-		fbtn.ImageColor3 = themes[IsTheme] and themes[IsTheme]["Text & Icon"] or Color3.fromRGB(255,255,255)
+		fbtn.Image = ico.Image
+		fbtn.ImageRectSize = ico.ImageRectSize
+		fbtn.ImageRectOffset = ico.ImageRectPosition
+		fbtn.ImageColor3 = themes[IsTheme] and themes[IsTheme]["Text & Icon"] or Color3.fromRGB(255, 255, 255)
 		fbtn.ZIndex = 201
 		fbtn.Parent = float
 		local fpad = Instance.new("UIPadding")
@@ -5438,206 +5357,20 @@ function Library:Window(p)
 		end)
 		U.InputEnded:Connect(function(input)
 			if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-				if dragging and not moved then
-					pcall(closeui)
-				end
+				if dragging and not moved then pcall(closeui) end
 				dragging = false
 			end
 		end)
 	end
 
-
 	do
-		local anon = (p.Config and p.Config.Anonymous) or p.Anonymous or false
-		local profile = Instance.new("Frame")
-		profile.Name = "PlayerProfile"
-		profile.Parent = Background_1
-		profile.AnchorPoint = Vector2.new(0.5, 1)
-		profile.Position = UDim2.new(0.5, 0, 1, -10)
-		profile.Size = UDim2.new(1, -20, 0, 52)
-		profile.BackgroundColor3 = Color3.fromRGB(24, 24, 31)
-		profile.BorderSizePixel = 0
-		profile.ZIndex = 15
-		local pc = Instance.new("UICorner")
-		pc.CornerRadius = UDim.new(0, 12)
-		pc.Parent = profile
-		addToTheme("Page", profile)
-
-		local avatar = Instance.new("ImageLabel")
-		avatar.Size = UDim2.new(0, 36, 0, 36)
-		avatar.Position = UDim2.new(0, 10, 0.5, -18)
-		avatar.BackgroundColor3 = Color3.fromRGB(40, 40, 55)
-		avatar.BorderSizePixel = 0
-		avatar.ZIndex = 16
-		avatar.Parent = profile
-		local ac = Instance.new("UICorner")
-		ac.CornerRadius = UDim.new(1, 0)
-		ac.Parent = avatar
-
-		local disp = Instance.new("TextLabel")
-		disp.Size = UDim2.new(0.45, 0, 0, 18)
-		disp.Position = UDim2.new(0, 54, 0, 8)
-		disp.BackgroundTransparency = 1
-		disp.TextColor3 = Color3.fromRGB(255, 255, 255)
-		disp.TextSize = 14
-		disp.Font = Enum.Font.GothamBold
-		disp.TextXAlignment = Enum.TextXAlignment.Left
-		disp.ZIndex = 16
-		disp.Parent = profile
-		addToTheme("Text & Icon", disp)
-
-		local user = Instance.new("TextLabel")
-		user.Size = UDim2.new(0.45, 0, 0, 16)
-		user.Position = UDim2.new(0, 54, 0, 28)
-		user.BackgroundTransparency = 1
-		user.TextColor3 = Color3.fromRGB(160, 160, 180)
-		user.TextSize = 12
-		user.Font = Enum.Font.Gotham
-		user.TextXAlignment = Enum.TextXAlignment.Left
-		user.ZIndex = 16
-		user.Parent = profile
-
-		local clock = Instance.new("TextLabel")
-		clock.Size = UDim2.new(0.35, 0, 1, 0)
-		clock.Position = UDim2.new(0.62, 0, 0, 0)
-		clock.BackgroundTransparency = 1
-		clock.TextColor3 = Color3.fromRGB(180, 180, 200)
-		clock.TextSize = 12
-		clock.Font = Enum.Font.GothamMedium
-		clock.TextXAlignment = Enum.TextXAlignment.Right
-		clock.ZIndex = 16
-		clock.Parent = profile
-
-		local lp = game.Players.LocalPlayer
-		local function applyProfile()
-			if anon then
-				avatar.Image = "rbxassetid://10747384394"
-				avatar.ImageColor3 = Color3.fromRGB(255, 100, 100)
-				disp.Text = "*****"
-				user.Text = "@*****"
-			else
-				avatar.ImageColor3 = Color3.fromRGB(255, 255, 255)
-				pcall(function()
-					avatar.Image = game:GetService("Players"):GetUserThumbnailAsync(
-						lp.UserId,
-						Enum.ThumbnailType.HeadShot,
-						Enum.ThumbnailSize.Size48x48
-					)
-				end)
-				disp.Text = lp.DisplayName or lp.Name
-				user.Text = "@" .. lp.Name
-			end
-		end
-		applyProfile()
-		task.spawn(function()
-			while profile.Parent do
-				local t = os.date("*t")
-				clock.Text = string.format("%02d/%02d/%04d  %02d:%02d:%02d", t.day, t.month, t.year, t.hour, t.min, t.sec)
-				task.wait(1)
-			end
-		end)
-		Tabs.SetAnonymous = function(v)
-			anon = v and true or false
-			applyProfile()
-		end
-	end
-
-
-	do
-		local dragLine = Instance.new("Frame")
-		dragLine.Name = "DragLine"
-		dragLine.Parent = Shadow_1
-		dragLine.AnchorPoint = Vector2.new(0.5, 0)
-		dragLine.Position = UDim2.new(0.5, 0, 1, 6)
-		dragLine.Size = UDim2.new(0, 100, 0, 5)
-		dragLine.BackgroundColor3 = Color3.fromRGB(200, 200, 220)
-		dragLine.BackgroundTransparency = 0.3
-		dragLine.BorderSizePixel = 0
-		dragLine.ZIndex = 50
-		local dlc = Instance.new("UICorner")
-		dlc.CornerRadius = UDim.new(1, 0)
-		dlc.Parent = dragLine
-
-		local dDragging, dStart, dPos
-		dragLine.InputBegan:Connect(function(input)
-			if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-				dDragging = true
-				dStart = input.Position
-				dPos = Shadow_1.Position
-			end
-		end)
-		U.InputChanged:Connect(function(input)
-			if dDragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
-				local d = input.Position - dStart
-				Shadow_1.Position = UDim2.new(dPos.X.Scale, dPos.X.Offset + d.X, dPos.Y.Scale, dPos.Y.Offset + d.Y)
-			end
-		end)
-		U.InputEnded:Connect(function(input)
-			if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-				dDragging = false
-			end
-		end)
-
-		local resizeHold = Instance.new("Frame")
-		resizeHold.Name = "ResizeHandle"
-		resizeHold.Parent = Shadow_1
-		resizeHold.AnchorPoint = Vector2.new(1, 1)
-		resizeHold.Position = UDim2.new(1, 10, 1, 10)
-		resizeHold.Size = UDim2.new(0, 28, 0, 28)
-		resizeHold.BackgroundTransparency = 1
-		resizeHold.ZIndex = 50
-
-		local rH = Instance.new("Frame")
-		rH.Size = UDim2.new(0, 16, 0, 3)
-		rH.Position = UDim2.new(1, -18, 1, -6)
-		rH.BackgroundColor3 = Color3.fromRGB(200, 200, 220)
-		rH.BackgroundTransparency = 0.25
-		rH.BorderSizePixel = 0
-		rH.ZIndex = 51
-		rH.Parent = resizeHold
-		Instance.new("UICorner", rH).CornerRadius = UDim.new(1, 0)
-
-		local rV = Instance.new("Frame")
-		rV.Size = UDim2.new(0, 3, 0, 16)
-		rV.Position = UDim2.new(1, -6, 1, -18)
-		rV.BackgroundColor3 = Color3.fromRGB(200, 200, 220)
-		rV.BackgroundTransparency = 0.25
-		rV.BorderSizePixel = 0
-		rV.ZIndex = 51
-		rV.Parent = resizeHold
-		Instance.new("UICorner", rV).CornerRadius = UDim.new(1, 0)
-
-		local resizing, rStart, sStart
-		resizeHold.InputBegan:Connect(function(input)
-			if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-				resizing = true
-				rStart = Vector2.new(input.Position.X, input.Position.Y)
-				sStart = Shadow_1.Size
-			end
-		end)
-		U.InputChanged:Connect(function(input)
-			if not resizing then return end
-			if input.UserInputType ~= Enum.UserInputType.MouseMovement and input.UserInputType ~= Enum.UserInputType.Touch then return end
-			local d = Vector2.new(input.Position.X, input.Position.Y) - rStart
-			local nw = math.max(420, sStart.X.Offset + d.X)
-			local nh = math.max(280, sStart.Y.Offset + d.Y)
-			Shadow_1.Size = UDim2.new(0, nw, 0, nh)
-		end)
-		U.InputEnded:Connect(function(input)
-			if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-				resizing = false
-			end
-		end)
-	end
-
-	do
-		local tags = (p.Config and p.Config.Tags) or p.Tags or {}
-		if #tags > 0 then
+		local tags = WindowTags or {}
+		if type(tags) == "table" and #tags > 0 then
 			local bar = Instance.new("Frame")
 			bar.Name = "WindowTags"
 			bar.Parent = Topbar_1
-			bar.Position = UDim2.new(0, 120, 0, 0)
-			bar.Size = UDim2.new(0.4, 0, 1, 0)
+			bar.Position = UDim2.new(0, 130, 0, 0)
+			bar.Size = UDim2.new(0.35, 0, 1, 0)
 			bar.BackgroundTransparency = 1
 			bar.ZIndex = 12
 			local lay = Instance.new("UIListLayout")
@@ -5646,8 +5379,8 @@ function Library:Window(p)
 			lay.Padding = UDim.new(0, 6)
 			lay.Parent = bar
 			for _, t in ipairs(tags) do
-				local text = type(t)=="table" and (t.Text or t.Title) or tostring(t)
-				local color = type(t)=="table" and t.Color or Color3.fromRGB(255, 200, 50)
+				local text = type(t) == "table" and (t.Text or t.Title) or tostring(t)
+				local color = type(t) == "table" and t.Color or Color3.fromRGB(255, 200, 50)
 				local pill = Instance.new("TextLabel")
 				pill.AutomaticSize = Enum.AutomaticSize.X
 				pill.Size = UDim2.new(0, 0, 0, 20)
@@ -5658,99 +5391,137 @@ function Library:Window(p)
 				pill.TextSize = 11
 				pill.Font = Enum.Font.GothamBold
 				pill.Parent = bar
-				Instance.new("UICorner", pill).CornerRadius = UDim.new(0, 6)
+				local pc = Instance.new("UICorner")
+				pc.CornerRadius = UDim.new(0, 6)
+				pc.Parent = pill
 			end
 		end
 	end
+
+	do
+		local anon = Anonymous
+		local profile = Instance.new("Frame")
+		profile.Name = "PlayerProfile"
+		profile.Parent = Background_1
+		profile.AnchorPoint = Vector2.new(0.5, 1)
+		profile.Position = UDim2.new(0.5, 0, 1, -8)
+		profile.Size = UDim2.new(1, -16, 0, 50)
+		profile.BackgroundColor3 = Color3.fromRGB(24, 24, 31)
+		profile.BorderSizePixel = 0
+		profile.ZIndex = 15
+		local pc = Instance.new("UICorner")
+		pc.CornerRadius = UDim.new(0, 12)
+		pc.Parent = profile
+		addToTheme("Page", profile)
+		local avatar = Instance.new("ImageLabel")
+		avatar.Size = UDim2.new(0, 34, 0, 34)
+		avatar.Position = UDim2.new(0, 10, 0.5, -17)
+		avatar.BackgroundColor3 = Color3.fromRGB(40, 40, 55)
+		avatar.BorderSizePixel = 0
+		avatar.ZIndex = 16
+		avatar.Parent = profile
+		local ac = Instance.new("UICorner")
+		ac.CornerRadius = UDim.new(1, 0)
+		ac.Parent = avatar
+		local disp = Instance.new("TextLabel")
+		disp.Size = UDim2.new(0.4, 0, 0, 16)
+		disp.Position = UDim2.new(0, 52, 0, 8)
+		disp.BackgroundTransparency = 1
+		disp.TextColor3 = Color3.fromRGB(255, 255, 255)
+		disp.TextSize = 13
+		disp.Font = Enum.Font.GothamBold
+		disp.TextXAlignment = Enum.TextXAlignment.Left
+		disp.ZIndex = 16
+		disp.Parent = profile
+		addToTheme("Text & Icon", disp)
+		local user = Instance.new("TextLabel")
+		user.Size = UDim2.new(0.4, 0, 0, 14)
+		user.Position = UDim2.new(0, 52, 0, 26)
+		user.BackgroundTransparency = 1
+		user.TextColor3 = Color3.fromRGB(160, 160, 180)
+		user.TextSize = 11
+		user.Font = Enum.Font.Gotham
+		user.TextXAlignment = Enum.TextXAlignment.Left
+		user.ZIndex = 16
+		user.Parent = profile
+		local clock = Instance.new("TextLabel")
+		clock.Size = UDim2.new(0.4, 0, 1, 0)
+		clock.Position = UDim2.new(0.58, 0, 0, 0)
+		clock.BackgroundTransparency = 1
+		clock.TextColor3 = Color3.fromRGB(180, 180, 200)
+		clock.TextSize = 11
+		clock.Font = Enum.Font.GothamMedium
+		clock.TextXAlignment = Enum.TextXAlignment.Right
+		clock.ZIndex = 16
+		clock.Parent = profile
+		local lp = game.Players.LocalPlayer
+		local function applyProfile()
+			if anon then
+				avatar.Image = "rbxassetid://10747384394"
+				avatar.ImageColor3 = Color3.fromRGB(255, 100, 100)
+				disp.Text = "*****"
+				user.Text = "@*****"
+			else
+				avatar.ImageColor3 = Color3.fromRGB(255, 255, 255)
+				pcall(function()
+					avatar.Image = game.Players:GetUserThumbnailAsync(lp.UserId, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size48x48)
+				end)
+				disp.Text = lp.DisplayName or lp.Name
+				user.Text = "@" .. lp.Name
+			end
+		end
+		applyProfile()
+		task.spawn(function()
+			while profile.Parent do
+				local t = os.date("*t")
+				clock.Text = string.format("%02d/%02d/%04d  %02d:%02d", t.day, t.month, t.year, t.hour, t.min)
+				task.wait(1)
+			end
+		end)
+		Tabs.SetAnonymous = function(v)
+			anon = v and true or false
+			applyProfile()
+		end
+	end
+
 
 	return Tabs
 end
 
 
+Library.Flags = {}
+Library.ConfigFolder = "NexxChasers"
 
-function Library:CreateMultiButton(parent, index)
-	local buttons = index.Buttons or {}
-	local frame = Instance.new("Frame")
-	frame.Size = UDim2.new(1, 0, 0, 92)
-	frame.BackgroundTransparency = 1
-	frame.Parent = parent
-	local function style(btn, text)
-		btn.BackgroundColor3 = Color3.fromRGB(36, 35, 48)
-		btn.BorderSizePixel = 0
-		btn.Text = text or ""
-		btn.TextColor3 = Color3.fromRGB(255, 255, 255)
-		btn.TextSize = 14
-		btn.Font = Enum.Font.GothamMedium
-		btn.AutoButtonColor = false
-		local c = Instance.new("UICorner")
-		c.CornerRadius = UDim.new(0, 8)
-		c.Parent = btn
-		local s = Instance.new("UIStroke")
-		s.Color = Color3.fromRGB(80, 80, 100)
-		s.Thickness = 1
-		s.Parent = btn
+function Library:AddTheme(name, themeTable)
+	if type(name) ~= "string" or type(themeTable) ~= "table" then return end
+	themes[name] = themeTable
+	local found = false
+	for _, n in ipairs(themes.index) do
+		if n == name then found = true break end
 	end
-	if buttons[1] then
-		local b1 = Instance.new("TextButton")
-		b1.Size = UDim2.new(1, 0, 0, 40)
-		b1.Parent = frame
-		style(b1, buttons[1].Title or "Button")
-		b1.MouseButton1Click:Connect(function()
-			if buttons[1].Callback then buttons[1].Callback() end
-		end)
-	end
-	if buttons[2] then
-		local b2 = Instance.new("TextButton")
-		b2.Size = UDim2.new(0.5, -4, 0, 40)
-		b2.Position = UDim2.new(0, 0, 0, 48)
-		b2.Parent = frame
-		style(b2, buttons[2].Title or "Button")
-		b2.MouseButton1Click:Connect(function()
-			if buttons[2].Callback then buttons[2].Callback() end
-		end)
-	end
-	if buttons[3] then
-		local b3 = Instance.new("TextButton")
-		b3.Size = UDim2.new(0.5, -4, 0, 40)
-		b3.Position = UDim2.new(0.5, 4, 0, 48)
-		b3.Parent = frame
-		style(b3, buttons[3].Title or "Button")
-		b3.MouseButton1Click:Connect(function()
-			if buttons[3].Callback then buttons[3].Callback() end
-		end)
-	end
-	return frame
+	if not found then table.insert(themes.index, name) end
 end
 
-Library.Flags = Library.Flags or {}
-Library.ConfigFolder = Library.ConfigFolder or "NexxChasers"
+function Library:GetThemes()
+	return themes.index
+end
 
 function Library:SetFlag(flag, value)
-	if not flag then return end
-	self.Flags[flag] = value
-end
-
-function Library:GetFlag(flag)
-	return self.Flags[flag]
+	if flag then self.Flags[flag] = value end
 end
 
 function Library:ExportConfig()
-	local HttpService = game:GetService("HttpService")
-	local json = HttpService:JSONEncode(self.Flags)
-	if setclipboard then pcall(setclipboard, json) elseif toclipboard then pcall(toclipboard, json) end
+	local json = game:GetService("HttpService"):JSONEncode(self.Flags)
+	pcall(function()
+		if setclipboard then setclipboard(json) elseif toclipboard then toclipboard(json) end
+	end)
 	return json
 end
 
 function Library:ImportConfig(json)
-	local HttpService = game:GetService("HttpService")
-	local ok, data = pcall(function() return HttpService:JSONDecode(json) end)
+	local ok, data = pcall(function() return game:GetService("HttpService"):JSONDecode(json) end)
 	if not ok or type(data) ~= "table" then return false end
-	for k, v in pairs(data) do
-		self.Flags[k] = v
-	end
-	if self._ConfigApply then
-		pcall(self._ConfigApply, data)
-	end
+	for k, v in pairs(data) do self.Flags[k] = v end
 	return true
 end
 
@@ -5766,27 +5537,51 @@ function Library:LoadConfig(name)
 	if not readfile then return end
 	pcall(function()
 		local path = self.ConfigFolder .. "/" .. (name or "config") .. ".json"
-		if isfile(path) then
-			Library:ImportConfig(readfile(path))
-		end
+		if isfile(path) then self:ImportConfig(readfile(path)) end
 	end)
 end
 
-
-function Library:AddTheme(name, themeTable)
-	if type(name) ~= "string" or type(themeTable) ~= "table" then return end
-	themes[name] = themeTable
-	local found = false
-	for _, n in ipairs(themes.index) do
-		if n == name then found = true break end
+function Library:CreateMultiButton(parent, index)
+	local buttons = index.Buttons or {}
+	local frame = Instance.new("Frame")
+	frame.Size = UDim2.new(1, 0, 0, 92)
+	frame.BackgroundTransparency = 1
+	frame.Parent = parent
+	local function style(btn, text)
+		btn.BackgroundColor3 = Color3.fromRGB(36, 35, 48)
+		btn.BorderSizePixel = 0
+		btn.Text = text or ""
+		btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+		btn.TextSize = 14
+		btn.Font = Enum.Font.GothamMedium
+		local c = Instance.new("UICorner") c.CornerRadius = UDim.new(0, 8) c.Parent = btn
+		local s = Instance.new("UIStroke") s.Color = Color3.fromRGB(80, 80, 100) s.Thickness = 1 s.Parent = btn
 	end
-	if not found then
-		table.insert(themes.index, name)
+	if buttons[1] then
+		local b1 = Instance.new("TextButton")
+		b1.Size = UDim2.new(1, 0, 0, 40)
+		b1.Parent = frame
+		style(b1, buttons[1].Title or "Button")
+		b1.MouseButton1Click:Connect(function() if buttons[1].Callback then buttons[1].Callback() end end)
 	end
+	if buttons[2] then
+		local b2 = Instance.new("TextButton")
+		b2.Size = UDim2.new(0.5, -4, 0, 40)
+		b2.Position = UDim2.new(0, 0, 0, 48)
+		b2.Parent = frame
+		style(b2, buttons[2].Title or "Button")
+		b2.MouseButton1Click:Connect(function() if buttons[2].Callback then buttons[2].Callback() end end)
+	end
+	if buttons[3] then
+		local b3 = Instance.new("TextButton")
+		b3.Size = UDim2.new(0.5, -4, 0, 40)
+		b3.Position = UDim2.new(0.5, 4, 0, 48)
+		b3.Parent = frame
+		style(b3, buttons[3].Title or "Button")
+		b3.MouseButton1Click:Connect(function() if buttons[3].Callback then buttons[3].Callback() end end)
+	end
+	return frame
 end
 
-function Library:GetThemes()
-	return themes.index
-end
 
 return Library
