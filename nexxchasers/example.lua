@@ -1,138 +1,139 @@
 local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/Nail120212/NexLib/refs/heads/main/nexxchasers/loader.lua"))()
 
-local Window = Library:CreateWindow({
-    Title = "NexxChasers",
-    Author = "by Nexx • Chasers",
-    Theme = "Dark",
-    Transparency = 0.06,
-    Logo = 10734943674,
-    ToggleKeybind = Enum.KeyCode.RightShift,
-    Folder = "NexxChasers",
+Library:AddTheme("Nexx", {
+	['Shadow'] = Color3.fromRGB(20, 20, 28),
+	['Background'] = Color3.fromRGB(18, 18, 24),
+	['Page'] = Color3.fromRGB(24, 24, 32),
+	['Main'] = Color3.fromRGB(255, 255, 255),
+	['Text & Icon'] = Color3.fromRGB(240, 240, 250),
+	['Function'] = {
+		['Toggle'] = {
+			['Background'] = Color3.fromRGB(28, 28, 38),
+			['True'] = {
+				['Toggle Background'] = Color3.fromRGB(255, 255, 255),
+				['Toggle Value'] = Color3.fromRGB(20, 20, 28),
+			},
+			['False'] = {
+				['Toggle Background'] = Color3.fromRGB(45, 45, 55),
+				['Toggle Value'] = Color3.fromRGB(140, 140, 160),
+			}
+		},
+		['Label'] = { ['Background'] = Color3.fromRGB(28, 28, 38) },
+		['Dropdown'] = {
+			['Background'] = Color3.fromRGB(28, 28, 38),
+			['Value Background'] = Color3.fromRGB(35, 35, 48),
+			['Value Stroke'] = Color3.fromRGB(70, 70, 90),
+			['Dropdown Select'] = {
+				['Background'] = Color3.fromRGB(30, 30, 42),
+				['Search'] = Color3.fromRGB(40, 40, 55),
+				['Item Background'] = Color3.fromRGB(36, 36, 50),
+			}
+		},
+		['Slider'] = {
+			['Background'] = Color3.fromRGB(28, 28, 38),
+			['Value Background'] = Color3.fromRGB(35, 35, 48),
+			['Value Stroke'] = Color3.fromRGB(70, 70, 90),
+			['Slider Bar'] = Color3.fromRGB(60, 60, 75),
+			['Slider Bar Value'] = Color3.fromRGB(255, 255, 255),
+			['Circle Value'] = Color3.fromRGB(255, 255, 255)
+		},
+		['Code'] = {
+			['Background'] = ColorSequence.new{
+				ColorSequenceKeypoint.new(0, Color3.fromRGB(22, 22, 30)),
+				ColorSequenceKeypoint.new(1, Color3.fromRGB(30, 30, 40))
+			},
+			['Background Code'] = Color3.fromRGB(28, 28, 38),
+			['Background Code Value'] = Color3.fromRGB(40, 40, 55),
+			['ScrollingFrame Code'] = Color3.fromRGB(180, 180, 200)
+		},
+		['Button'] = {
+			['Background'] = Color3.fromRGB(28, 28, 38),
+			['Click'] = Color3.fromRGB(255, 255, 255)
+		},
+		['Textbox'] = {
+			['Background'] = Color3.fromRGB(28, 28, 38),
+			['Value Background'] = Color3.fromRGB(35, 35, 48),
+			['Value Stroke'] = Color3.fromRGB(70, 70, 90),
+		},
+		['Keybind'] = {
+			['Background'] = Color3.fromRGB(28, 28, 38),
+			['Value Background'] = Color3.fromRGB(35, 35, 48),
+			['Value Stroke'] = Color3.fromRGB(70, 70, 90),
+			['True'] = {
+				['Toggle Background'] = Color3.fromRGB(255, 255, 255),
+				['Toggle Value'] = Color3.fromRGB(20, 20, 28),
+			},
+			['False'] = {
+				['Toggle Background'] = Color3.fromRGB(45, 45, 55),
+				['Toggle Value'] = Color3.fromRGB(140, 140, 160),
+			}
+		},
+		['Color Picker'] = {
+			['Background'] = Color3.fromRGB(28, 28, 38),
+			['Color Select'] = {
+				['Background'] = Color3.fromRGB(35, 35, 48),
+				['UIStroke'] = Color3.fromRGB(70, 70, 90),
+			}
+		}
+	}
 })
 
-Library:EnableAutoSave("main")
-Library:LoadConfig("main")
-
-local Main = Window:create_tab("Main", "home")
-local Combat = Window:create_tab("Combat", "swords")
-local Visuals = Window:create_tab("Visuals", "eye")
-local Settings = Window:create_tab("Settings", "settings")
-
-Main:create_paragraph({
-    Title = "Welcome",
-    Content = "Clean rewrite with large readable text. WindUI-style buttons, toggles, and components.",
+local Window = Library:Window({
+	Title = "NexxChasers",
+	Desc = "by Nexx • Chasers",
+	Icon = "layout-dashboard",
+	Theme = "Dark",
+	Config = {
+		Keybind = Enum.KeyCode.RightShift,
+		Size = UDim2.new(0, 560, 0, 420),
+	},
 })
 
-Main:create_divider("Player")
+local Main = Window:Tab({ Title = "Main", Icon = "home" })
+local Combat = Window:Tab({ Title = "Combat", Icon = "swords" })
+local Settings = Window:Tab({ Title = "Settings", Icon = "settings" })
 
-Main:create_toggle({
-    Title = "Speed Hack",
-    Flag = "SpeedHack",
-    default = false,
-    callback = function(state) print("Speed:", state) end,
+Main:Toggle({
+	Title = "Speed Hack",
+	Desc = "Increase walk speed",
+	Value = false,
+	Callback = function(v) print("Speed", v) end,
 })
 
-Main:create_slider({
-    Title = "WalkSpeed",
-    Flag = "WalkSpeed",
-    Min = 16,
-    Max = 200,
-    default = 16,
-    Step = 1,
-    callback = function(v) print("WalkSpeed", v) end,
+Main:Button({
+	Title = "Reset Character",
+	Desc = "Respawn",
+	Callback = function()
+		local c = game.Players.LocalPlayer.Character
+		if c then c:BreakJoints() end
+	end,
 })
 
-Main:create_button({
-    Title = "Reset Character",
-    callback = function()
-        local c = game.Players.LocalPlayer.Character
-        if c then c:BreakJoints() end
-    end,
+local locked = Main:Toggle({
+	Title = "Premium Feature",
+	Desc = "Requires VIP",
+	Value = false,
+	Locked = true,
+	LockedText = "VIP Only",
+	Callback = function(v) print("Premium", v) end,
 })
 
-Main:create_codebox({
-    Title = "Example Script",
-    Code = [[print("Hello from NexxChasers")
-print(game.Players.LocalPlayer.Name)]],
+Main:Button({
+	Title = "Unlock Premium",
+	Callback = function()
+		if locked then locked:Unlock() end
+	end,
 })
 
-Main:create_colorpicker({
-    Title = "Accent Color",
-    Flag = "AccentColor",
-    default = Color3.fromRGB(255, 255, 255),
-    callback = function(c) print(c) end,
+Combat:Toggle({
+	Title = "Aimbot",
+	Value = false,
+	Callback = function(v) print("Aimbot", v) end,
 })
 
-Combat:create_divider("Aimbot")
-
-Combat:create_toggle({
-    Title = "Enable Aimbot",
-    Flag = "Aimbot",
-    default = false,
-    callback = function(s) print("Aimbot", s) end,
-})
-
-local locked = Combat:create_toggle({
-    Title = "Premium Aim",
-    Locked = true,
-    LockedText = "VIP Only",
-    default = false,
-})
-
-Combat:create_button({
-    Title = "Unlock Premium",
-    callback = function()
-        locked:Unlock()
-        Library:Notify({ title = "Unlocked", content = "Premium Aim available", duration = 3 })
-    end,
-})
-
-Visuals:create_toggle({
-    Title = "Box ESP",
-    Flag = "BoxESP",
-    default = false,
-    callback = function(s) print("Box", s) end,
-})
-
-Visuals:create_colorpicker({
-    Title = "ESP Color",
-    Flag = "ESPColor",
-    default = Color3.fromRGB(255, 50, 50),
-})
-
-Settings:create_divider("UI")
-
-Settings:create_dropdown({
-    Title = "Theme",
-    options = { "Dark", "Light", "Custom" },
-    default = "Dark",
-    callback = function(v)
-        if v == "Custom" then Library:OpenThemeEditor()
-        else Library:SetTheme(v) end
-    end,
-})
-
-Settings:create_button({
-    Title = "Open Theme Editor",
-    callback = function() Library:OpenThemeEditor() end,
-})
-
-Settings:create_button({
-    Title = "Save Config",
-    callback = function()
-        Library:SaveConfig("main")
-        Library:Notify({ title = "Config", content = "Saved", duration = 2 })
-    end,
-})
-
-Settings:create_button({
-    Title = "Close UI",
-    callback = function() Library:Close() end,
-})
-
-task.wait(0.4)
-Library:Notify({
-    title = "NexxChasers",
-    content = "Loaded • RightShift to toggle",
-    duration = 4,
+Settings:Button({
+	Title = "Notify Test",
+	Callback = function()
+		print("NexxChasers ready")
+	end,
 })
