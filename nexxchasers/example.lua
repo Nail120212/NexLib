@@ -1,168 +1,190 @@
-local ok, Library = pcall(function()
-	return loadstring(game:HttpGet("https://raw.githubusercontent.com/Nail120212/NexLib/refs/heads/main/nexxchasers/loader.lua"))()
-end)
-if not ok or type(Library) ~= "table" then
-	warn("[NexxChasers] load failed:", Library)
-	return
-end
+local Library = loadstring(game:HttpGet("YOUR_HOSTED_LOADER_URL"))() -- or require the local loader
 
 local Window = Library:Window({
 	Title = "NexxChasers",
-	Desc = "Nexx • Chasers",
-	Icon = "house",
-	Theme = "Galaxy",
+	Author = "UI Library",
+	Theme = "Dark",
+	Logo = "house",
 	Config = {
-		Keybind = Enum.KeyCode.RightShift,
-		Size = UDim2.new(0, 560, 0, 440),
+		ToggleKeybind = Enum.KeyCode.LeftControl,
+		Size = UDim2.new(0, 580, 0, 420),
 		AutoScale = true,
-		Transparency = 0.05,
-		Anonymous = false,
+		Transparency = 0,
 		Tags = {
-			{ Text = "BETA", Color = Color3.fromRGB(255, 200, 50) },
-			{ Text = "v2", Color = Color3.fromRGB(120, 200, 255) },
+			{Text = "BETA", Color = Color3.fromRGB(255, 180, 0)}
 		},
-	},
-	CloseUIButton = { Enabled = true, Text = "Nexx" },
+		Anonymous = false
+	}
 })
 
-Window:SelectTab(1)
-
-local ButtonsTab = Window:Tab({ Title = "Buttons", Icon = "house" })
-local TogglesTab = Window:Tab({ Title = "Toggles", Icon = "house" })
-local ScalesTab = Window:Tab({ Title = "Sliders", Icon = "house" })
-local InputsTab = Window:Tab({ Title = "Inputs", Icon = "house" })
-local DropsTab = Window:Tab({ Title = "Dropdowns", Icon = "house" })
-local KeysTab = Window:Tab({ Title = "Keybinds", Icon = "house" })
-local ColorsTab = Window:Tab({ Title = "Colors", Icon = "house" })
-local CodeTab = Window:Tab({ Title = "Code", Icon = "house" })
-local SettingsTab = Window:Tab({ Title = "Settings", Icon = "house" })
-
-ButtonsTab:Section({ Title = "Buttons" })
-ButtonsTab:Button({
+local Buttons = Window:Tab({Title = "Buttons", Icon = "mouse-pointer-click"})
+Buttons:Section({Title = "Buttons"})
+Buttons:Button({
 	Title = "Normal Button",
-	Desc = "Click me",
-	Callback = function() print("clicked") end,
-})
-ButtonsTab:Button({
-	Title = "Reset Character",
+	Desc = "Standard clickable button",
 	Callback = function()
-		local c = game.Players.LocalPlayer.Character
-		if c then c:BreakJoints() end
-	end,
+		Window:Notify({Title = "Clicked", Desc = "Normal button pressed", Time = 3})
+	end
 })
-local lockedBtn = ButtonsTab:Button({
+Buttons:Button({
 	Title = "Locked Button",
+	Desc = "This one is locked",
 	Locked = true,
-	LockedText = "Locked",
-	Callback = function() print("should not fire") end,
+	LockText = "Premium"
 })
-ButtonsTab:Button({
-	Title = "Unlock Locked Button",
-	Callback = function()
-		if lockedBtn and lockedBtn.Unlock then lockedBtn:Unlock() end
-	end,
+Buttons:MultiButton({
+	Title = "Multi Button",
+	Buttons = {
+		{Title = "Full Width", Callback = function() Window:Notify({Title = "Full", Desc = "Line 1", Time = 2}) end},
+		{Title = "Left", Callback = function() Window:Notify({Title = "Left", Desc = "Half A", Time = 2}) end},
+		{Title = "Right", Callback = function() Window:Notify({Title = "Right", Desc = "Half B", Time = 2}) end}
+	}
 })
 
-TogglesTab:Section({ Title = "Toggles" })
-TogglesTab:Toggle({
-	Title = "Speed Hack",
-	Desc = "Walk faster",
+local Toggles = Window:Tab({Title = "Toggles", Icon = "toggle-left"})
+Toggles:Section({Title = "Toggles"})
+Toggles:Toggle({
+	Title = "Enable Feature",
+	Desc = "Toggle with callback",
 	Value = false,
-	Callback = function(v) print("Speed", v) end,
+	Flag = "feature1",
+	Callback = function(v) print("Toggle:", v) end
 })
-local lockedToggle = TogglesTab:Toggle({
-	Title = "Premium Aim",
-	Value = false,
+Toggles:Toggle({
+	Title = "Colored Toggle",
+	Value = true,
+	Color = Color3.fromRGB(0, 200, 100),
+	Flag = "feature2"
+})
+Toggles:Toggle({
+	Title = "Locked Toggle",
 	Locked = true,
-	LockedText = "Locked",
-	Callback = function(v) print("Premium", v) end,
-})
-TogglesTab:Button({
-	Title = "Unlock Premium",
-	Callback = function()
-		if lockedToggle and lockedToggle.Unlock then lockedToggle:Unlock() end
-	end,
+	LockText = "VIP Only"
 })
 
-ScalesTab:Section({ Title = "Sliders" })
-ScalesTab:Slider({
-	Title = "WalkSpeed",
-	Min = 16,
-	Max = 200,
-	Value = 16,
-	Rounding = 0,
-	Callback = function(v) print("WS", v) end,
+local Sliders = Window:Tab({Title = "Sliders", Icon = "sliders"})
+Sliders:Section({Title = "Sliders & Steppers"})
+Sliders:Slider({
+	Title = "Volume",
+	Min = 0, Max = 100, Value = 50,
+	Flag = "volume",
+	Callback = function(v) print("Volume", v) end
 })
-ScalesTab:Slider({
-	Title = "JumpPower",
-	Min = 50,
-	Max = 200,
-	Value = 50,
-	Rounding = 0,
-	Callback = function(v) print("JP", v) end,
+Sliders:Slider({
+	Title = "Locked Slider",
+	Min = 0, Max = 10, Value = 5,
+	Locked = true,
+	LockText = "Locked"
+})
+Sliders:Stepper({
+	Title = "Count",
+	Min = 0, Max = 20, Value = 5,
+	Flag = "count",
+	Callback = function(v) print("Count", v) end
+})
+Sliders:RangeSlider({
+	Title = "Range",
+	Min = 0, Max = 100,
+	Value = {20, 80},
+	Callback = function(v) print(v[1], v[2]) end
 })
 
-InputsTab:Section({ Title = "Inputs" })
-InputsTab:Textbox({
+local Inputs = Window:Tab({Title = "Inputs", Icon = "text"})
+Inputs:Section({Title = "Text Inputs"})
+Inputs:Textbox({
 	Title = "Username",
-	Callback = function(t) print("Name", t) end,
+	Placeholder = "Enter name...",
+	Value = "",
+	Flag = "username",
+	Callback = function(t) print("Text:", t) end
 })
-InputsTab:Label({
+Inputs:Paragraph({
 	Title = "Info",
-	Desc = "Label component",
+	Content = "This is a paragraph component for longer descriptive text."
+})
+Inputs:Label({Title = "Simple Label"})
+
+local Dropdowns = Window:Tab({Title = "Dropdowns", Icon = "chevron-down"})
+Dropdowns:Section({Title = "Dropdowns & Segmented"})
+Dropdowns:Dropdown({
+	Title = "Select Mode",
+	List = {"Easy", "Normal", "Hard", "Nightmare"},
+	Value = "Normal",
+	Flag = "mode",
+	Callback = function(v) print("Mode:", v) end
+})
+Dropdowns:Segmented({
+	Title = "View",
+	Options = {"List", "Grid", "Detail"},
+	Value = "List",
+	Callback = function(v) print("View:", v) end
 })
 
-DropsTab:Section({ Title = "Dropdowns" })
-DropsTab:Dropdown({
-	Title = "Teleport",
-	Options = { "Spawn", "Bank", "Shop" },
-	Value = "Spawn",
-	Callback = function(v) print("TP", v) end,
+local Keybinds = Window:Tab({Title = "Keybinds", Icon = "keyboard"})
+Keybinds:Section({Title = "Keybinds"})
+Keybinds:Keybind({
+	Title = "Toggle Menu",
+	Key = Enum.KeyCode.E,
+	Flag = "menukey",
+	Callback = function(key, state) print("Key", key, "State", state) end
 })
 
-KeysTab:Section({ Title = "Keybinds" })
-KeysTab:Keybind({
-	Title = "Panic Key",
-	Value = Enum.KeyCode.P,
-	Callback = function(k) print("Panic", k) end,
+local Colors = Window:Tab({Title = "Colors", Icon = "palette"})
+Colors:Section({Title = "Color Picker"})
+Colors:ColorPicker({
+	Title = "Accent Color",
+	Value = Color3.fromRGB(0, 122, 255),
+	Flag = "accent",
+	Callback = function(r, g, b) print(r, g, b) end
 })
 
-ColorsTab:Section({ Title = "Colors" })
-ColorsTab:ColorPicker({
-	Title = "ESP Color",
-	Value = Color3.fromRGB(255, 50, 50),
-	Callback = function(c) print(c) end,
-})
-
-CodeTab:Section({ Title = "Code" })
+local CodeTab = Window:Tab({Title = "Code", Icon = "code"})
+CodeTab:Section({Title = "Code Box"})
 CodeTab:Code({
 	Title = "example.lua",
-	Code = 'print("Hello NexxChasers")',
+	Code = 'print("Hello from NexxChasers")\\nlocal x = 10\\nprint(x * 2)'
 })
 
-SettingsTab:Section({ Title = "Config" })
-SettingsTab:Button({
-	Title = "Export Config",
-	Callback = function() print(Library:ExportConfig()) end,
-})
-SettingsTab:Button({
+local Settings = Window:Tab({Title = "Settings", Icon = "settings"})
+Settings:Section({Title = "Config System"})
+Settings:Button({
 	Title = "Save Config",
-	Callback = function() Library:SaveConfig("main") end,
+	Callback = function()
+		Window:SaveConfig("default")
+		Window:Notify({Title = "Saved", Desc = "Config exported to clipboard", Time = 3})
+	end
 })
-SettingsTab:Button({
+Settings:Button({
 	Title = "Load Config",
-	Callback = function() Library:LoadConfig("main") end,
-})
-SettingsTab:Section({ Title = "Profile" })
-SettingsTab:Button({
-	Title = "Anonymous On",
 	Callback = function()
-		if Window.SetAnonymous then Window.SetAnonymous(true) end
-	end,
+		Window:LoadConfig("default")
+		Window:Notify({Title = "Loaded", Desc = "Config applied", Time = 3})
+	end
 })
-SettingsTab:Button({
-	Title = "Anonymous Off",
+Settings:Button({
+	Title = "Export JSON",
 	Callback = function()
-		if Window.SetAnonymous then Window.SetAnonymous(false) end
-	end,
+		Window:ExportConfig()
+		Window:Notify({Title = "Exported", Desc = "JSON on clipboard", Time = 3})
+	end
+})
+Settings:Button({
+	Title = "Show Dialog",
+	Callback = function()
+		Window:Dialog({
+			Title = "Are you sure you want to continue?",
+			Buttons = {
+				{Title = "Yes", Color = Color3.fromRGB(0, 180, 0), Callback = function()
+					Window:Notify({Title = "Confirmed", Desc = "Action done", Time = 2})
+				end},
+				{Title = "No", Color = Color3.fromRGB(200, 50, 50)}
+			}
+		})
+	end
+})
+
+Window:Notify({
+	Title = "NexxChasers Loaded",
+	Desc = "Press LeftControl to toggle UI",
+	Time = 5
 })
