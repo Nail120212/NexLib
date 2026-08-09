@@ -240,6 +240,15 @@ local function Create(ClassName, Properties)
     end
     return Object
 end
+function Library:ResolveAssetId(Value)
+    if Value == nil or Value == "" then return "" end
+    local s = tostring(Value)
+    if s:find("rbxassetid://") then return s end
+    if s:find("rbxasset://") then return s end
+    local num = s:match("(%d+)")
+    if num then return "rbxassetid://" .. num end
+    return s
+end
 function Library:TweenInstance(Instance, Time, Property, TargetValue, Callback)
     local Tween = TweenService:Create(
         Instance,
@@ -662,13 +671,19 @@ function Library:NewWindow(ConfigWindow)
         Title = "Quantum Hub",
         Description = "By Ho Van Hai",
         Icon = "rbxassetid://89646749075297",
-        Logo = "rbxassetid://89646749075297",
+        Logo = "89646749075297",
+        Icon = "89646749075297",
         Color = Color3.fromRGB(158, 158, 158),
         Size = nil,
         Theme = "Dark",
         Transparency = 0.06,
         ToggleKey = "RightControl",
+        CustomBackground = false,
+        CustomBackgroundId = "",
     }, ConfigWindow or {})
+    ConfigWindow.Logo = self:ResolveAssetId(ConfigWindow.Logo)
+    ConfigWindow.Icon = self:ResolveAssetId(ConfigWindow.Icon or ConfigWindow.Logo)
+    ConfigWindow.CustomBackgroundId = self:ResolveAssetId(ConfigWindow.CustomBackgroundId or ConfigWindow.CustomBackroundId or "")
     self:SetTheme(ConfigWindow.Theme)
     self:SetTransparency(ConfigWindow.Transparency)
     if ConfigWindow.Color then
@@ -740,6 +755,23 @@ function Library:NewWindow(ConfigWindow)
     })
     self:RegisterThemeObject(Main, "BackgroundColor3", "Main")
     self:RegisterThemeObject(MainStroke, "Color", "Accent")
+    if ConfigWindow.CustomBackground or ConfigWindow.CustomBackround then
+        local bgId = ConfigWindow.CustomBackgroundId
+        if bgId and bgId ~= "" then
+            local Bg = Create("ImageLabel", {
+                Name = "CustomBackground",
+                Parent = Main,
+                BackgroundTransparency = 1,
+                BorderSizePixel = 0,
+                Size = UDim2.new(1, 0, 1, 0),
+                Image = bgId,
+                ScaleType = Enum.ScaleType.Crop,
+                ImageTransparency = 0.35,
+                ZIndex = 0
+            })
+            Create("UICorner", {CornerRadius = UDim.new(0, 6), Parent = Bg})
+        end
+    end
 
     local Top = Create("Frame", {
         Name = "Top",
@@ -1747,7 +1779,7 @@ function Library:NewWindow(ConfigWindow)
                 local ToggleLock = Library:ResolveLockConfig(cftoggle)
                 local Toggle = MakeCardBase(SectionList, 35)
                 Toggle.Name = "Toggle"
-                local RightOffset = ToggleLock.Locked and 150 or 70
+                local RightOffset = ToggleLock.Locked and 175 or 70
                 local Title = Create("TextLabel", {
                     Name = "Title",
                     Parent = Toggle,
@@ -3203,7 +3235,7 @@ function Library:NewWindow(ConfigWindow)
                     BackgroundTransparency = 1,
                     BorderSizePixel = 0,
                     Size = UDim2.new(1, 0, 1, 0),
-                    Image = tostring(cfimage.Image or ""),
+                    Image = Library:ResolveAssetId(cfimage.Image or ""),
                     ScaleType = Enum.ScaleType.Fit
                 })
                 if HasBtn then
@@ -3259,12 +3291,13 @@ function Library:NewWindow(ConfigWindow)
                     Parent = Card,
                     BackgroundTransparency = 1,
                     Position = UDim2.new(0, 18, 0, 0),
-                    Size = UDim2.new(1, -100, 1, 0),
+                    Size = UDim2.new(1, -120, 1, 0),
                     Font = Enum.Font.GothamBold,
                     Text = cfct.Title,
                     TextColor3 = Library.Theme.Text,
                     TextSize = 13,
-                    TextXAlignment = Enum.TextXAlignment.Left
+                    TextXAlignment = Enum.TextXAlignment.Left,
+                    TextTruncate = Enum.TextTruncate.AtEnd
                 })
                 local Presets = cfct.Presets or {
                     Color3.fromRGB(255, 60, 60),
@@ -3478,7 +3511,7 @@ function Library:NewWindow(ConfigWindow)
                 local KeyLock = Library:ResolveLockConfig(cfkey)
                 local Keybind = MakeCardBase(SectionList, 35)
                 Keybind.Name = "Keybind"
-                local RightOffset = KeyLock.Locked and 150 or 90
+                local RightOffset = KeyLock.Locked and 185 or 95
                 local Title = Create("TextLabel", {
                     Name = "Title",
                     Parent = Keybind,
