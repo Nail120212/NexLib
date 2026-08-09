@@ -17,20 +17,20 @@ local Window = Library:Window({
 })
 
 local Buttons = Window:Tab({Title="Buttons",Icon="mouse-pointer-click"})
-Buttons:Section({Title="Buttons"})
-Buttons:Button({
+local Sec1 = Buttons:Section({Title="Buttons",Opened=true})
+Sec1:Button({
 	Title="Normal Button",
 	Desc="Click me",
 	Callback=function()
 		Window:Notify({Title="Clicked",Desc="Button works",Delay=2})
 	end
 })
-Buttons:Button({
+Sec1:Button({
 	Title="Locked Button",
 	Locked=true,
 	LockText="Premium"
 })
-Buttons:MultiButton({
+Sec1:MultiButton({
 	Title="Multi Button",
 	Buttons={
 		{Title="Full",Callback=function() print("full") end},
@@ -38,109 +38,112 @@ Buttons:MultiButton({
 		{Title="B",Callback=function() print("B") end}
 	}
 })
+local SecClosed = Buttons:Section({Title="Closed Section",Opened=false})
+SecClosed:Button({Title="Hidden until open"})
 
 local Toggles = Window:Tab({Title="Toggles",Icon="toggle-left"})
-Toggles:Section({Title="Toggles"})
-Toggles:Toggle({
+local TSec = Toggles:Section({Title="Toggles",Opened=true})
+TSec:Toggle({
 	Title="Enable Feature",
 	Desc="Test toggle",
 	Value=false,
 	Flag="enable",
 	Callback=function(v) print(v) end
 })
-Toggles:Toggle({
+TSec:Toggle({
 	Title="Colored",
 	Value=true,
 	Color=Color3.fromRGB(0,200,100),
 	Flag="colored"
 })
-Toggles:Toggle({
+TSec:Toggle({
 	Title="Locked Toggle",
 	Locked=true,
 	LockText="VIP"
 })
 
 local Sliders = Window:Tab({Title="Sliders",Icon="sliders"})
-Sliders:Section({Title="Sliders"})
-Sliders:Slider({
+local SSec = Sliders:Section({Title="Sliders",Opened=true})
+
+SSec:Slider({
 	Title="Volume",
 	Min=0,Max=100,Value=50,
 	Flag="vol",
 	Callback=function(v) print(v) end
 })
-Sliders:Slider({
+SSec:Slider({
 	Title="Locked Slider",
 	Min=0,Max=10,Value=5,
 	Locked=true,
 	LockText="Locked"
 })
-Sliders:Stepper({
+SSec:Stepper({
 	Title="Count",
 	Min=0,Max=20,Value=3,
 	Flag="cnt"
 })
-Sliders:RangeSlider({
+SSec:RangeSlider({
 	Title="Range",
 	Min=0,Max=100,
 	Value={20,80}
 })
 
 local Inputs = Window:Tab({Title="Inputs",Icon="text"})
-Inputs:Section({Title="Inputs"})
-Inputs:Textbox({
+local ISec = Inputs:Section({Title="Inputs",Opened=true})
+ISec:Textbox({
 	Title="Username",
 	Placeholder="Type...",
 	Flag="user"
 })
-Inputs:Dropdown({
+ISec:Dropdown({
 	Title="Mode",
 	List={"Easy","Normal","Hard"},
 	Value="Normal",
 	Flag="mode"
 })
-Inputs:Segmented({
+ISec:Segmented({
 	Title="View",
 	Options={"List","Grid","Detail"},
 	Value="List"
 })
-Inputs:Paragraph({
+ISec:Paragraph({
 	Title="Info",
 	Content="Paragraph text component"
 })
-Inputs:Label({Title="Simple Label"})
+ISec:Label({Title="Simple Label"})
 
 local More = Window:Tab({Title="More",Icon="settings"})
-More:Section({Title="Keybind & Color"})
-More:Keybind({
+local MSec = More:Section({Title="Keybind & Color",Opened=true})
+MSec:Keybind({
 	Title="Action Key",
 	Key=Enum.KeyCode.E,
 	Flag="key"
 })
-More:ColorPicker({
+MSec:ColorPicker({
 	Title="Accent",
 	Value=Color3.fromRGB(0,122,255),
 	Flag="accent"
 })
-More:Code({
+MSec:Code({
 	Title="Script",
 	Code='print("NexxChasers")'
 })
-More:Section({Title="Config"})
-More:Button({
+local CSec = More:Section({Title="Config",Opened=true})
+CSec:Button({
 	Title="Save Config",
 	Callback=function()
 		Window:SaveConfig("default")
 		Window:Notify({Title="Saved",Desc="Config exported",Delay=2})
 	end
 })
-More:Button({
+CSec:Button({
 	Title="Load Config",
 	Callback=function()
 		Window:LoadConfig("default")
 		Window:Notify({Title="Loaded",Desc="Config applied",Delay=2})
 	end
 })
-More:Button({
+CSec:Button({
 	Title="Dialog",
 	Callback=function()
 		Window:Dialog({

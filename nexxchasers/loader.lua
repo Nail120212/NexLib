@@ -46,12 +46,14 @@ local function gl(i)
 		local ss = IconList.Spritesheets and IconList.Spritesheets[tostring(d.Image)]
 		if ss then return {Image=ss,ImageRectSize=d.ImageRectSize,ImageRectPosition=d.ImageRectPosition} end
 	end
-	if type(i)=="string" and not string.find(i,"rbxassetid://") then
-		return {Image="rbxassetid://"..i,ImageRectSize=Vector2.new(0,0),ImageRectPosition=Vector2.new(0,0)}
+	if type(i)=="string" and string.find(i,"rbxassetid://") then
+		return {Image=i,ImageRectSize=Vector2.new(0,0),ImageRectPosition=Vector2.new(0,0)}
 	elseif type(i)=="number" then
 		return {Image="rbxassetid://"..i,ImageRectSize=Vector2.new(0,0),ImageRectPosition=Vector2.new(0,0)}
+	elseif type(i)=="string" and tonumber(i) then
+		return {Image="rbxassetid://"..i,ImageRectSize=Vector2.new(0,0),ImageRectPosition=Vector2.new(0,0)}
 	end
-	return {Image=tostring(i or ""),ImageRectSize=Vector2.new(0,0),ImageRectPosition=Vector2.new(0,0)}
+	return {Image="rbxassetid://7733960981",ImageRectSize=Vector2.new(0,0),ImageRectPosition=Vector2.new(0,0)}
 end
 
 local function tw(obj,info,props)
@@ -102,33 +104,34 @@ local function makeLockBox(parent, text)
 	local box = Instance.new("Frame")
 	box.Name = "LockBox"
 	box.Parent = parent
-	box.BackgroundColor3 = Color3.fromRGB(35,35,35)
+	box.BackgroundColor3 = Color3.fromRGB(28,28,28)
 	box.BorderSizePixel = 0
-	box.Size = UDim2.new(0,0,0,18)
+	box.Size = UDim2.new(0,0,0,20)
 	box.AutomaticSize = Enum.AutomaticSize.X
 	box.Visible = false
 	box.ZIndex = 15
 	box.AnchorPoint = Vector2.new(1,0.5)
-	box.Position = UDim2.new(1,-8,0.5,0)
-	Instance.new("UICorner",box).CornerRadius = UDim.new(0,4)
+	box.Position = UDim2.new(1,-10,0.5,0)
+	Instance.new("UICorner",box).CornerRadius = UDim.new(0,6)
 	local st = Instance.new("UIStroke")
-	st.Color = Color3.fromRGB(255,255,255)
-	st.Thickness = 1
-	st.Transparency = 0.6
+	st.Color = Color3.fromRGB(0,122,255)
+	st.Thickness = 1.2
+	st.Transparency = 0.3
 	st.Parent = box
 	local list = Instance.new("UIListLayout")
 	list.FillDirection = Enum.FillDirection.Horizontal
 	list.VerticalAlignment = Enum.VerticalAlignment.Center
-	list.Padding = UDim.new(0,4)
+	list.Padding = UDim.new(0,5)
 	list.Parent = box
 	local pad = Instance.new("UIPadding")
-	pad.PaddingLeft = UDim.new(0,6)
-	pad.PaddingRight = UDim.new(0,6)
+	pad.PaddingLeft = UDim.new(0,8)
+	pad.PaddingRight = UDim.new(0,8)
 	pad.Parent = box
 	local icon = Instance.new("ImageLabel")
 	icon.BackgroundTransparency = 1
 	icon.Size = UDim2.new(0,12,0,12)
 	icon.Image = "rbxassetid://6031094678"
+	icon.ImageColor3 = Color3.fromRGB(0,122,255)
 	icon.Parent = box
 	local lbl = Instance.new("TextLabel")
 	lbl.BackgroundTransparency = 1
@@ -136,8 +139,8 @@ local function makeLockBox(parent, text)
 	lbl.Size = UDim2.new(0,0,1,0)
 	lbl.Font = Enum.Font.GothamBold
 	lbl.Text = text or "Locked"
-	lbl.TextColor3 = Color3.fromRGB(255,255,255)
-	lbl.TextSize = 10
+	lbl.TextColor3 = Color3.fromRGB(220,220,220)
+	lbl.TextSize = 11
 	lbl.Parent = box
 	return box
 end
@@ -390,23 +393,38 @@ function Library:MakeGui(GuiConfig)
 
 	local TagHolder = Instance.new("Frame")
 	TagHolder.BackgroundTransparency = 1
-	TagHolder.Position = UDim2.new(0,42 + TitleLabel.TextBounds.X + 8,0,5)
-	TagHolder.Size = UDim2.new(0,200,0,18)
+	TagHolder.Position = UDim2.new(0,42,0,4)
+	TagHolder.Size = UDim2.new(0,0,0,18)
+	TagHolder.AutomaticSize = Enum.AutomaticSize.X
 	TagHolder.Parent = Top
 	local TagList = Instance.new("UIListLayout")
 	TagList.FillDirection = Enum.FillDirection.Horizontal
-	TagList.Padding = UDim.new(0,4)
+	TagList.VerticalAlignment = Enum.VerticalAlignment.Center
+	TagList.Padding = UDim.new(0,6)
 	TagList.Parent = TagHolder
-	for _,tag in ipairs(Tags) do
+	local TitleInTag = Instance.new("TextLabel")
+	TitleInTag.BackgroundTransparency = 1
+	TitleInTag.AutomaticSize = Enum.AutomaticSize.X
+	TitleInTag.Size = UDim2.new(0,0,0,18)
+	TitleInTag.Font = Enum.Font.GothamBold
+	TitleInTag.Text = NameHub
+	TitleInTag.TextColor3 = Themes[CurrentTheme].Text
+	TitleInTag.TextSize = 14
+	TitleInTag.LayoutOrder = 0
+	TitleInTag.Parent = TagHolder
+	TitleLabel.Visible = false
+	for i,tag in ipairs(Tags) do
 		local tf = Instance.new("Frame")
 		tf.BackgroundColor3 = tag.Color or Color3.fromRGB(255,180,0)
+		tf.BorderSizePixel = 0
 		tf.Size = UDim2.new(0,0,0,16)
 		tf.AutomaticSize = Enum.AutomaticSize.X
+		tf.LayoutOrder = i
 		tf.Parent = TagHolder
-		Instance.new("UICorner",tf).CornerRadius = UDim.new(0,4)
+		Instance.new("UICorner",tf).CornerRadius = UDim.new(0,5)
 		local tp = Instance.new("UIPadding")
-		tp.PaddingLeft = UDim.new(0,6)
-		tp.PaddingRight = UDim.new(0,6)
+		tp.PaddingLeft = UDim.new(0,7)
+		tp.PaddingRight = UDim.new(0,7)
 		tp.Parent = tf
 		local tt = Instance.new("TextLabel")
 		tt.BackgroundTransparency = 1
@@ -422,8 +440,8 @@ function Library:MakeGui(GuiConfig)
 	local FPSLabel = Instance.new("TextLabel")
 	FPSLabel.BackgroundTransparency = 1
 	FPSLabel.AnchorPoint = Vector2.new(1,0.5)
-	FPSLabel.Position = UDim2.new(1,-130,0.5,0)
-	FPSLabel.Size = UDim2.new(0,55,0,18)
+	FPSLabel.Position = UDim2.new(1,-145,0.5,0)
+	FPSLabel.Size = UDim2.new(0,60,0,18)
 	FPSLabel.Font = Enum.Font.GothamBold
 	FPSLabel.Text = "60 FPS"
 	FPSLabel.TextColor3 = Color3.fromRGB(255,220,50)
@@ -446,7 +464,7 @@ function Library:MakeGui(GuiConfig)
 	ThemeBtn.BackgroundColor3 = Themes[CurrentTheme].Page
 	ThemeBtn.BorderSizePixel = 0
 	ThemeBtn.AnchorPoint = Vector2.new(1,0.5)
-	ThemeBtn.Position = UDim2.new(1,-70,0.5,0)
+	ThemeBtn.Position = UDim2.new(1,-78,0.5,0)
 	ThemeBtn.Size = UDim2.new(0,55,0,22)
 	ThemeBtn.Font = Enum.Font.Gotham
 	ThemeBtn.Text = CurrentTheme
@@ -959,6 +977,7 @@ function Library:MakeGui(GuiConfig)
 				t.TIcon.ImageTransparency = 0.45
 			end
 			Page.Visible = true
+			Page.CanvasPosition = Vector2.new(0,0)
 			TTitle.TextTransparency = 0
 			TIcon.ImageTransparency = 0
 			NameTab.Text = TabTitle
@@ -1025,18 +1044,90 @@ function Library:MakeGui(GuiConfig)
 
 		function Items:AddSection(cfg)
 			cfg = cfg or {}
+			local Title = cfg.Title or cfg.Name or "Section"
+			local Opened = true
+			if cfg.Opened ~= nil then Opened = cfg.Opened end
 			ItemCount = ItemCount + 1
-			local S = Instance.new("TextLabel")
-			S.BackgroundTransparency = 1
-			S.LayoutOrder = ItemCount
-			S.Size = UDim2.new(1,0,0,22)
-			S.Font = Enum.Font.GothamBold
-			S.Text = cfg.Title or cfg.Name or "Section"
-			S.TextColor3 = Themes[CurrentTheme].Main
-			S.TextSize = 13
-			S.TextXAlignment = Enum.TextXAlignment.Left
-			S.Parent = Page
-			return S
+			local SectionFrame = Instance.new("Frame")
+			SectionFrame.Name = "Section"
+			SectionFrame.BackgroundTransparency = 1
+			SectionFrame.BorderSizePixel = 0
+			SectionFrame.LayoutOrder = ItemCount
+			SectionFrame.Size = UDim2.new(1,0,0,0)
+			SectionFrame.AutomaticSize = Enum.AutomaticSize.Y
+			SectionFrame.Parent = Page
+			local Header = Instance.new("TextButton")
+			Header.BackgroundTransparency = 1
+			Header.Size = UDim2.new(1,0,0,28)
+			Header.Text = ""
+			Header.AutoButtonColor = false
+			Header.Parent = SectionFrame
+			local Arrow = Instance.new("TextLabel")
+			Arrow.BackgroundTransparency = 1
+			Arrow.Size = UDim2.new(0,16,0,28)
+			Arrow.Font = Enum.Font.GothamBold
+			Arrow.Text = Opened and "v" or ">"
+			Arrow.TextColor3 = Themes[CurrentTheme].Main
+			Arrow.TextSize = 11
+			Arrow.Parent = Header
+			local SecTitle = Instance.new("TextLabel")
+			SecTitle.BackgroundTransparency = 1
+			SecTitle.Position = UDim2.new(0,18,0,0)
+			SecTitle.Size = UDim2.new(1,-20,1,0)
+			SecTitle.Font = Enum.Font.GothamBold
+			SecTitle.Text = Title
+			SecTitle.TextColor3 = Themes[CurrentTheme].Main
+			SecTitle.TextSize = 14
+			SecTitle.TextXAlignment = Enum.TextXAlignment.Left
+			SecTitle.Parent = Header
+			local Content = Instance.new("Frame")
+			Content.Name = "Content"
+			Content.BackgroundTransparency = 1
+			Content.Position = UDim2.new(0,0,0,30)
+			Content.Size = UDim2.new(1,0,0,0)
+			Content.AutomaticSize = Enum.AutomaticSize.Y
+			Content.Visible = Opened
+			Content.Parent = SectionFrame
+			local ContentList = Instance.new("UIListLayout")
+			ContentList.Padding = UDim.new(0,6)
+			ContentList.SortOrder = Enum.SortOrder.LayoutOrder
+			ContentList.Parent = Content
+			local isOpen = Opened
+			Header.MouseButton1Click:Connect(function()
+				isOpen = not isOpen
+				Content.Visible = isOpen
+				Arrow.Text = isOpen and "v" or ">"
+			end)
+			local SecItems = {}
+			local secCount = 0
+			local oldParent = Page
+			local function withContent(fn)
+				return function(c)
+					local prev = Page
+					Page = Content
+					local r = fn(c)
+					Page = prev
+					return r
+				end
+			end
+			SecItems.Button = withContent(function(c) return Items:AddButton(c) end)
+			SecItems.Toggle = withContent(function(c) return Items:AddToggle(c) end)
+			SecItems.Slider = withContent(function(c) return Items:AddSlider(c) end)
+			SecItems.Stepper = withContent(function(c) return Items:AddStepper(c) end)
+			SecItems.Textbox = withContent(function(c) return Items:AddInput(c) end)
+			SecItems.Dropdown = withContent(function(c) return Items:AddDropdown(c) end)
+			SecItems.Segmented = withContent(function(c) return Items:AddSegmented(c) end)
+			SecItems.Keybind = withContent(function(c) return Items:AddKeybind(c) end)
+			SecItems.ColorPicker = withContent(function(c) return Items:AddColorPicker(c) end)
+			SecItems.Paragraph = withContent(function(c) return Items:AddParagraph(c) end)
+			SecItems.Label = withContent(function(c) return Items:Label(c) end)
+			SecItems.MultiButton = withContent(function(c) return Items:MultiButton(c) end)
+			SecItems.RangeSlider = withContent(function(c) return Items:RangeSlider(c) end)
+			SecItems.Code = withContent(function(c) return Items:Code(c) end)
+			function SecItems:Open() isOpen=true Content.Visible=true Arrow.Text="v" end
+			function SecItems:Close() isOpen=false Content.Visible=false Arrow.Text=">" end
+			function SecItems:SetTitle(t) SecTitle.Text = t end
+			return SecItems
 		end
 
 		function Items:AddButton(cfg)
