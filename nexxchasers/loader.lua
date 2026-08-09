@@ -1597,6 +1597,7 @@ function Library:Window(p)
 	local Theme = p.Theme or 'Dark'
 	local Keybind = (p.Config and p.Config.Keybind) or Enum.KeyCode.LeftControl
 	local AutoScale = p.Config and p.Config.AutoScale
+	local Transparency = (p.Config and p.Config.Transparency) or p.Transparency or 0
 	local Size = (p.Config and p.Config.Size) or UDim2.new(0, 530,0, 400)
 	if AutoScale then
 		local cam = workspace.CurrentCamera
@@ -1652,6 +1653,7 @@ function Library:Window(p)
 	Background_1.Size = UDim2.new(1, 0,1, 0)
 	Background_1.ClipsDescendants = true
 	Background_1.GroupTransparency = 1
+	Background_1.BackgroundTransparency = Transparency
 
 	Shadow_1.Visible = true  
 	local org = Background_1.Size
@@ -1769,6 +1771,7 @@ function Library:Window(p)
 	Close_1.Image = "rbxassetid://15082305656"
 
 	ChSize_1.Name = "Size"
+		Size_1.Visible = false
 	ChSize_1.Parent = Ct_1
 	ChSize_1.Active = true
 	ChSize_1.BackgroundColor3 = Color3.fromRGB(255,255,255)
@@ -1789,6 +1792,35 @@ function Library:Window(p)
 	DropdownValue_1.Position = UDim2.new(1, 0,0.5, 0)
 	DropdownValue_1.Size = UDim2.new(0, 120,0, 20)
 	DropdownValue_1.Transparency = 1
+
+	local FpsTag = Instance.new("TextLabel")
+	FpsTag.Name = "FpsTag"
+	FpsTag.Parent = Ct_1
+	FpsTag.AnchorPoint = Vector2.new(1, 0.5)
+	FpsTag.Position = UDim2.new(1, -128, 0.5, 0)
+	FpsTag.Size = UDim2.new(0, 70, 0, 20)
+	FpsTag.BackgroundTransparency = 1
+	FpsTag.Text = "60 FPS"
+	FpsTag.TextColor3 = Color3.fromRGB(255, 220, 50)
+	FpsTag.TextSize = 13
+	FpsTag.Font = Enum.Font.GothamBold
+	FpsTag.TextXAlignment = Enum.TextXAlignment.Right
+	FpsTag.ZIndex = 10
+	task.spawn(function()
+		local last = tick()
+		local frames = 0
+		local fps = 60
+		game:GetService("RunService").RenderStepped:Connect(function()
+			frames = frames + 1
+			local now = tick()
+			if now - last >= 1 then
+				fps = frames
+				frames = 0
+				last = now
+				FpsTag.Text = tostring(fps) .. " FPS"
+			end
+		end)
+	end)
 
 	Td_1.Name = "Td"
 	Td_1.Parent = Topbar_1
@@ -4621,6 +4653,160 @@ function Library:Window(p)
 			UICorner_1.CornerRadius = UDim.new(0,3)
 		end
 
+
+		function Func:Segmented(p)
+			local Title = p.Title or "Mode"
+			local Options = p.Options or {"A", "B"}
+			local Value = p.Value or Options[1]
+			local Callback = p.Callback or function() end
+			local Seg, Config = background(ScrollingFrame_1, Title, p.Desc or "", p.Image or "", "Label")
+			Config:SetTextTransparencyTitle(0)
+			local hold = Instance.new("Frame")
+			hold.Size = UDim2.new(0, math.min(220, #Options * 70), 0, 28)
+			hold.Position = UDim2.new(1, -10, 0.5, -14)
+			hold.AnchorPoint = Vector2.new(1, 0)
+			hold.BackgroundColor3 = Color3.fromRGB(24, 24, 31)
+			hold.BorderSizePixel = 0
+			hold.Parent = Seg
+			Instance.new("UICorner", hold).CornerRadius = UDim.new(0, 8)
+			local lay = Instance.new("UIListLayout")
+			lay.FillDirection = Enum.FillDirection.Horizontal
+			lay.Parent = hold
+			local btns = {}
+			local function select(opt)
+				Value = opt
+				for name, b in pairs(btns) do
+					b.BackgroundTransparency = name == opt and 0.3 or 1
+					b.TextColor3 = name == opt and Color3.fromRGB(255,255,255) or Color3.fromRGB(160,160,180)
+				end
+				Callback(opt)
+			end
+			for _, opt in ipairs(Options) do
+				local b = Instance.new("TextButton")
+				b.Size = UDim2.new(1/#Options, 0, 1, 0)
+				b.BackgroundColor3 = Color3.fromRGB(80, 80, 100)
+				b.BackgroundTransparency = opt == Value and 0.3 or 1
+				b.Text = opt
+				b.TextColor3 = opt == Value and Color3.fromRGB(255,255,255) or Color3.fromRGB(160,160,180)
+				b.TextSize = 12
+				b.Font = Enum.Font.GothamMedium
+				b.Parent = hold
+				Instance.new("UICorner", b).CornerRadius = UDim.new(0, 6)
+				btns[opt] = b
+				b.MouseButton1Click:Connect(function() select(opt) end)
+			end
+			local New = {}
+			function New:Set(v) select(v) end
+			function New:Get() return Value end
+			return New
+		end
+
+		function Func:Stepper(p)
+			local Title = p.Title or "Value"
+			local Min = p.Min or 0
+			local Max = p.Max or 100
+			local Value = p.Value or Min
+			local Step = p.Step or 1
+			local Callback = p.Callback or function() end
+			local St, Config = background(ScrollingFrame_1, Title, p.Desc or "", p.Image or "", "Label")
+			Config:SetTextTransparencyTitle(0)
+			local hold = Instance.new("Frame")
+			hold.Size = UDim2.new(0, 120, 0, 28)
+			hold.Position = UDim2.new(1, -10, 0.5, -14)
+			hold.AnchorPoint = Vector2.new(1, 0)
+			hold.BackgroundTransparency = 1
+			hold.Parent = St
+			local minus = Instance.new("TextButton")
+			minus.Size = UDim2.new(0, 28, 0, 28)
+			minus.BackgroundColor3 = Color3.fromRGB(40, 40, 55)
+			minus.Text = "-"
+			minus.TextColor3 = Color3.fromRGB(255,255,255)
+			minus.TextSize = 16
+			minus.Font = Enum.Font.GothamBold
+			minus.Parent = hold
+			Instance.new("UICorner", minus).CornerRadius = UDim.new(0, 6)
+			local val = Instance.new("TextLabel")
+			val.Size = UDim2.new(0, 56, 0, 28)
+			val.Position = UDim2.new(0, 32, 0, 0)
+			val.BackgroundTransparency = 1
+			val.Text = tostring(Value)
+			val.TextColor3 = Color3.fromRGB(255,255,255)
+			val.TextSize = 14
+			val.Font = Enum.Font.GothamMedium
+			val.Parent = hold
+			local plus = Instance.new("TextButton")
+			plus.Size = UDim2.new(0, 28, 0, 28)
+			plus.Position = UDim2.new(0, 92, 0, 0)
+			plus.BackgroundColor3 = Color3.fromRGB(40, 40, 55)
+			plus.Text = "+"
+			plus.TextColor3 = Color3.fromRGB(255,255,255)
+			plus.TextSize = 16
+			plus.Font = Enum.Font.GothamBold
+			plus.Parent = hold
+			Instance.new("UICorner", plus).CornerRadius = UDim.new(0, 6)
+			local function set(v)
+				Value = math.clamp(v, Min, Max)
+				val.Text = tostring(Value)
+				Callback(Value)
+			end
+			minus.MouseButton1Click:Connect(function() set(Value - Step) end)
+			plus.MouseButton1Click:Connect(function() set(Value + Step) end)
+			local New = {}
+			function New:Set(v) set(v) end
+			function New:Get() return Value end
+			return New
+		end
+
+		function Func:RangeSlider(p)
+			local Title = p.Title or "Range"
+			local Min = p.Min or 0
+			local Max = p.Max or 100
+			local ValueMin = p.ValueMin or Min
+			local ValueMax = p.ValueMax or Max
+			local Callback = p.Callback or function() end
+			local Rs, Config = background(ScrollingFrame_1, Title, p.Desc or "", p.Image or "", "Slider")
+			Config:SetTextTransparencyTitle(0)
+			local lbl = Instance.new("TextLabel")
+			lbl.Size = UDim2.new(0, 80, 0, 20)
+			lbl.Position = UDim2.new(1, -90, 0, 4)
+			lbl.BackgroundTransparency = 1
+			lbl.Text = tostring(ValueMin) .. " - " .. tostring(ValueMax)
+			lbl.TextColor3 = Color3.fromRGB(200,200,220)
+			lbl.TextSize = 12
+			lbl.Font = Enum.Font.Gotham
+			lbl.Parent = Rs
+			local New = {}
+			function New:Set(a,b)
+				ValueMin, ValueMax = a, b
+				lbl.Text = tostring(a) .. " - " .. tostring(b)
+				Callback(a, b)
+			end
+			function New:Get() return ValueMin, ValueMax end
+			return New
+		end
+
+		function Func:Tag(p)
+			local text = p.Text or p.Title or "TAG"
+			local color = p.Color or Color3.fromRGB(255, 200, 50)
+			local tag = Instance.new("TextLabel")
+			tag.AutomaticSize = Enum.AutomaticSize.X
+			tag.Size = UDim2.new(0, 0, 0, 22)
+			tag.BackgroundColor3 = color
+			tag.BackgroundTransparency = 0.85
+			tag.Text = "  " .. text .. "  "
+			tag.TextColor3 = color
+			tag.TextSize = 11
+			tag.Font = Enum.Font.GothamBold
+			tag.Parent = ScrollingFrame_1
+			Instance.new("UICorner", tag).CornerRadius = UDim.new(0, 6)
+			local s = Instance.new("UIStroke")
+			s.Color = color
+			s.Thickness = 1
+			s.Transparency = 0.5
+			s.Parent = tag
+			return tag
+		end
+
 		return Func
 	end
 
@@ -5375,6 +5561,222 @@ function Library:Window(p)
 		end)
 	end
 
+
+	do
+		local anon = (p.Config and p.Config.Anonymous) or p.Anonymous or false
+		local profile = Instance.new("Frame")
+		profile.Name = "PlayerProfile"
+		profile.Parent = Background_1
+		profile.AnchorPoint = Vector2.new(0.5, 1)
+		profile.Position = UDim2.new(0.5, 0, 1, -10)
+		profile.Size = UDim2.new(1, -20, 0, 52)
+		profile.BackgroundColor3 = Color3.fromRGB(24, 24, 31)
+		profile.BorderSizePixel = 0
+		profile.ZIndex = 15
+		local pc = Instance.new("UICorner")
+		pc.CornerRadius = UDim.new(0, 12)
+		pc.Parent = profile
+		addToTheme("Page", profile)
+
+		local avatar = Instance.new("ImageLabel")
+		avatar.Size = UDim2.new(0, 36, 0, 36)
+		avatar.Position = UDim2.new(0, 10, 0.5, -18)
+		avatar.BackgroundColor3 = Color3.fromRGB(40, 40, 55)
+		avatar.BorderSizePixel = 0
+		avatar.ZIndex = 16
+		avatar.Parent = profile
+		local ac = Instance.new("UICorner")
+		ac.CornerRadius = UDim.new(1, 0)
+		ac.Parent = avatar
+
+		local disp = Instance.new("TextLabel")
+		disp.Size = UDim2.new(0.45, 0, 0, 18)
+		disp.Position = UDim2.new(0, 54, 0, 8)
+		disp.BackgroundTransparency = 1
+		disp.TextColor3 = Color3.fromRGB(255, 255, 255)
+		disp.TextSize = 14
+		disp.Font = Enum.Font.GothamBold
+		disp.TextXAlignment = Enum.TextXAlignment.Left
+		disp.ZIndex = 16
+		disp.Parent = profile
+		addToTheme("Text & Icon", disp)
+
+		local user = Instance.new("TextLabel")
+		user.Size = UDim2.new(0.45, 0, 0, 16)
+		user.Position = UDim2.new(0, 54, 0, 28)
+		user.BackgroundTransparency = 1
+		user.TextColor3 = Color3.fromRGB(160, 160, 180)
+		user.TextSize = 12
+		user.Font = Enum.Font.Gotham
+		user.TextXAlignment = Enum.TextXAlignment.Left
+		user.ZIndex = 16
+		user.Parent = profile
+
+		local clock = Instance.new("TextLabel")
+		clock.Size = UDim2.new(0.35, 0, 1, 0)
+		clock.Position = UDim2.new(0.62, 0, 0, 0)
+		clock.BackgroundTransparency = 1
+		clock.TextColor3 = Color3.fromRGB(180, 180, 200)
+		clock.TextSize = 12
+		clock.Font = Enum.Font.GothamMedium
+		clock.TextXAlignment = Enum.TextXAlignment.Right
+		clock.ZIndex = 16
+		clock.Parent = profile
+
+		local lp = game.Players.LocalPlayer
+		local function applyProfile()
+			if anon then
+				avatar.Image = "rbxassetid://10747384394"
+				avatar.ImageColor3 = Color3.fromRGB(255, 100, 100)
+				disp.Text = "*****"
+				user.Text = "@*****"
+			else
+				avatar.ImageColor3 = Color3.fromRGB(255, 255, 255)
+				pcall(function()
+					avatar.Image = game:GetService("Players"):GetUserThumbnailAsync(
+						lp.UserId,
+						Enum.ThumbnailType.HeadShot,
+						Enum.ThumbnailSize.Size48x48
+					)
+				end)
+				disp.Text = lp.DisplayName or lp.Name
+				user.Text = "@" .. lp.Name
+			end
+		end
+		applyProfile()
+		task.spawn(function()
+			while profile.Parent do
+				local t = os.date("*t")
+				clock.Text = string.format("%02d/%02d/%04d  %02d:%02d:%02d", t.day, t.month, t.year, t.hour, t.min, t.sec)
+				task.wait(1)
+			end
+		end)
+		Tabs.SetAnonymous = function(v)
+			anon = v and true or false
+			applyProfile()
+		end
+	end
+
+
+	do
+		local dragLine = Instance.new("Frame")
+		dragLine.Name = "DragLine"
+		dragLine.Parent = Shadow_1
+		dragLine.AnchorPoint = Vector2.new(0.5, 0)
+		dragLine.Position = UDim2.new(0.5, 0, 1, 6)
+		dragLine.Size = UDim2.new(0, 100, 0, 5)
+		dragLine.BackgroundColor3 = Color3.fromRGB(200, 200, 220)
+		dragLine.BackgroundTransparency = 0.3
+		dragLine.BorderSizePixel = 0
+		dragLine.ZIndex = 50
+		local dlc = Instance.new("UICorner")
+		dlc.CornerRadius = UDim.new(1, 0)
+		dlc.Parent = dragLine
+
+		local dDragging, dStart, dPos
+		dragLine.InputBegan:Connect(function(input)
+			if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+				dDragging = true
+				dStart = input.Position
+				dPos = Shadow_1.Position
+			end
+		end)
+		U.InputChanged:Connect(function(input)
+			if dDragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+				local d = input.Position - dStart
+				Shadow_1.Position = UDim2.new(dPos.X.Scale, dPos.X.Offset + d.X, dPos.Y.Scale, dPos.Y.Offset + d.Y)
+			end
+		end)
+		U.InputEnded:Connect(function(input)
+			if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+				dDragging = false
+			end
+		end)
+
+		local resizeHold = Instance.new("Frame")
+		resizeHold.Name = "ResizeHandle"
+		resizeHold.Parent = Shadow_1
+		resizeHold.AnchorPoint = Vector2.new(1, 1)
+		resizeHold.Position = UDim2.new(1, 10, 1, 10)
+		resizeHold.Size = UDim2.new(0, 28, 0, 28)
+		resizeHold.BackgroundTransparency = 1
+		resizeHold.ZIndex = 50
+
+		local rH = Instance.new("Frame")
+		rH.Size = UDim2.new(0, 16, 0, 3)
+		rH.Position = UDim2.new(1, -18, 1, -6)
+		rH.BackgroundColor3 = Color3.fromRGB(200, 200, 220)
+		rH.BackgroundTransparency = 0.25
+		rH.BorderSizePixel = 0
+		rH.ZIndex = 51
+		rH.Parent = resizeHold
+		Instance.new("UICorner", rH).CornerRadius = UDim.new(1, 0)
+
+		local rV = Instance.new("Frame")
+		rV.Size = UDim2.new(0, 3, 0, 16)
+		rV.Position = UDim2.new(1, -6, 1, -18)
+		rV.BackgroundColor3 = Color3.fromRGB(200, 200, 220)
+		rV.BackgroundTransparency = 0.25
+		rV.BorderSizePixel = 0
+		rV.ZIndex = 51
+		rV.Parent = resizeHold
+		Instance.new("UICorner", rV).CornerRadius = UDim.new(1, 0)
+
+		local resizing, rStart, sStart
+		resizeHold.InputBegan:Connect(function(input)
+			if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+				resizing = true
+				rStart = Vector2.new(input.Position.X, input.Position.Y)
+				sStart = Shadow_1.Size
+			end
+		end)
+		U.InputChanged:Connect(function(input)
+			if not resizing then return end
+			if input.UserInputType ~= Enum.UserInputType.MouseMovement and input.UserInputType ~= Enum.UserInputType.Touch then return end
+			local d = Vector2.new(input.Position.X, input.Position.Y) - rStart
+			local nw = math.max(420, sStart.X.Offset + d.X)
+			local nh = math.max(280, sStart.Y.Offset + d.Y)
+			Shadow_1.Size = UDim2.new(0, nw, 0, nh)
+		end)
+		U.InputEnded:Connect(function(input)
+			if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+				resizing = false
+			end
+		end)
+	end
+
+	do
+		local tags = (p.Config and p.Config.Tags) or p.Tags or {}
+		if #tags > 0 then
+			local bar = Instance.new("Frame")
+			bar.Name = "WindowTags"
+			bar.Parent = Topbar_1
+			bar.Position = UDim2.new(0, 120, 0, 0)
+			bar.Size = UDim2.new(0.4, 0, 1, 0)
+			bar.BackgroundTransparency = 1
+			bar.ZIndex = 12
+			local lay = Instance.new("UIListLayout")
+			lay.FillDirection = Enum.FillDirection.Horizontal
+			lay.VerticalAlignment = Enum.VerticalAlignment.Center
+			lay.Padding = UDim.new(0, 6)
+			lay.Parent = bar
+			for _, t in ipairs(tags) do
+				local text = type(t)=="table" and (t.Text or t.Title) or tostring(t)
+				local color = type(t)=="table" and t.Color or Color3.fromRGB(255, 200, 50)
+				local pill = Instance.new("TextLabel")
+				pill.AutomaticSize = Enum.AutomaticSize.X
+				pill.Size = UDim2.new(0, 0, 0, 20)
+				pill.BackgroundColor3 = color
+				pill.BackgroundTransparency = 0.85
+				pill.Text = "  " .. text .. "  "
+				pill.TextColor3 = color
+				pill.TextSize = 11
+				pill.Font = Enum.Font.GothamBold
+				pill.Parent = bar
+				Instance.new("UICorner", pill).CornerRadius = UDim.new(0, 6)
+			end
+		end
+	end
 
 	return Tabs
 end
