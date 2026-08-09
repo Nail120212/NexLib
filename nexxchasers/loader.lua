@@ -1700,10 +1700,11 @@ function Library:Window(p)
 	DragLine.Name = "DragLine"
 	DragLine.Parent = Shadow_1
 	DragLine.AnchorPoint = Vector2.new(0.5, 0)
-	DragLine.BackgroundColor3 = Color3.fromRGB(90,90,90)
+	DragLine.BackgroundColor3 = Color3.fromRGB(100,100,100)
 	DragLine.BorderSizePixel = 0
 	DragLine.Position = UDim2.new(0.5, 0, 1, 6)
-	DragLine.Size = UDim2.new(0, 90, 0, 5)
+	DragLine.Size = UDim2.new(0, 100, 0, 6)
+	DragLine.BackgroundTransparency = 0.15
 	local UICornerDL = Instance.new("UICorner")
 	UICornerDL.CornerRadius = UDim.new(1, 0)
 	UICornerDL.Parent = DragLine
@@ -1714,26 +1715,44 @@ function Library:Window(p)
 	ResizeHandle.Parent = Shadow_1
 	ResizeHandle.AnchorPoint = Vector2.new(1, 1)
 	ResizeHandle.BackgroundTransparency = 1
-	ResizeHandle.Position = UDim2.new(1, 10, 1, 10)
-	ResizeHandle.Size = UDim2.new(0, 22, 0, 22)
+	ResizeHandle.Position = UDim2.new(1, 12, 1, 12)
+	ResizeHandle.Size = UDim2.new(0, 28, 0, 28)
+	ResizeHandle.ZIndex = 20
+
+	local ResizeArc = Instance.new("Frame")
+	ResizeArc.Name = "ResizeArc"
+	ResizeArc.Parent = ResizeHandle
+	ResizeArc.BackgroundColor3 = Color3.fromRGB(120, 120, 120)
+	ResizeArc.BackgroundTransparency = 0.3
+	ResizeArc.BorderSizePixel = 0
+	ResizeArc.Position = UDim2.new(0.15, 0, 0.15, 0)
+	ResizeArc.Size = UDim2.new(0.7, 0, 0.7, 0)
+	local UICornerRA = Instance.new("UICorner")
+	UICornerRA.CornerRadius = UDim.new(0, 4)
+	UICornerRA.Parent = ResizeArc
+
 	local ResizeL = Instance.new("Frame")
 	ResizeL.Parent = ResizeHandle
-	ResizeL.BackgroundColor3 = Color3.fromRGB(110,110,110)
+	ResizeL.BackgroundColor3 = Color3.fromRGB(180, 180, 180)
 	ResizeL.BorderSizePixel = 0
-	ResizeL.Position = UDim2.new(0.55, 0, 0, 3)
-	ResizeL.Size = UDim2.new(0, 3, 0, 14)
+	ResizeL.AnchorPoint = Vector2.new(1, 0)
+	ResizeL.Position = UDim2.new(1, -2, 0.2, 0)
+	ResizeL.Size = UDim2.new(0, 3, 0.55, 0)
 	local UICornerRL = Instance.new("UICorner")
 	UICornerRL.CornerRadius = UDim.new(1, 0)
 	UICornerRL.Parent = ResizeL
+
 	local ResizeB = Instance.new("Frame")
 	ResizeB.Parent = ResizeHandle
-	ResizeB.BackgroundColor3 = Color3.fromRGB(110,110,110)
+	ResizeB.BackgroundColor3 = Color3.fromRGB(180, 180, 180)
 	ResizeB.BorderSizePixel = 0
-	ResizeB.Position = UDim2.new(0, 3, 0.55, 0)
-	ResizeB.Size = UDim2.new(0, 14, 0, 3)
+	ResizeB.AnchorPoint = Vector2.new(0, 1)
+	ResizeB.Position = UDim2.new(0.2, 0, 1, -2)
+	ResizeB.Size = UDim2.new(0.55, 0, 0, 3)
 	local UICornerRB = Instance.new("UICorner")
 	UICornerRB.CornerRadius = UDim.new(1, 0)
 	UICornerRB.Parent = ResizeB
+
 	local resizing = false
 	local startPos, startSize
 	ResizeHandle.InputBegan:Connect(function(input)
@@ -1753,7 +1772,7 @@ function Library:Window(p)
 			local delta = input.Position - startPos
 			local newW = math.max(420, startSize.X.Offset + delta.X)
 			local newH = math.max(280, startSize.Y.Offset + delta.Y)
-			tw({v = Shadow_1, t = 0.05, s = Enum.EasingStyle.Linear, d = "Out", g = {Size = UDim2.new(0, newW, 0, newH)}}):Play()
+			tw({v = Shadow_1, t = 0.08, s = Enum.EasingStyle.Quad, d = "Out", g = {Size = UDim2.new(0, newW, 0, newH)}}):Play()
 		end
 	end)
 
@@ -2023,29 +2042,35 @@ function Library:Window(p)
 
 	addToTheme('Text & Icon', Title_2)
 
-	for _, tag in ipairs(Tags or {}) do
-		local TagFrame = Instance.new("Frame")
-		TagFrame.Parent = Td_1
-		TagFrame.BackgroundColor3 = tag.Color or Color3.fromRGB(255,180,0)
-		TagFrame.Size = UDim2.new(0,0,0,18)
-		TagFrame.AutomaticSize = Enum.AutomaticSize.X
-		local UICornerT = Instance.new("UICorner")
-		UICornerT.CornerRadius = UDim.new(0,4)
-		UICornerT.Parent = TagFrame
-		local UIPadT = Instance.new("UIPadding")
-		UIPadT.PaddingLeft = UDim.new(0,6)
-		UIPadT.PaddingRight = UDim.new(0,6)
-		UIPadT.Parent = TagFrame
-		local TagText = Instance.new("TextLabel")
-		TagText.Parent = TagFrame
-		TagText.BackgroundTransparency = 1
-		TagText.AutomaticSize = Enum.AutomaticSize.X
-		TagText.Size = UDim2.new(0,0,1,0)
-		TagText.Font = Enum.Font.GothamBold
-		TagText.Text = tag.Text or "TAG"
-		TagText.TextColor3 = Color3.fromRGB(0,0,0)
-		TagText.TextSize = 10
+	if Tags and #Tags > 0 then
+		for _, tag in ipairs(Tags) do
+			local TagFrame = Instance.new("Frame")
+			TagFrame.Parent = Td_1
+			TagFrame.BackgroundColor3 = tag.Color or Color3.fromRGB(255, 180, 0)
+			TagFrame.BorderSizePixel = 0
+			TagFrame.Size = UDim2.new(0, 0, 0, 18)
+			TagFrame.AutomaticSize = Enum.AutomaticSize.X
+			TagFrame.LayoutOrder = 3
+			local UICornerT = Instance.new("UICorner")
+			UICornerT.CornerRadius = UDim.new(0, 5)
+			UICornerT.Parent = TagFrame
+			local UIPadT = Instance.new("UIPadding")
+			UIPadT.PaddingLeft = UDim.new(0, 7)
+			UIPadT.PaddingRight = UDim.new(0, 7)
+			UIPadT.Parent = TagFrame
+			local TagText = Instance.new("TextLabel")
+			TagText.Parent = TagFrame
+			TagText.BackgroundTransparency = 1
+			TagText.AutomaticSize = Enum.AutomaticSize.X
+			TagText.Size = UDim2.new(0, 0, 1, 0)
+			TagText.Font = Enum.Font.GothamBold
+			TagText.Text = tag.Text or "TAG"
+			TagText.TextColor3 = Color3.fromRGB(0, 0, 0)
+			TagText.TextSize = 10
+		end
 	end
+
+
 
 
 	local TabP_1 = Instance.new("Frame")
@@ -2205,7 +2230,7 @@ function Library:Window(p)
 	UIPadding_16.PaddingTop = UDim.new(0,1)
 
 	UIPadding_17.Parent = TabP_1
-	UIPadding_17.PaddingBottom = UDim.new(0,5)
+	UIPadding_17.PaddingBottom = UDim.new(0,70)
 	UIPadding_17.PaddingLeft = UDim.new(0,3)
 	UIPadding_17.PaddingTop = UDim.new(0,45)
 
@@ -2283,7 +2308,7 @@ function Library:Window(p)
 		Title_3.Text = tostring(Title)
 		Title_3.TextColor3 = Color3.fromRGB(255,255,255)
 		Title_3.TextSize = 11
-		Title_3.TextTransparency = 0.7
+		Title_3.TextTransparency = 0.45
 		Title_3.TextWrapped = true
 		Title_3.TextXAlignment = Enum.TextXAlignment.Left
 
@@ -2302,7 +2327,7 @@ function Library:Window(p)
 		ImageLabel_2.BorderSizePixel = 0
 		ImageLabel_2.Size = UDim2.new(0, 18,0, 18)
 		ImageLabel_2.Image = gl(Icon).Image
-		ImageLabel_2.ImageTransparency = 0.7
+		ImageLabel_2.ImageTransparency = 0.45
 		ImageLabel_2.ImageRectSize = gl(Icon).ImageRectSize
 		ImageLabel_2.ImageRectOffset = gl(Icon).ImageRectPosition
 
@@ -5486,7 +5511,7 @@ function Library:Window(p)
 			end
 		end)
 
-		lak(Topbar_1, Shadow_1)
+		-- drag moved to DragLine only
 
 		local isopen = false
 		local firsttime = false
