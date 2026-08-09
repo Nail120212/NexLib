@@ -83,7 +83,7 @@ local themes = {
 		}
 	},
 
-Clover = {
+	Clover = {
 		['Shadow'] = Color3.fromRGB(0, 40, 20),
 		['Background'] = Color3.fromRGB(10, 30, 15),
 		['Page'] = Color3.fromRGB(15, 45, 25),
@@ -162,85 +162,6 @@ Clover = {
 			}
 		}
 	},
-	Galaxy = {
-		['Shadow'] = Color3.fromRGB(40, 0, 60),
-		['Background'] = Color3.fromRGB(20, 10, 30),
-		['Page'] = Color3.fromRGB(30, 15, 45),
-		['Main'] = Color3.fromRGB(108, 0, 200),
-		['Text & Icon'] = Color3.fromRGB(220, 220, 255),
-		['Function'] = {
-			['Toggle'] = {
-				['Background'] = Color3.fromRGB(30, 15, 45),
-				['True'] = {
-					['Toggle Background'] = Color3.fromRGB(144, 0, 255),
-					['Toggle Value'] = Color3.fromRGB(255, 255, 255),
-				},
-				['False'] = {
-					['Toggle Background'] = Color3.fromRGB(60, 30, 80),
-					['Toggle Value'] = Color3.fromRGB(120, 100, 180),
-				}
-			},
-			['Label'] = {
-				['Background'] = Color3.fromRGB(30, 15, 45),
-			},
-			['Dropdown'] = {
-				['Background'] = Color3.fromRGB(30, 15, 45),
-				['Value Background'] = Color3.fromRGB(40, 20, 60),
-				['Value Stroke'] = Color3.fromRGB(120, 60, 160),
-				['Dropdown Select'] = {
-					['Background'] = Color3.fromRGB(35, 20, 50),
-					['Search'] = Color3.fromRGB(50, 30, 70),
-					['Item Background'] = Color3.fromRGB(45, 25, 65),
-				}
-			},
-			['Slider'] = {
-				['Background'] = Color3.fromRGB(30, 15, 45),
-				['Value Background'] = Color3.fromRGB(40, 20, 60),
-				['Value Stroke'] = Color3.fromRGB(100, 60, 150),
-				['Slider Bar'] = Color3.fromRGB(144, 0, 255),
-				['Slider Bar Value'] = Color3.fromRGB(0, 255, 255),
-				['Circle Value'] = Color3.fromRGB(255, 255, 255)
-			},
-			['Code'] = {
-				['Background'] = ColorSequence.new{
-					ColorSequenceKeypoint.new(0, Color3.fromRGB(25, 15, 35)),
-					ColorSequenceKeypoint.new(1, Color3.fromRGB(35, 20, 55))
-				},
-				['Background Code'] = Color3.fromRGB(40, 25, 60),
-				['Background Code Value'] = Color3.fromRGB(60, 35, 85),
-				['ScrollingFrame Code'] = Color3.fromRGB(160, 100, 255)
-			},
-			['Button'] = {
-				['Background'] = Color3.fromRGB(30, 15, 45),
-				['Click'] = Color3.fromRGB(144, 0, 255)
-			},
-			['Textbox'] = {
-				['Background'] = Color3.fromRGB(30, 15, 45),
-				['Value Background'] = Color3.fromRGB(40, 20, 60),
-				['Value Stroke'] = Color3.fromRGB(120, 60, 160),
-			},
-			['Keybind'] = {
-				['Background'] = Color3.fromRGB(30, 15, 45),
-				['Value Background'] = Color3.fromRGB(40, 20, 60),
-				['Value Stroke'] = Color3.fromRGB(120, 60, 160),
-				['True'] = {
-					['Toggle Background'] = Color3.fromRGB(144, 0, 255),
-					['Toggle Value'] = Color3.fromRGB(255, 255, 255),
-				},
-				['False'] = {
-					['Toggle Background'] = Color3.fromRGB(60, 30, 80),
-					['Toggle Value'] = Color3.fromRGB(120, 100, 180),
-				}
-			},
-			['Color Picker'] = {
-				['Background'] = Color3.fromRGB(30, 15, 45),
-				['Color Select'] = {
-					['Background'] = Color3.fromRGB(40, 20, 60),
-					['UIStroke'] = Color3.fromRGB(120, 60, 160),
-				}
-			}
-		}
-	},	
 	Ocean = {
 		['Shadow'] = Color3.fromRGB(60, 90, 120),
 		['Background'] = Color3.fromRGB(220, 240, 255),
@@ -549,82 +470,6 @@ Clover = {
 		}
 	},
 
-	Rose = {
-		['Shadow'] = Color3.fromRGB(200, 180, 190),
-		['Background'] = Color3.fromRGB(255, 240, 245),
-		['Page'] = Color3.fromRGB(255, 250, 252),
-		['Main'] = Color3.fromRGB(255, 105, 180),
-		['Text & Icon'] = Color3.fromRGB(60, 60, 60),
-		['Function'] = {
-			['Toggle'] = {
-				['Background'] = Color3.fromRGB(250, 230, 235),
-				['True'] = {
-					['Toggle Background'] = Color3.fromRGB(255, 200, 220),
-					['Toggle Value'] = Color3.fromRGB(255, 105, 180),
-				},
-				['False'] = {
-					['Toggle Background'] = Color3.fromRGB(245, 220, 225),
-					['Toggle Value'] = Color3.fromRGB(180, 180, 180),
-				}
-			},
-			['Label'] = {
-				['Background'] = Color3.fromRGB(250, 230, 235),
-			},
-			['Dropdown'] = {
-				['Background'] = Color3.fromRGB(250, 230, 235),
-				['Value Background'] = Color3.fromRGB(255, 250, 252),
-				['Value Stroke'] = Color3.fromRGB(220, 200, 210),
-				['Dropdown Select'] = {
-					['Background'] = Color3.fromRGB(255, 250, 252),
-					['Search'] = Color3.fromRGB(250, 240, 245),
-					['Item Background'] = Color3.fromRGB(250, 230, 235),
-				}
-			},
-			['Slider'] = {
-				['Background'] = Color3.fromRGB(250, 230, 235),
-				['Value Background'] = Color3.fromRGB(255, 250, 252),
-				['Value Stroke'] = Color3.fromRGB(220, 200, 210),
-				['Slider Bar'] = Color3.fromRGB(255, 200, 220),
-				['Slider Bar Value'] = Color3.fromRGB(255, 105, 180),
-				['Circle Value'] = Color3.fromRGB(255, 255, 255)
-			},
-			['Code'] = {
-				['Background'] = ColorSequence.new{ColorSequenceKeypoint.new(0, Color3.fromRGB(250, 230, 235)), ColorSequenceKeypoint.new(1, Color3.fromRGB(250, 230, 235))},
-				['Background Code'] = Color3.fromRGB(255, 240, 245),
-				['Background Code Value'] = Color3.fromRGB(250, 220, 230),
-				['ScrollingFrame Code'] = Color3.fromRGB(140, 100, 110)
-			},
-			['Button'] = {
-				['Background'] = Color3.fromRGB(250, 230, 235),
-				['Click'] = Color3.fromRGB(255, 105, 180)
-			},
-			['Textbox'] = {
-				['Background'] = Color3.fromRGB(250, 230, 235),
-				['Value Background'] = Color3.fromRGB(255, 250, 252),
-				['Value Stroke'] = Color3.fromRGB(220, 200, 210),
-			},
-			['Keybind'] = {
-				['Background'] = Color3.fromRGB(250, 230, 235),
-				['Value Background'] = Color3.fromRGB(255, 250, 252),
-				['Value Stroke'] = Color3.fromRGB(220, 200, 210),
-				['True'] = {
-					['Toggle Background'] = Color3.fromRGB(255, 200, 220),
-					['Toggle Value'] = Color3.fromRGB(255, 105, 180),
-				},
-				['False'] = {
-					['Toggle Background'] = Color3.fromRGB(245, 220, 225),
-					['Toggle Value'] = Color3.fromRGB(180, 180, 180),
-				}
-			},
-			['Color Picker'] = {
-				['Background'] = Color3.fromRGB(250, 230, 235),
-				['Color Select'] = {
-					['Background'] = Color3.fromRGB(255, 250, 252),
-					['UIStroke'] = Color3.fromRGB(220, 200, 210),
-				}
-			}
-		}
-	},
 	Dark = {
 		['Shadow'] = Color3.fromRGB(15, 15, 15),
 		['Background'] = Color3.fromRGB(20, 20, 20),
@@ -705,7 +550,9 @@ Clover = {
 
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "Dummy Kawaii"
-ScreenGui.Parent = not game:GetService("RunService"):IsStudio() and game:GetService("CoreGui") or game:GetService("Players").LocalPlayer.PlayerGui
+pcall(function()
+	ScreenGui.Parent = (not game:GetService("RunService"):IsStudio() and game:GetService("CoreGui")) or game:GetService("Players").LocalPlayer:WaitForChild("PlayerGui")
+end)
 ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 
 local U, Tw = game:GetService("UserInputService"), game:GetService("TweenService")
@@ -719,7 +566,11 @@ do
 	end
 	function getColorFromPath(tbl, path)
 		local result = tbl
-		for _, part in ipairs(string.split(path, ".")) do
+		local parts = {}
+		for part in string.gmatch(path, "[^.]+") do
+			table.insert(parts, part)
+		end
+		for _, part in ipairs(parts) do
 			result = result and result[part]
 		end
 		return result
