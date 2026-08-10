@@ -1,4 +1,4 @@
-local Library = loadstring(game:HttpGet("PASTE_RAW_URL_OF_sh1ttybanana.lua_HERE"))()
+local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/Nail120212/NexLib/refs/heads/main/sh1ttybanana/sh1ttybanana.lua"))()
 
 local Window = Library:NewWindow({
     Title = "sh1ttybanana",
