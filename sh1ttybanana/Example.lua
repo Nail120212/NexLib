@@ -4,7 +4,7 @@ local Window = Library:NewWindow({
     Title = "sh1ttybanana",
     Description = "full featured",
     Color = Color3.fromRGB(179, 0, 255),
-    Size = UDim2.new(0, 600, 0, 420),
+    Size = UDim2.new(0, 620, 0, 440),
     Logo = "rbxassetid://89646749075297",
     Icon = "rbxassetid://89646749075297",
     Transparent = 0.07,
@@ -41,82 +41,62 @@ Sec1:AddToggle({
 
 Sec1:AddSlider({
     Title = "UI Transparency",
-    Description = "Live transparency control",
+    Description = "Live transparency",
     Min = 0, Max = 80, Default = 7, Increment = 1,
-    Callback = function(v)
-        Window:SetTransparency(v / 100)
-    end
+    Callback = function(v) Window:SetTransparency(v / 100) end
 })
 
 Sec1:AddButton({
     Title = "Run Action",
-    Description = "Click me",
-    Callback = function() print("Button clicked") end
+    Callback = function()
+        Window:Notify({ Title = "Action", Content = "Button clicked", Type = "Success", Duration = 3 })
+    end
 })
 
 Sec1:AddKeybind({
     Title = "Toggle Key",
-    Description = "Bind a key",
     Default = Enum.KeyCode.RightControl,
-    Callback = function(k) print("Keybind:", k.Name) end
+    Callback = function(k) print("Key:", k.Name) end
 })
 
-Sec1:AddSpace(8)
+local Collapsed = Main:AddTabSection({ Title = "Collapsible Section", Opened = true })
+Collapsed:AddToggle({ Title = "Inside TabSection", Default = true, Callback = function() end })
+Collapsed:AddSlider({ Title = "Nested Slider", Min = 0, Max = 10, Default = 3, Callback = function() end })
+Collapsed:AddButton({ Title = "Nested Button", Callback = function()
+    Window:Notify({ Title = "TabSection", Content = "Works", Type = "Info" })
+end })
+
+Sec1:AddSpace(6)
 Sec1:AddDivider()
 
-Sec1:AddInput({
-    Title = "Username",
-    PlaceHolder = "Enter name...",
-    Default = "",
-    Callback = function(t) print("Input:", t) end
-})
-
-Sec1:AddDropdown({
-    Title = "Mode",
-    Values = {"Normal", "Fast", "Extreme"},
-    Default = "Normal",
-    Multi = false,
-    Callback = function(v) print("Dropdown:", v) end
-})
-
-Sec1:AddColorpicker({
-    Title = "Accent Color",
-    Default = Color3.fromRGB(179, 0, 255),
-    Callback = function(c) print("Color:", c) end
-})
-
-Sec1:AddParagraph({
-    Title = "Info",
-    Content = "Search highlights yellow · Reorder / AI / PlayerCard at bottom left · AutoScale on"
-})
+Sec1:AddInput({ Title = "Username", PlaceHolder = "Enter name...", Callback = function(t) print(t) end })
+Sec1:AddDropdown({ Title = "Mode", Values = {"Normal", "Fast", "Extreme"}, Default = "Normal", Callback = function(v) print(v) end })
+Sec1:AddColorpicker({ Title = "Accent", Default = Color3.fromRGB(179, 0, 255), Callback = function(c) print(c) end })
+Sec1:AddParagraph({ Title = "Info", Content = "TabSection · Theme fix · Resize · Drag · Notifications" })
 
 local Sec2 = Settings:AddSection("Appearance & Config")
 
 Sec2:AddToggle({
-    Title = "Transparent UI",
+    Title = "Light Theme Test",
     Default = false,
     Callback = function(v)
-        Window:SetTransparency(v and 0.35 or 0.07)
+        Window:Notify({ Title = "Theme", Content = "Use top palette button to switch Dark/Light", Type = "Info" })
     end
 })
 
-Sec2:AddColorpicker({
-    Title = "Theme Accent",
-    Default = Color3.fromRGB(0, 170, 255),
-    Callback = function() end
-})
+Sec2:AddColorpicker({ Title = "Theme Accent", Default = Color3.fromRGB(0, 170, 255), Callback = function() end })
 
 Sec2:AddMultiButton({
     Full = { Title = "Export Config", Callback = function()
         Window:SaveConfig("sh1ttybanana")
-        Window:Notify({ Title = "Config", Content = "Exported", Duration = 2 })
+        Window:Notify({ Title = "Config", Content = "Exported", Type = "Success" })
     end },
     Left = { Title = "Import", Callback = function()
         Window:LoadConfig("sh1ttybanana")
-        Window:Notify({ Title = "Config", Content = "Imported", Duration = 2 })
+        Window:Notify({ Title = "Config", Content = "Imported", Type = "Info" })
     end },
     Right = { Title = "Reset", Callback = function()
-        Window:Notify({ Title = "Config", Content = "Reset", Duration = 2 })
+        Window:Notify({ Title = "Config", Content = "Reset", Type = "Warn" })
     end }
 })
 
@@ -125,19 +105,27 @@ Sec2:AddButton({
     Callback = function()
         Window:Dialog({
             Title = "Confirm",
-            Content = "Are you sure you want to continue?",
+            Content = "Are you sure?",
             Buttons = {
                 { Title = "Cancel", Variant = "Secondary", Callback = function() end },
-                { Title = "Confirm", Variant = "Primary", Callback = function() print("Confirmed") end }
+                { Title = "OK", Variant = "Primary", Callback = function()
+                    Window:Notify({ Title = "Dialog", Content = "Confirmed", Type = "Success" })
+                end }
             }
         })
     end
 })
 
 Sec2:AddButton({
-    Title = "Show Notify",
+    Title = "Test All Notifies",
     Callback = function()
-        Window:Notify({ Title = "Success", Content = "Action completed", Duration = 3 })
+        Window:Notify({ Title = "Info", Content = "Info type", Type = "Info", Duration = 3 })
+        task.wait(0.3)
+        Window:Notify({ Title = "Success", Content = "Success type", Type = "Success", Duration = 3 })
+        task.wait(0.3)
+        Window:Notify({ Title = "Warn", Content = "Warn type", Type = "Warn", Duration = 3 })
+        task.wait(0.3)
+        Window:Notify({ Title = "Error", Content = "Error type", Type = "Error", Duration = 3 })
     end
 })
 
@@ -154,26 +142,30 @@ Sec3:AddSpace(6)
 Sec3:AddDivider()
 
 Sec3:AddMultiButton({
-    Full = { Title = "Full Width Button", Callback = function() print("Full") end },
-    Left = { Title = "Half Left", Callback = function() print("Left") end },
-    Right = { Title = "Half Right", Callback = function() print("Right") end }
+    Full = { Title = "Full Width", Callback = function() print("Full") end },
+    Left = { Title = "Left", Callback = function() print("Left") end },
+    Right = { Title = "Right", Callback = function() print("Right") end }
 })
 
 Sec3:AddCodeblock({
     Title = "Code Block",
-    Code = "print('Hello from sh1ttybanana')\nprint('Run works')",
-    Callback = function() print("Code ran") end
+    Code = "print('sh1ttybanana')\nprint('full example')",
+    Callback = function() end
 })
 
-Sec3:AddParagraph({ Title = "Paragraph", Content = "Everything is here" })
+local Nested = Components:AddTabSection({ Title = "More Options", Opened = false })
+Nested:AddParagraph({ Title = "Collapsed by default", Content = "Open me" })
+Nested:AddToggle({ Title = "Nested toggle", Default = false, Callback = function() end })
 
 local SecAdmin = Admin:AddSection("Restricted")
 SecAdmin:AddParagraph({ Title = "Admin Only", Content = "Password: admin123" })
-SecAdmin:AddButton({ Title = "Secret Action", Callback = function() print("Admin action") end })
+SecAdmin:AddButton({ Title = "Secret", Callback = function()
+    Window:Notify({ Title = "Admin", Content = "Secret action", Type = "Success" })
+end })
 SecAdmin:AddToggle({ Title = "God Mode", Default = false, Callback = function(v) print("God:", v) end })
 
 local SecAbout = About:AddSection("Credits")
 SecAbout:AddParagraph({
     Title = "sh1ttybanana",
-    Content = "AutoScale · live transparency · search highlight · reorder mode · tags with icons · config save/load · floating hide on open · destroy fixes"
+    Content = "TabSection · Theme text fix · Resize · Drag · Stacked notifies · AutoScale · Config · Lock tabs"
 })

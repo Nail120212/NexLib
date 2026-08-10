@@ -295,6 +295,8 @@ function Library:NewWindow(ConfigWindow)
     Top.BorderColor3 = Color3.fromRGB(0, 0, 0)
     Top.BorderSizePixel = 0
     Top.Size = UDim2.new(1, 0, 0, 50)
+    Top.Active = true
+    Top.ZIndex = 5
 
     Line.Name = "Line"
     Line.Parent = Top
@@ -389,8 +391,37 @@ function Library:NewWindow(ConfigWindow)
         Library.Theme = Library.Themes[nextTheme]
         Library.Theme.Accent = ConfigWindow.Color
         Main.BackgroundColor3 = Library.Theme.Main
+        Main.BackgroundTransparency = typeof(ConfigWindow.Transparent) == "number" and ConfigWindow.Transparent or 0.07
         NameHub.TextColor3 = Library.Theme.Text
         Desc.TextColor3 = Library.Theme.TextDisabled
+        SearchBox.TextColor3 = Library.Theme.Text
+        TextLabel.TextColor3 = Library.Theme.Text
+        local function ApplyTheme(obj)
+            for _, child in ipairs(obj:GetDescendants()) do
+                if child:IsA("TextLabel") or child:IsA("TextButton") or child:IsA("TextBox") then
+                    if child.Name == "Content" or child.Name == "Desc" or child.Name == "NotificationDescription" then
+                        child.TextColor3 = Library.Theme.TextDisabled
+                    elseif child.TextColor3 == Color3.fromRGB(255, 255, 255) or child.TextColor3 == Color3.fromRGB(20, 20, 20) or child.TextColor3 == Library.Themes.Dark.Text or child.TextColor3 == Library.Themes.Light.Text then
+                        child.TextColor3 = Library.Theme.Text
+                    end
+                elseif child:IsA("Frame") and (child.Name == "Section" or child.Name == "Toggle" or child.Name == "Button" or child.Name == "Slider" or child.Name == "Dropdown" or child.Name == "Input" or child.Name == "Colorpicker" or child.Name == "Keybind" or child.Name == "Paragraph") then
+                    if nextTheme == "Light" then
+                        child.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+                        child.BackgroundTransparency = 0.92
+                    else
+                        child.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+                        child.BackgroundTransparency = 0.95
+                    end
+                end
+            end
+        end
+        ApplyTheme(Main)
+        ApplyTheme(ScrollingTab)
+        for _, t in ipairs(TabElements) do
+            if t.Frame and t.Frame:FindFirstChild("NameTab") then
+                t.Frame.NameTab.TextColor3 = Library.Theme.Text
+            end
+        end
     end)
 
     Minize.Name = "Minize"
@@ -705,6 +736,74 @@ function Library:NewWindow(ConfigWindow)
     DropdownZone.Visible = false
 
     self:MakeDraggable(Top, DropShadowHolder)
+
+    local ResizeHandle = Instance.new("Frame")
+    ResizeHandle.Name = "ResizeHandle"
+    ResizeHandle.Parent = DropShadowHolder
+    ResizeHandle.AnchorPoint = Vector2.new(1, 1)
+    ResizeHandle.BackgroundTransparency = 1
+    ResizeHandle.BorderSizePixel = 0
+    ResizeHandle.Position = UDim2.new(1, 8, 1, 8)
+    ResizeHandle.Size = UDim2.new(0, 22, 0, 22)
+    ResizeHandle.ZIndex = 60
+
+    local ResizeH = Instance.new("Frame")
+    ResizeH.Parent = ResizeHandle
+    ResizeH.AnchorPoint = Vector2.new(1, 1)
+    ResizeH.BackgroundColor3 = Color3.fromRGB(170, 170, 178)
+    ResizeH.BackgroundTransparency = 0.15
+    ResizeH.BorderSizePixel = 0
+    ResizeH.Position = UDim2.new(1, 0, 1, 0)
+    ResizeH.Size = UDim2.new(0, 20, 0, 4)
+    ResizeH.ZIndex = 61
+    local RHC = Instance.new("UICorner")
+    RHC.CornerRadius = UDim.new(1, 0)
+    RHC.Parent = ResizeH
+
+    local ResizeV = Instance.new("Frame")
+    ResizeV.Parent = ResizeHandle
+    ResizeV.AnchorPoint = Vector2.new(1, 1)
+    ResizeV.BackgroundColor3 = Color3.fromRGB(170, 170, 178)
+    ResizeV.BackgroundTransparency = 0.15
+    ResizeV.BorderSizePixel = 0
+    ResizeV.Position = UDim2.new(1, 0, 1, 0)
+    ResizeV.Size = UDim2.new(0, 4, 0, 20)
+    ResizeV.ZIndex = 61
+    local RVC = Instance.new("UICorner")
+    RVC.CornerRadius = UDim.new(1, 0)
+    RVC.Parent = ResizeV
+
+    do
+        local Resizing = false
+        local StartPos, StartSize
+        local MinW, MinH = 420, 280
+        local function BeginResize(Input)
+            if Input.UserInputType == Enum.UserInputType.MouseButton1 or Input.UserInputType == Enum.UserInputType.Touch then
+                Resizing = true
+                StartPos = Input.Position
+                StartSize = DropShadowHolder.AbsoluteSize
+                Input.Changed:Connect(function()
+                    if Input.UserInputState == Enum.UserInputState.End then
+                        Resizing = false
+                        ConfigWindow.Size = UDim2.new(0, DropShadowHolder.AbsoluteSize.X, 0, DropShadowHolder.AbsoluteSize.Y)
+                    end
+                end)
+            end
+        end
+        ResizeHandle.InputBegan:Connect(BeginResize)
+        ResizeH.InputBegan:Connect(BeginResize)
+        ResizeV.InputBegan:Connect(BeginResize)
+        UserInputService.InputChanged:Connect(function(Input)
+            if not Resizing then return end
+            if Input.UserInputType == Enum.UserInputType.MouseMovement or Input.UserInputType == Enum.UserInputType.Touch then
+                local dx = Input.Position.X - StartPos.X
+                local dy = Input.Position.Y - StartPos.Y
+                local nw = math.max(MinW, StartSize.X + dx)
+                local nh = math.max(MinH, StartSize.Y + dy)
+                DropShadowHolder.Size = UDim2.new(0, nw, 0, nh)
+            end
+        end)
+    end
 
     local FloatBox = Instance.new("Frame")
     FloatBox.Name = "FloatingButton"
@@ -1281,6 +1380,130 @@ function Library:NewWindow(ConfigWindow)
         AllLayouts = AllLayouts + 1
         local TabFunc = {}
 
+        function TabFunc:AddTabSection(cfg)
+            if type(cfg) == "string" then
+                cfg = { Title = cfg, Opened = true }
+            end
+            cfg = Library:MakeConfig({
+                Title = "Section",
+                Opened = true
+            }, cfg or {})
+
+            local Opened = cfg.Opened ~= false
+
+            local Card = Instance.new("Frame")
+            Card.Name = "TabSection"
+            Card.Parent = Layout
+            Card.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+            Card.BackgroundTransparency = 0.97
+            Card.BorderSizePixel = 0
+            Card.Size = UDim2.new(1, 0, 0, 36)
+
+            local CardCorner = Instance.new("UICorner")
+            CardCorner.CornerRadius = UDim.new(0, 6)
+            CardCorner.Parent = Card
+
+            local Header = Instance.new("TextButton")
+            Header.Name = "Header"
+            Header.Parent = Card
+            Header.BackgroundTransparency = 1
+            Header.Size = UDim2.new(1, 0, 0, 34)
+            Header.Text = ""
+            Header.AutoButtonColor = false
+
+            local Arrow = Instance.new("TextLabel")
+            Arrow.Parent = Header
+            Arrow.BackgroundTransparency = 1
+            Arrow.Position = UDim2.new(0, 10, 0, 0)
+            Arrow.Size = UDim2.new(0, 18, 1, 0)
+            Arrow.Font = Enum.Font.GothamBold
+            Arrow.Text = Opened and "v" or ">"
+            Arrow.TextColor3 = Library.Theme.TextDisabled
+            Arrow.TextSize = 12
+
+            local TitleLbl = Instance.new("TextLabel")
+            TitleLbl.Parent = Header
+            TitleLbl.BackgroundTransparency = 1
+            TitleLbl.Position = UDim2.new(0, 30, 0, 0)
+            TitleLbl.Size = UDim2.new(1, -40, 1, 0)
+            TitleLbl.Font = Enum.Font.GothamBold
+            TitleLbl.Text = cfg.Title
+            TitleLbl.TextColor3 = Library.Theme.Text
+            TitleLbl.TextSize = 13
+            TitleLbl.TextXAlignment = Enum.TextXAlignment.Left
+
+            local Body = Instance.new("Frame")
+            Body.Name = "Body"
+            Body.Parent = Card
+            Body.BackgroundTransparency = 1
+            Body.Position = UDim2.new(0, 0, 0, 34)
+            Body.Size = UDim2.new(1, 0, 0, 0)
+            Body.Visible = Opened
+            Body.ClipsDescendants = true
+
+            local BodyList = Instance.new("UIListLayout")
+            BodyList.Parent = Body
+            BodyList.SortOrder = Enum.SortOrder.LayoutOrder
+            BodyList.Padding = UDim.new(0, 6)
+
+            local BodyPad = Instance.new("UIPadding")
+            BodyPad.Parent = Body
+            BodyPad.PaddingLeft = UDim.new(0, 8)
+            BodyPad.PaddingRight = UDim.new(0, 8)
+            BodyPad.PaddingBottom = UDim.new(0, 8)
+            BodyPad.PaddingTop = UDim.new(0, 2)
+
+            local function RefreshSize()
+                if Opened then
+                    local h = math.max(0, BodyList.AbsoluteContentSize.Y) + 10
+                    Body.Size = UDim2.new(1, 0, 0, h)
+                    Card.Size = UDim2.new(1, 0, 0, 34 + h)
+                    Arrow.Text = "v"
+                    Body.Visible = true
+                else
+                    Body.Size = UDim2.new(1, 0, 0, 0)
+                    Card.Size = UDim2.new(1, 0, 0, 34)
+                    Arrow.Text = ">"
+                    Body.Visible = false
+                end
+            end
+
+            BodyList:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(RefreshSize)
+
+            Header.MouseButton1Click:Connect(function()
+                Opened = not Opened
+                RefreshSize()
+            end)
+
+            local Inner = TabFunc:AddSection(cfg.Title)
+            if Inner and Inner._GetSectionFrame then
+                local sf = Inner._GetSectionFrame()
+                if sf then
+                    sf.Parent = Body
+                    sf.BackgroundTransparency = 1
+                end
+            else
+                for _, child in ipairs(Layout:GetChildren()) do
+                    if child.Name == "Section" and child:FindFirstChild("NameSection") then
+                        local t = child.NameSection:FindFirstChild("Title")
+                        if t and t.Text == cfg.Title then
+                            child.Parent = Body
+                            child.BackgroundTransparency = 1
+                            if child:FindFirstChild("NameSection") then
+                                child.NameSection.Visible = false
+                            end
+                            break
+                        end
+                    end
+                end
+            end
+
+            task.defer(RefreshSize)
+            task.delay(0.1, RefreshSize)
+
+            return Inner
+        end
+
         function TabFunc:AddSection(RealNameSection)
             local Section = Instance.new("Frame")
             local UICorner_5 = Instance.new("UICorner")
@@ -1295,6 +1518,7 @@ function Library:NewWindow(ConfigWindow)
 
             Section.Name = "Section"
             Section.Parent = Layout
+            Section:SetAttribute("SectionTitle", tostring(RealNameSection or ""))
             Section.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
             Section.BackgroundTransparency = 0.980
             Section.BorderColor3 = Color3.fromRGB(0, 0, 0)
@@ -3044,51 +3268,147 @@ function Library:NewWindow(ConfigWindow)
         return WindowAPI:Dialog(cfg)
     end
 
+    Library.ActiveNotifications = Library.ActiveNotifications or {}
+
     function WindowAPI:Notify(cfg)
         cfg = Library:MakeConfig({
-            Title = "Notify",
+            Title = "Notification",
             Content = "",
-            Duration = 3
+            Desc = "",
+            Type = "Info",
+            Duration = 4
         }, cfg or {})
 
-        local N = Instance.new("Frame")
-        N.Parent = TeddyUI_Premium
-        N.BackgroundColor3 = Color3.fromRGB(18, 18, 18)
-        N.BorderSizePixel = 0
-        N.Position = UDim2.new(1, -280, 1, -80)
-        N.Size = UDim2.new(0, 260, 0, 60)
-        N.ZIndex = 50
+        local titleText = cfg.Title
+        local descText = cfg.Content ~= "" and cfg.Content or cfg.Desc
+        local duration = cfg.Duration or 4
+        local notifType = cfg.Type or "Info"
 
-        local NC = Instance.new("UICorner")
-        NC.CornerRadius = UDim.new(0, 8)
-        NC.Parent = N
+        local typeColor = Color3.fromRGB(158, 198, 255)
+        if notifType == "Error" then
+            typeColor = Color3.fromRGB(255, 82, 82)
+        elseif notifType == "Success" then
+            typeColor = Color3.fromRGB(145, 255, 128)
+        elseif notifType == "Warn" then
+            typeColor = Color3.fromRGB(255, 225, 117)
+        end
 
-        local NT = Instance.new("TextLabel")
-        NT.Parent = N
-        NT.BackgroundTransparency = 1
-        NT.Position = UDim2.new(0, 12, 0, 8)
-        NT.Size = UDim2.new(1, -24, 0, 18)
-        NT.Font = Enum.Font.GothamBold
-        NT.Text = cfg.Title
-        NT.TextColor3 = Library.Theme.Text
-        NT.TextSize = 13
-        NT.TextXAlignment = Enum.TextXAlignment.Left
-        NT.ZIndex = 51
+        local MainFrame = Instance.new("Frame")
+        MainFrame.Name = "Notify"
+        MainFrame.Parent = TeddyUI_Premium
+        MainFrame.BorderSizePixel = 0
+        MainFrame.BackgroundColor3 = Color3.fromRGB(12, 12, 14)
+        MainFrame.Size = UDim2.new(0, 220, 0, 58)
+        MainFrame.Position = UDim2.new(1, 40, 0, 120)
+        MainFrame.ZIndex = 80
 
-        local ND = Instance.new("TextLabel")
-        ND.Parent = N
-        ND.BackgroundTransparency = 1
-        ND.Position = UDim2.new(0, 12, 0, 28)
-        ND.Size = UDim2.new(1, -24, 0, 24)
-        ND.Font = Enum.Font.Gotham
-        ND.Text = cfg.Content
-        ND.TextColor3 = Library.Theme.TextDisabled
-        ND.TextSize = 12
-        ND.TextXAlignment = Enum.TextXAlignment.Left
-        ND.ZIndex = 51
+        local UICorner_Main = Instance.new("UICorner")
+        UICorner_Main.CornerRadius = UDim.new(0, 8)
+        UICorner_Main.Parent = MainFrame
 
-        task.delay(cfg.Duration or 3, function()
-            if N then N:Destroy() end
+        local TypeEffect = Instance.new("Frame")
+        TypeEffect.Parent = MainFrame
+        TypeEffect.BorderSizePixel = 0
+        TypeEffect.BackgroundColor3 = typeColor
+        TypeEffect.Size = UDim2.new(0, 4, 1, 0)
+        TypeEffect.Position = UDim2.new(0, 0, 0, 0)
+        TypeEffect.ZIndex = 81
+        local TEC = Instance.new("UICorner")
+        TEC.CornerRadius = UDim.new(0, 8)
+        TEC.Parent = TypeEffect
+
+        local NotificationTitle = Instance.new("TextLabel")
+        NotificationTitle.Parent = MainFrame
+        NotificationTitle.BorderSizePixel = 0
+        NotificationTitle.TextSize = 13
+        NotificationTitle.TextXAlignment = Enum.TextXAlignment.Left
+        NotificationTitle.BackgroundTransparency = 1
+        NotificationTitle.Font = Enum.Font.GothamBold
+        NotificationTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
+        NotificationTitle.Size = UDim2.new(1, -30, 0, 20)
+        NotificationTitle.Text = titleText
+        NotificationTitle.Position = UDim2.new(0, 14, 0, 6)
+        NotificationTitle.ZIndex = 82
+
+        local NotificationDescription = Instance.new("TextLabel")
+        NotificationDescription.Parent = MainFrame
+        NotificationDescription.TextWrapped = true
+        NotificationDescription.BorderSizePixel = 0
+        NotificationDescription.TextSize = 11
+        NotificationDescription.TextXAlignment = Enum.TextXAlignment.Left
+        NotificationDescription.TextTransparency = 0.35
+        NotificationDescription.BackgroundTransparency = 1
+        NotificationDescription.Font = Enum.Font.Gotham
+        NotificationDescription.TextColor3 = Color3.fromRGB(220, 220, 220)
+        NotificationDescription.Size = UDim2.new(1, -24, 0, 28)
+        NotificationDescription.Text = descText
+        NotificationDescription.Position = UDim2.new(0, 14, 0, 26)
+        NotificationDescription.ZIndex = 82
+
+        local DurationFrame = Instance.new("Frame")
+        DurationFrame.Parent = MainFrame
+        DurationFrame.BorderSizePixel = 0
+        DurationFrame.BackgroundColor3 = typeColor
+        DurationFrame.Size = UDim2.new(1, -16, 0, 3)
+        DurationFrame.Position = UDim2.new(0, 8, 1, -6)
+        DurationFrame.BackgroundTransparency = 0.3
+        DurationFrame.ZIndex = 82
+        local DFC = Instance.new("UICorner")
+        DFC.CornerRadius = UDim.new(1, 0)
+        DFC.Parent = DurationFrame
+
+        local CloseButton = Instance.new("TextButton")
+        CloseButton.Parent = MainFrame
+        CloseButton.BorderSizePixel = 0
+        CloseButton.TextSize = 14
+        CloseButton.TextColor3 = Color3.fromRGB(200, 200, 200)
+        CloseButton.BackgroundTransparency = 1
+        CloseButton.Size = UDim2.new(0, 20, 0, 20)
+        CloseButton.Position = UDim2.new(1, -24, 0, 4)
+        CloseButton.Text = "×"
+        CloseButton.ZIndex = 83
+
+        local notifData = {Frame = MainFrame}
+        table.insert(Library.ActiveNotifications, notifData)
+
+        local function updatePositions()
+            for i, notif in ipairs(Library.ActiveNotifications) do
+                if notif and notif.Frame and notif.Frame.Parent then
+                    local targetY = 100 + ((i - 1) * 68)
+                    Library:Tween(notif.Frame, TweenInfo.new(0.35, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
+                        Position = UDim2.new(1, -240, 0, targetY)
+                    })
+                end
+            end
+        end
+
+        local isClosing = false
+        local tweenBar = TweenService:Create(DurationFrame, TweenInfo.new(duration, Enum.EasingStyle.Linear), {Size = UDim2.new(0, 0, 0, 3)})
+
+        local function closeUI()
+            if isClosing then return end
+            isClosing = true
+            if tweenBar then tweenBar:Cancel() end
+            for i, v in ipairs(Library.ActiveNotifications) do
+                if v == notifData then
+                    table.remove(Library.ActiveNotifications, i)
+                    break
+                end
+            end
+            updatePositions()
+            Library:Tween(MainFrame, TweenInfo.new(0.3, Enum.EasingStyle.Quart, Enum.EasingDirection.In), {
+                Position = UDim2.new(1, 40, 0, MainFrame.Position.Y.Offset)
+            }, function()
+                MainFrame:Destroy()
+            end)
+        end
+
+        CloseButton.MouseButton1Click:Connect(closeUI)
+
+        updatePositions()
+        tweenBar:Play()
+        tweenBar.Completed:Connect(function()
+            if not isClosing then closeUI() end
         end)
     end
 
