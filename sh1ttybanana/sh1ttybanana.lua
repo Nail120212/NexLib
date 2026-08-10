@@ -193,12 +193,21 @@ function Library:NewWindow(ConfigWindow)
         Logo = "rbxassetid://89646749075297",
         Color = Color3.fromRGB(179, 0, 255),
         Size = UDim2.new(0, 580, 0, 380),
-        Transparent = false,
-        FloatTransparency = 0.5,
+        Transparent = 0.07,
+        AutoScale = true,
     }, ConfigWindow or {})
 
     Library.Theme.Accent = ConfigWindow.Color
     local WindowTags = {}
+    local ConfigFlags = {}
+    local ReorderMode = false
+    local TabElements = {}
+
+    if ConfigWindow.AutoScale ~= false then
+        local cam = workspace.CurrentCamera
+        local scale = math.clamp(math.min(cam.ViewportSize.X / 1920, cam.ViewportSize.Y / 1080), 0.65, 1.2)
+        ConfigWindow.Size = UDim2.new(0, math.floor(ConfigWindow.Size.X.Offset * scale), 0, math.floor(ConfigWindow.Size.Y.Offset * scale))
+    end
 
     local TeddyUI_Premium = Instance.new("ScreenGui")
     local DropShadowHolder = Instance.new("Frame")
@@ -271,7 +280,7 @@ function Library:NewWindow(ConfigWindow)
     Main.Parent = DropShadowHolder
     Main.AnchorPoint = Vector2.new(0.5, 0.5)
     Main.BackgroundColor3 = Library.Theme.Main
-    Main.BackgroundTransparency = ConfigWindow.Transparent and 0.25 or 0.07
+    Main.BackgroundTransparency = typeof(ConfigWindow.Transparent) == "number" and ConfigWindow.Transparent or 0.07
     Main.BorderColor3 = Color3.fromRGB(0, 0, 0)
     Main.BorderSizePixel = 0
     Main.Position = UDim2.new(0.5, 0, 0.5, 0)
@@ -525,7 +534,7 @@ function Library:NewWindow(ConfigWindow)
     ScrollingTab.BorderSizePixel = 0
     ScrollingTab.Position = UDim2.new(0, 0, 0, 50)
     ScrollingTab.Selectable = false
-    ScrollingTab.Size = UDim2.new(1, 0, 1, -50)
+    ScrollingTab.Size = UDim2.new(1, 0, 1, -100)
     ScrollingTab.ScrollBarThickness = 0
     self:UpdateScrolling(ScrollingTab, UIListLayout_2)
 
@@ -537,6 +546,106 @@ function Library:NewWindow(ConfigWindow)
 
     UIListLayout_2.Parent = ScrollingTab
     UIListLayout_2.SortOrder = Enum.SortOrder.LayoutOrder
+
+    local BottomBar = Instance.new("Frame")
+    BottomBar.Name = "BottomBar"
+    BottomBar.Parent = TabFrame
+    BottomBar.BackgroundTransparency = 1
+    BottomBar.Position = UDim2.new(0, 0, 1, -48)
+    BottomBar.Size = UDim2.new(1, 0, 0, 48)
+
+    local function MakeBottomBtn(name, icon, order, callback)
+        local B = Instance.new("TextButton")
+        B.Name = name
+        B.Parent = BottomBar
+        B.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+        B.BackgroundTransparency = 0.3
+        B.BorderSizePixel = 0
+        B.Position = UDim2.new(0, 8 + (order - 1) * 44, 0, 8)
+        B.Size = UDim2.new(0, 38, 0, 32)
+        B.Text = ""
+        B.AutoButtonColor = false
+
+        local BC = Instance.new("UICorner")
+        BC.CornerRadius = UDim.new(0, 6)
+        BC.Parent = B
+
+        local BI = Instance.new("ImageLabel")
+        BI.Parent = B
+        BI.BackgroundTransparency = 1
+        BI.AnchorPoint = Vector2.new(0.5, 0.5)
+        BI.Position = UDim2.new(0.5, 0, 0.5, 0)
+        BI.Size = UDim2.new(0, 16, 0, 16)
+        Library:SetIcon(BI, icon, Library.Theme.Text)
+
+        B.MouseButton1Click:Connect(function()
+            callback(B, BI)
+        end)
+        return B, BI
+    end
+
+    local ReorderBtn, ReorderIcon = MakeBottomBtn("Reorder", "list-ordered", 1, function(btn, icon)
+        ReorderMode = not ReorderMode
+        if ReorderMode then
+            btn.BackgroundColor3 = Color3.fromRGB(0, 120, 255)
+            Library:SetIcon(icon, "list-ordered", Color3.fromRGB(255, 255, 255))
+            for _, t in ipairs(TabElements) do
+                if t.DragIcon then t.DragIcon.Visible = true end
+            end
+        else
+            btn.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+            Library:SetIcon(icon, "list-ordered", Library.Theme.Text)
+            for _, t in ipairs(TabElements) do
+                if t.DragIcon then t.DragIcon.Visible = false end
+            end
+        end
+    end)
+
+    MakeBottomBtn("AI", "bot", 2, function()
+        local N = Instance.new("Frame")
+        N.Parent = TeddyUI_Premium
+        N.BackgroundColor3 = Color3.fromRGB(18, 18, 18)
+        N.BorderSizePixel = 0
+        N.Position = UDim2.new(1, -280, 1, -80)
+        N.Size = UDim2.new(0, 260, 0, 50)
+        N.ZIndex = 50
+        local NC = Instance.new("UICorner")
+        NC.CornerRadius = UDim.new(0, 8)
+        NC.Parent = N
+        local NT = Instance.new("TextLabel")
+        NT.Parent = N
+        NT.BackgroundTransparency = 1
+        NT.Size = UDim2.new(1, 0, 1, 0)
+        NT.Font = Enum.Font.GothamBold
+        NT.Text = "AI — indev"
+        NT.TextColor3 = Color3.fromRGB(255, 255, 255)
+        NT.TextSize = 13
+        NT.ZIndex = 51
+        task.delay(2, function() if N then N:Destroy() end end)
+    end)
+
+    MakeBottomBtn("PlayerCard", "contact", 3, function()
+        local N = Instance.new("Frame")
+        N.Parent = TeddyUI_Premium
+        N.BackgroundColor3 = Color3.fromRGB(18, 18, 18)
+        N.BorderSizePixel = 0
+        N.Position = UDim2.new(1, -280, 1, -80)
+        N.Size = UDim2.new(0, 260, 0, 50)
+        N.ZIndex = 50
+        local NC = Instance.new("UICorner")
+        NC.CornerRadius = UDim.new(0, 8)
+        NC.Parent = N
+        local NT = Instance.new("TextLabel")
+        NT.Parent = N
+        NT.BackgroundTransparency = 1
+        NT.Size = UDim2.new(1, 0, 1, 0)
+        NT.Font = Enum.Font.GothamBold
+        NT.Text = "PlayerCard — indev"
+        NT.TextColor3 = Color3.fromRGB(255, 255, 255)
+        NT.TextSize = 13
+        NT.ZIndex = 51
+        task.delay(2, function() if N then N:Destroy() end end)
+    end)
 
     LayoutFrame.Name = "LayoutFrame"
     LayoutFrame.Parent = Main
@@ -601,11 +710,12 @@ function Library:NewWindow(ConfigWindow)
     FloatBox.Name = "FloatingButton"
     FloatBox.Parent = TeddyUI_Premium
     FloatBox.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-    FloatBox.BackgroundTransparency = ConfigWindow.FloatTransparency or 0.5
+    FloatBox.BackgroundTransparency = 0.5
     FloatBox.BorderSizePixel = 0
     FloatBox.Position = UDim2.new(0.05, 0, 0.4, 0)
     FloatBox.Size = UDim2.new(0, 160, 0, 42)
     FloatBox.ZIndex = 10
+    FloatBox.Visible = true
 
     local FloatCorner = Instance.new("UICorner")
     FloatCorner.CornerRadius = UDim.new(0, 8)
@@ -653,17 +763,19 @@ function Library:NewWindow(ConfigWindow)
 
     local function ToggleWindow(open)
         if open then
+            FloatBox.Visible = false
             DropShadowHolder.Visible = true
-            DropShadowHolder.Size = UDim2.new(0, 0, 0, 0)
-            Library:Tween(DropShadowHolder, TweenInfo.new(0.35, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+            DropShadowHolder.Size = UDim2.new(0, 40, 0, 40)
+            Library:Tween(DropShadowHolder, TweenInfo.new(0.4, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
                 Size = ConfigWindow.Size
             })
         else
-            Library:Tween(DropShadowHolder, TweenInfo.new(0.28, Enum.EasingStyle.Quart, Enum.EasingDirection.In), {
-                Size = UDim2.new(0, 0, 0, 0)
+            Library:Tween(DropShadowHolder, TweenInfo.new(0.3, Enum.EasingStyle.Quart, Enum.EasingDirection.In), {
+                Size = UDim2.new(0, 40, 0, 40)
             }, function()
                 DropShadowHolder.Visible = false
                 DropShadowHolder.Size = ConfigWindow.Size
+                FloatBox.Visible = true
             end)
         end
     end
@@ -671,6 +783,29 @@ function Library:NewWindow(ConfigWindow)
     FloatScan.MouseButton1Click:Connect(function()
         local isOpen = DropShadowHolder.Visible
         ToggleWindow(not isOpen)
+    end)
+
+    SearchBox:GetPropertyChangedSignal("Text"):Connect(function()
+        local q = string.lower(SearchBox.Text)
+        for _, child in ipairs(ScrollingTab:GetChildren()) do
+            if child:IsA("Frame") and child:FindFirstChild("NameTab") then
+                local label = child.NameTab
+                local raw = label:GetAttribute("RawName") or label.Text or ""
+                local name = string.lower(raw)
+                local match = q == "" or string.find(name, q, 1, true) ~= nil
+                child.Visible = match
+                if q ~= "" and match then
+                    local start = string.find(name, q, 1, true)
+                    if start then
+                        label.Text = string.sub(raw, 1, start - 1) .. "【" .. string.sub(raw, start, start + #q - 1) .. "】" .. string.sub(raw, start + #q)
+                        label.TextColor3 = Color3.fromRGB(255, 220, 50)
+                    end
+                else
+                    label.Text = raw
+                    label.TextColor3 = Library.Theme.Text
+                end
+            end
+        end
     end)
 
     local IsEnlarged = false
@@ -731,9 +866,11 @@ function Library:NewWindow(ConfigWindow)
         btnyes["Position"] = UDim2.new(0, 40, 1, -40)
         
         btnyes.MouseButton1Down:Connect(function()
+            FloatBox:Destroy()
             DropShadowHolder:Destroy()
             DropdownZone.Visible = false
             tat_:Destroy()
+            TeddyUI_Premium:Destroy()
         end)
 
         local thuaaa = Instance.new("UICorner", btnyes)
@@ -840,13 +977,23 @@ function Library:NewWindow(ConfigWindow)
         NameTab_2.BorderColor3 = Color3.fromRGB(0, 0, 0)
         NameTab_2.BorderSizePixel = 0
         NameTab_2.Position = UDim2.new(0, 32, 0, 0)
-        NameTab_2.Size = UDim2.new(1, -36, 1, 0)
+        NameTab_2.Size = UDim2.new(1, -50, 1, 0)
         NameTab_2.Font = Enum.Font.GothamBold
         NameTab_2.Text = name
         NameTab_2.TextColor3 = Library.Theme.Text
         NameTab_2.TextSize = 12.000
         NameTab_2.TextTransparency = 0.35
         NameTab_2.TextXAlignment = Enum.TextXAlignment.Left
+        NameTab_2:SetAttribute("RawName", name)
+
+        local DragIcon = Instance.new("ImageLabel")
+        DragIcon.Name = "DragIcon"
+        DragIcon.Parent = TabDisable
+        DragIcon.BackgroundTransparency = 1
+        DragIcon.Position = UDim2.new(1, -22, 0.5, -7)
+        DragIcon.Size = UDim2.new(0, 14, 0, 14)
+        DragIcon.Visible = false
+        Library:SetIcon(DragIcon, "grip-vertical", Library.Theme.TextDisabled)
 
         Click_Tab_2.Name = "Click_Tab"
         Click_Tab_2.Parent = TabDisable
@@ -867,6 +1014,8 @@ function Library:NewWindow(ConfigWindow)
         Divider.BorderSizePixel = 0
         Divider.Position = UDim2.new(0, 8, 1, -1)
         Divider.Size = UDim2.new(1, -16, 0, 1)
+
+        table.insert(TabElements, { Frame = TabDisable, DragIcon = DragIcon, Name = name })
 
         Layout.Name = "Layout"
         Layout.Parent = LayoutList
@@ -2749,9 +2898,19 @@ function Library:NewWindow(ConfigWindow)
         TC.CornerRadius = UDim.new(1, 0)
         TC.Parent = Tag
 
+        if cfg.Icon then
+            local TI = Instance.new("ImageLabel")
+            TI.Parent = Tag
+            TI.BackgroundTransparency = 1
+            TI.Position = UDim2.new(0, 6, 0.5, -6)
+            TI.Size = UDim2.new(0, 12, 0, 12)
+            Library:SetIcon(TI, cfg.Icon, Color3.fromRGB(20, 20, 20))
+        end
+
         local TL = Instance.new("TextLabel")
         TL.Parent = Tag
         TL.BackgroundTransparency = 1
+        TL.Position = UDim2.new(0, cfg.Icon and 22 or 0, 0, 0)
         TL.Size = UDim2.new(0, 0, 1, 0)
         TL.AutomaticSize = Enum.AutomaticSize.X
         TL.Font = Enum.Font.GothamBold
@@ -2761,11 +2920,46 @@ function Library:NewWindow(ConfigWindow)
 
         local Pad = Instance.new("UIPadding")
         Pad.Parent = Tag
-        Pad.PaddingLeft = UDim.new(0, 10)
+        Pad.PaddingLeft = UDim.new(0, cfg.Icon and 6 or 10)
         Pad.PaddingRight = UDim.new(0, 10)
 
         table.insert(WindowTags, Tag)
         return Tag
+    end
+
+    function WindowAPI:SetTransparency(value)
+        value = math.clamp(tonumber(value) or 0.07, 0, 0.8)
+        Main.BackgroundTransparency = value
+        ConfigWindow.Transparent = value
+    end
+
+    function WindowAPI:SaveConfig(name)
+        name = name or "sh1ttybanana_config"
+        if writefile then
+            pcall(function()
+                writefile(name .. ".json", HttpService:JSONEncode(ConfigFlags))
+            end)
+        end
+    end
+
+    function WindowAPI:LoadConfig(name)
+        name = name or "sh1ttybanana_config"
+        if readfile and isfile and isfile(name .. ".json") then
+            local ok, data = pcall(function()
+                return HttpService:JSONDecode(readfile(name .. ".json"))
+            end)
+            if ok and type(data) == "table" then
+                ConfigFlags = data
+            end
+        end
+    end
+
+    function WindowAPI:SetFlag(flag, value)
+        ConfigFlags[flag] = value
+    end
+
+    function WindowAPI:GetFlag(flag)
+        return ConfigFlags[flag]
     end
 
     function WindowAPI:Dialog(cfg)

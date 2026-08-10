@@ -7,12 +7,12 @@ local Window = Library:NewWindow({
     Size = UDim2.new(0, 600, 0, 420),
     Logo = "rbxassetid://89646749075297",
     Icon = "rbxassetid://89646749075297",
-    Transparent = false,
-    FloatTransparency = 0.45
+    Transparent = 0.07,
+    AutoScale = true
 })
 
-Window:Tag({ Title = "v1.0", Color = Color3.fromRGB(236, 162, 1) })
-Window:Tag({ Title = "UI Library", Color = Color3.fromRGB(16, 197, 80) })
+Window:Tag({ Title = "v1.0", Color = Color3.fromRGB(236, 162, 1), Icon = "tag" })
+Window:Tag({ Title = "UI Library", Color = Color3.fromRGB(16, 197, 80), Icon = "box" })
 
 local Main = Window:T("General", "home")
 local Settings = Window:T("Settings", "settings")
@@ -40,10 +40,12 @@ Sec1:AddToggle({
 })
 
 Sec1:AddSlider({
-    Title = "Speed",
-    Description = "0 - 100",
-    Min = 0, Max = 100, Default = 50, Increment = 1,
-    Callback = function(v) print("Slider:", v) end
+    Title = "UI Transparency",
+    Description = "Live transparency control",
+    Min = 0, Max = 80, Default = 7, Increment = 1,
+    Callback = function(v)
+        Window:SetTransparency(v / 100)
+    end
 })
 
 Sec1:AddButton({
@@ -64,7 +66,6 @@ Sec1:AddDivider()
 
 Sec1:AddInput({
     Title = "Username",
-    Description = "Type something",
     PlaceHolder = "Enter name...",
     Default = "",
     Callback = function(t) print("Input:", t) end
@@ -72,30 +73,31 @@ Sec1:AddInput({
 
 Sec1:AddDropdown({
     Title = "Mode",
-    Description = "Select one",
     Values = {"Normal", "Fast", "Extreme"},
     Default = "Normal",
+    Multi = false,
     Callback = function(v) print("Dropdown:", v) end
 })
 
 Sec1:AddColorpicker({
     Title = "Accent Color",
-    Description = "Real colorpicker",
     Default = Color3.fromRGB(179, 0, 255),
     Callback = function(c) print("Color:", c) end
 })
 
 Sec1:AddParagraph({
     Title = "Info",
-    Content = "Window tags + dialog + popup + space added"
+    Content = "Search highlights yellow · Reorder / AI / PlayerCard at bottom left · AutoScale on"
 })
 
-local Sec2 = Settings:AddSection("Appearance")
+local Sec2 = Settings:AddSection("Appearance & Config")
 
 Sec2:AddToggle({
     Title = "Transparent UI",
     Default = false,
-    Callback = function() end
+    Callback = function(v)
+        Window:SetTransparency(v and 0.35 or 0.07)
+    end
 })
 
 Sec2:AddColorpicker({
@@ -105,9 +107,17 @@ Sec2:AddColorpicker({
 })
 
 Sec2:AddMultiButton({
-    Full = { Title = "Export Config", Callback = function() print("Export") end },
-    Left = { Title = "Import", Callback = function() print("Import") end },
-    Right = { Title = "Reset", Callback = function() print("Reset") end }
+    Full = { Title = "Export Config", Callback = function()
+        Window:SaveConfig("sh1ttybanana")
+        Window:Notify({ Title = "Config", Content = "Exported", Duration = 2 })
+    end },
+    Left = { Title = "Import", Callback = function()
+        Window:LoadConfig("sh1ttybanana")
+        Window:Notify({ Title = "Config", Content = "Imported", Duration = 2 })
+    end },
+    Right = { Title = "Reset", Callback = function()
+        Window:Notify({ Title = "Config", Content = "Reset", Duration = 2 })
+    end }
 })
 
 Sec2:AddButton({
@@ -136,7 +146,7 @@ local Sec3 = Components:AddSection("All Elements")
 Sec3:AddButton({ Title = "Button", Callback = function() end })
 Sec3:AddToggle({ Title = "Toggle", Default = true, Callback = function() end })
 Sec3:AddSlider({ Title = "Slider", Min = 1, Max = 10, Default = 5, Callback = function() end })
-Sec3:AddDropdown({ Title = "Dropdown", Values = {"A", "B", "C"}, Callback = function() end })
+Sec3:AddDropdown({ Title = "Dropdown", Values = {"A", "B", "C"}, Multi = true, Callback = function() end })
 Sec3:AddInput({ Title = "Input", PlaceHolder = "Type...", Callback = function() end })
 Sec3:AddColorpicker({ Title = "Colorpicker", Default = Color3.fromRGB(255, 100, 100), Callback = function() end })
 Sec3:AddKeybind({ Title = "Keybind", Default = Enum.KeyCode.F, Callback = function() end })
@@ -158,14 +168,12 @@ Sec3:AddCodeblock({
 Sec3:AddParagraph({ Title = "Paragraph", Content = "Everything is here" })
 
 local SecAdmin = Admin:AddSection("Restricted")
-
 SecAdmin:AddParagraph({ Title = "Admin Only", Content = "Password: admin123" })
 SecAdmin:AddButton({ Title = "Secret Action", Callback = function() print("Admin action") end })
 SecAdmin:AddToggle({ Title = "God Mode", Default = false, Callback = function(v) print("God:", v) end })
 
 local SecAbout = About:AddSection("Credits")
-
 SecAbout:AddParagraph({
     Title = "sh1ttybanana",
-    Content = "Window:Tag pills, Dialog, Popup, Notify, Space, real colorpicker, keybind, multibutton, codeblock, lock tabs, floating restyle"
+    Content = "AutoScale · live transparency · search highlight · reorder mode · tags with icons · config save/load · floating hide on open · destroy fixes"
 })
