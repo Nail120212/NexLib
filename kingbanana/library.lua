@@ -659,6 +659,7 @@ function Library:CreateLockBadge(Parent, LockData, Options)
         Size = UDim2.new(0, BadgeWidth, 0, BadgeHeight),
         Visible = LockData.Locked
     })
+    Badge:SetAttribute("IsLocked", LockData.Locked == true)
     if Options.Position then
         Badge.Position = Options.Position
     end
@@ -743,10 +744,24 @@ function Library:NewWindow(ConfigWindow)
         ToggleKey = "RightControl",
         CustomBackground = false,
         CustomBackgroundId = "",
+        Extras = nil,
     }, ConfigWindow or {})
     ConfigWindow.Logo = self:ResolveAssetId(ConfigWindow.Logo)
     ConfigWindow.Icon = self:ResolveAssetId(ConfigWindow.Icon or ConfigWindow.Logo)
     ConfigWindow.CustomBackgroundId = self:ResolveAssetId(ConfigWindow.CustomBackgroundId or ConfigWindow.CustomBackroundId or "")
+    local Extras = ConfigWindow.Extras or ConfigWindow.extras or {}
+    if type(Extras) ~= "table" then Extras = {} end
+    local function ExtraFlag(key, default)
+        local v = Extras[key]
+        if v == nil then v = Extras[string.lower(key)] end
+        if v == nil then return default end
+        return v
+    end
+    local ShowFps = ExtraFlag("FpsTag", ExtraFlag("Fpstag", true))
+    local ShowResize = ExtraFlag("ResizeLine", ExtraFlag("resize line", true))
+    if ShowResize == nil then ShowResize = true end
+    local AutoScale = ExtraFlag("AutoScale", ExtraFlag("auto scale", true))
+    if AutoScale == nil then AutoScale = true end
     self:SetTheme(ConfigWindow.Theme)
     self:SetTransparency(ConfigWindow.Transparency)
     if ConfigWindow.Color then
@@ -756,12 +771,18 @@ function Library:NewWindow(ConfigWindow)
         local cam = workspace.CurrentCamera
         local vp = (cam and cam.ViewportSize) or Vector2.new(1280, 720)
         local mobile = UserInputService.TouchEnabled and vp.X < 1000
-        if ConfigWindow.Size == nil then
-            local w = mobile and math.clamp(math.floor(vp.X * 0.94), 300, 440) or math.clamp(math.floor(vp.X * 0.42), 480, 620)
-            local h = mobile and math.clamp(math.floor(vp.Y * 0.58), 260, 360) or math.clamp(math.floor(vp.Y * 0.48), 320, 420)
-            ConfigWindow.Size = UDim2.new(0, w, 0, h)
+        if AutoScale == false and ConfigWindow.Size then
+            -- manual size only
+        elseif ConfigWindow.Size == nil or AutoScale then
+            if AutoScale or ConfigWindow.Size == nil then
+                local w = mobile and math.clamp(math.floor(vp.X * 0.94), 320, 440) or math.clamp(math.floor(vp.X * 0.42), 500, 640)
+                local h = mobile and math.clamp(math.floor(vp.Y * 0.58), 280, 360) or math.clamp(math.floor(vp.Y * 0.48), 340, 430)
+                ConfigWindow.Size = UDim2.new(0, w, 0, h)
+            end
         end
         ConfigWindow._Mobile = mobile
+        ConfigWindow._ShowFps = ShowFps ~= false
+        ConfigWindow._ShowResize = ShowResize ~= false
     end
 
     local ScreenGui = Create("ScreenGui", {
@@ -1179,11 +1200,11 @@ function Library:NewWindow(ConfigWindow)
         Name = "DragGrip",
         Parent = DropShadowHolder,
         AnchorPoint = Vector2.new(0.5, 0),
-        BackgroundColor3 = Color3.fromRGB(170, 170, 178),
-        BackgroundTransparency = 0.12,
+        BackgroundColor3 = Color3.fromRGB(175, 175, 185),
+        BackgroundTransparency = 0.1,
         BorderSizePixel = 0,
         Position = UDim2.new(0.5, 0, 1, 10),
-        Size = UDim2.new(0, 64, 0, 5),
+        Size = UDim2.new(0, 88, 0, 5),
         ZIndex = 60
     })
     Create("UICorner", {CornerRadius = UDim.new(1, 0), Parent = DragGrip})
@@ -1195,36 +1216,37 @@ function Library:NewWindow(ConfigWindow)
         AnchorPoint = Vector2.new(1, 1),
         BackgroundTransparency = 1,
         BorderSizePixel = 0,
-        Position = UDim2.new(1, 10, 1, 10),
-        Size = UDim2.new(0, 22, 0, 22),
-        ZIndex = 60
+        Position = UDim2.new(1, 12, 1, 12),
+        Size = UDim2.new(0, 26, 0, 26),
+        ZIndex = 60,
+        Visible = ConfigWindow._ShowResize ~= false
     })
     local ResizeH = Create("Frame", {
         Parent = ResizeHandle,
         AnchorPoint = Vector2.new(1, 1),
-        BackgroundColor3 = Color3.fromRGB(170, 170, 178),
-        BackgroundTransparency = 0.12,
+        BackgroundColor3 = Color3.fromRGB(175, 175, 185),
+        BackgroundTransparency = 0.1,
         BorderSizePixel = 0,
         Position = UDim2.new(1, 0, 1, 0),
-        Size = UDim2.new(0, 22, 0, 5),
+        Size = UDim2.new(0, 26, 0, 5),
         ZIndex = 61
     })
     Create("UICorner", {CornerRadius = UDim.new(1, 0), Parent = ResizeH})
     local ResizeV = Create("Frame", {
         Parent = ResizeHandle,
         AnchorPoint = Vector2.new(1, 1),
-        BackgroundColor3 = Color3.fromRGB(170, 170, 178),
-        BackgroundTransparency = 0.12,
+        BackgroundColor3 = Color3.fromRGB(175, 175, 185),
+        BackgroundTransparency = 0.1,
         BorderSizePixel = 0,
         Position = UDim2.new(1, 0, 1, 0),
-        Size = UDim2.new(0, 5, 0, 22),
+        Size = UDim2.new(0, 5, 0, 26),
         ZIndex = 61
     })
     Create("UICorner", {CornerRadius = UDim.new(1, 0), Parent = ResizeV})
     do
         local Resizing = false
         local StartPos, StartSize
-        local MinW, MinH = 480, 300
+        local MinW, MinH = 500, 320
         local function BeginResize(Input)
             if Input.UserInputType == Enum.UserInputType.MouseButton1 or Input.UserInputType == Enum.UserInputType.Touch then
                 Resizing = true
@@ -1258,31 +1280,46 @@ function Library:NewWindow(ConfigWindow)
     end
     local FpsLabel = Create("TextLabel", {
         Name = "FpsTag",
-        Parent = DropShadowHolder,
-        AnchorPoint = Vector2.new(0, 0),
+        Parent = Main,
+        AnchorPoint = Vector2.new(0.5, 1),
         BackgroundTransparency = 1,
-        Position = UDim2.new(0, 4, 1, 18),
-        Size = UDim2.new(0, 80, 0, 16),
+        Position = UDim2.new(0.5, 0, 1, -4),
+        Size = UDim2.new(0, 100, 0, 14),
         Font = Enum.Font.GothamBold,
-        Text = "FPS: --",
-        TextColor3 = Color3.fromRGB(180, 180, 190),
+        Text = "60 FPS",
+        TextColor3 = Color3.fromRGB(160, 160, 170),
         TextSize = 11,
-        TextXAlignment = Enum.TextXAlignment.Left,
-        ZIndex = 60
+        TextXAlignment = Enum.TextXAlignment.Center,
+        ZIndex = 15,
+        Visible = ConfigWindow._ShowFps ~= false
     })
     do
         local frames, last = 0, os.clock()
         game:GetService("RunService").RenderStepped:Connect(function()
+            if not FpsLabel.Visible then return end
             frames += 1
             local now = os.clock()
-            if now - last >= 0.5 then
+            if now - last >= 0.4 then
                 local fps = math.floor(frames / (now - last) + 0.5)
-                FpsLabel.Text = "FPS: " .. tostring(fps)
+                FpsLabel.Text = tostring(fps) .. " FPS"
                 frames = 0
                 last = now
             end
         end)
     end
+    local function UpdateLockVisibility()
+        local w = DropShadowHolder.AbsoluteSize.X
+        local show = w >= 520
+        for _, d in ipairs(Main:GetDescendants()) do
+            if d.Name == "LockBadge" then
+                local locked = d:GetAttribute("IsLocked")
+                if locked == nil then locked = true end
+                d.Visible = show and locked
+            end
+        end
+    end
+    DropShadowHolder:GetPropertyChangedSignal("AbsoluteSize"):Connect(UpdateLockVisibility)
+    task.defer(UpdateLockVisibility)
     local Window = {
         ScreenGui = ScreenGui,
         Main = Main,
@@ -1924,9 +1961,17 @@ function Library:NewWindow(ConfigWindow)
             end)
             return Card
         end
-        local function MakeGroupbox(RealNameSection, ParentColumn, StartOpened)
-            local NoHeader = (RealNameSection == nil or RealNameSection == "")
+        local function MakeGroupbox(SectionConfig, ParentColumn, StartOpened)
+            local RealNameSection = SectionConfig
+            local SectionTag = nil
             local Opened = StartOpened ~= false
+            if typeof(SectionConfig) == "table" then
+                RealNameSection = SectionConfig.Title or SectionConfig.Name or SectionConfig[1] or ""
+                SectionTag = SectionConfig.Tag or SectionConfig.Badge
+                if SectionConfig.Opened ~= nil then Opened = SectionConfig.Opened == true end
+                if SectionConfig.opened ~= nil then Opened = SectionConfig.opened == true end
+            end
+            local NoHeader = (RealNameSection == nil or RealNameSection == "")
             local Section = Create("Frame", {
                 Name = "Section",
                 Parent = ParentColumn,
@@ -1958,7 +2003,31 @@ function Library:NewWindow(ConfigWindow)
                     BorderSizePixel = 0,
                     Size = UDim2.new(1, 0, 0, 34)
                 })
-                Library:CreateHeaderDecor(NameSection, RealNameSection, 20)
+                local _, TitleLabel = Library:CreateHeaderDecor(NameSection, RealNameSection, 20)
+                if SectionTag and TitleLabel then
+                    local tagStr = tostring(SectionTag)
+                    local tw = TextService:GetTextSize(tagStr, 10, Enum.Font.GothamBold, Vector2.new(200, 20)).X
+                    local TagFrame = Create("Frame", {
+                        Name = "SectionTag",
+                        Parent = NameSection,
+                        BackgroundColor3 = Library.Theme.Accent,
+                        BorderSizePixel = 0,
+                        AnchorPoint = Vector2.new(0, 0.5),
+                        Position = UDim2.new(0.5, (TextService:GetTextSize(tostring(RealNameSection), 14, Enum.Font.GothamBold, Vector2.new(400, 30)).X / 2) + 10, 0.5, 0),
+                        Size = UDim2.new(0, math.max(28, tw + 12), 0, 16),
+                        ZIndex = 4
+                    })
+                    Create("UICorner", {CornerRadius = UDim.new(1, 0), Parent = TagFrame})
+                    Create("TextLabel", {
+                        Parent = TagFrame,
+                        BackgroundTransparency = 1,
+                        Size = UDim2.new(1, 0, 1, 0),
+                        Font = Enum.Font.GothamBold,
+                        Text = tagStr,
+                        TextColor3 = Color3.fromRGB(20, 20, 25),
+                        TextSize = 10
+                    })
+                end
                 HeaderBtn = Create("TextButton", {
                     Parent = NameSection,
                     BackgroundTransparency = 1,
@@ -4256,10 +4325,24 @@ function Library:NewWindow(ConfigWindow)
         function TabFunc:AddLabel(cfg) return ResolveSection(cfg):AddLabel(cfg) end
         function TabFunc:AddPlayerDropdown(cfg) return ResolveSection(cfg):AddPlayerDropdown(cfg) end
         function TabFunc:AddColorToggle(cfg) return ResolveSection(cfg):AddColorToggle(cfg) end
-        function TabFunc:AddLeftGroupbox(SectionName) return MakeGroupbox(SectionName, LeftColumn) end
-
+        function TabFunc:AddLeftGroupbox(SectionName)
+            local cfg = SectionName
+            if typeof(cfg) == "table" and cfg.Position then
+                local p = string.lower(tostring(cfg.Position))
+                if p == "right" then return MakeGroupbox(cfg, RightColumn) end
+            end
+            return MakeGroupbox(SectionName, LeftColumn)
+        end
         function TabFunc:AddRightGroupbox(SectionName) return MakeGroupbox(SectionName, RightColumn) end
-        function TabFunc:AddSection(SectionName) return MakeGroupbox(SectionName, LeftColumn) end
+        function TabFunc:AddSection(SectionName)
+            local cfg = SectionName
+            if typeof(cfg) == "table" then
+                local p = string.lower(tostring(cfg.Position or "left"))
+                if p == "right" then return MakeGroupbox(cfg, RightColumn) end
+                return MakeGroupbox(cfg, LeftColumn)
+            end
+            return MakeGroupbox(SectionName, LeftColumn)
+        end
         return TabFunc
     end
 
