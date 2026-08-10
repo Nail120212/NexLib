@@ -344,8 +344,8 @@ function Library:NewWindow(ConfigWindow)
     Frame.BackgroundTransparency = 1.000
     Frame.BorderColor3 = Color3.fromRGB(0, 0, 0)
     Frame.BorderSizePixel = 0
-    Frame.Position = UDim2.new(1, -110, 0, 0)
-    Frame.Size = UDim2.new(0, 110, 1, 0)
+    Frame.Position = UDim2.new(1, -150, 0, 0)
+    Frame.Size = UDim2.new(0, 150, 1, 0)
 
     UIListLayout.Parent = Frame
     UIListLayout.FillDirection = Enum.FillDirection.Horizontal
@@ -354,6 +354,32 @@ function Library:NewWindow(ConfigWindow)
 
     UIPadding.Parent = Frame
     UIPadding.PaddingTop = UDim.new(0, 10)
+
+    local ThemeBtn = Instance.new("TextButton")
+    ThemeBtn.Name = "Theme"
+    ThemeBtn.Parent = Frame
+    ThemeBtn.BackgroundTransparency = 1
+    ThemeBtn.Size = UDim2.new(0, 30, 0, 30)
+    ThemeBtn.Text = ""
+    ThemeBtn.LayoutOrder = 0
+
+    local ThemeIcon = Instance.new("ImageLabel")
+    ThemeIcon.Parent = ThemeBtn
+    ThemeIcon.AnchorPoint = Vector2.new(0.5, 0.5)
+    ThemeIcon.BackgroundTransparency = 1
+    ThemeIcon.Position = UDim2.new(0.5, 0, 0.5, 0)
+    ThemeIcon.Size = UDim2.new(0, 18, 0, 18)
+    Library:SetIcon(ThemeIcon, Library.DefaultIcons.Palette, Library.Theme.Accent)
+
+    ThemeBtn.MouseButton1Click:Connect(function()
+        local nextTheme = Library.CurrentTheme == "Dark" and "Light" or "Dark"
+        Library.CurrentTheme = nextTheme
+        Library.Theme = Library.Themes[nextTheme]
+        Library.Theme.Accent = ConfigWindow.Color
+        Main.BackgroundColor3 = Library.Theme.Main
+        NameHub.TextColor3 = Library.Theme.Text
+        Desc.TextColor3 = Library.Theme.TextDisabled
+    end)
 
     Minize.Name = "Minize"
     Minize.Parent = Frame
@@ -366,6 +392,7 @@ function Library:NewWindow(ConfigWindow)
     Minize.Selectable = false
     Minize.Size = UDim2.new(0, 30, 0, 30)
     Minize.Text = ""
+    Minize.LayoutOrder = 1
 
     Icon.Name = "Icon"
     Icon.Parent = Minize
@@ -389,6 +416,7 @@ function Library:NewWindow(ConfigWindow)
     Large.Selectable = false
     Large.Size = UDim2.new(0, 30, 0, 30)
     Large.Text = ""
+    Large.LayoutOrder = 2
 
     Icon_2.Name = "Icon"
     Icon_2.Parent = Large
@@ -412,6 +440,7 @@ function Library:NewWindow(ConfigWindow)
     Close.Selectable = false
     Close.Size = UDim2.new(0, 30, 0, 30)
     Close.Text = ""
+    Close.LayoutOrder = 3
 
     Icon_3.Name = "Icon"
     Icon_3.Parent = Close
@@ -619,27 +648,42 @@ function Library:NewWindow(ConfigWindow)
 
     self:MakeDraggable(FloatBox, FloatBox)
 
-    FloatScan.MouseButton1Click:Connect(function()
-        DropShadowHolder.Visible = not DropShadowHolder.Visible
-    end)
-
-    FloatBox.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            local start = tick()
-            local conn
-            conn = input.Changed:Connect(function()
-                if input.UserInputState == Enum.UserInputState.End then
-                    if tick() - start < 0.2 then
-                        DropShadowHolder.Visible = not DropShadowHolder.Visible
-                    end
-                    conn:Disconnect()
-                end
+    local function ToggleWindow(open)
+        if open then
+            DropShadowHolder.Visible = true
+            DropShadowHolder.Size = UDim2.new(0, 0, 0, 0)
+            Library:Tween(DropShadowHolder, TweenInfo.new(0.35, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+                Size = ConfigWindow.Size
+            })
+        else
+            Library:Tween(DropShadowHolder, TweenInfo.new(0.28, Enum.EasingStyle.Quart, Enum.EasingDirection.In), {
+                Size = UDim2.new(0, 0, 0, 0)
+            }, function()
+                DropShadowHolder.Visible = false
+                DropShadowHolder.Size = ConfigWindow.Size
             end)
         end
+    end
+
+    FloatScan.MouseButton1Click:Connect(function()
+        local isOpen = DropShadowHolder.Visible
+        ToggleWindow(not isOpen)
     end)
 
+    local IsEnlarged = false
+    local NormalSize = ConfigWindow.Size
+    local LargeSize = UDim2.new(0, NormalSize.X.Offset * 1.25, 0, NormalSize.Y.Offset * 1.25)
+
     Minize.MouseButton1Click:Connect(function()
-        DropShadowHolder.Visible = false
+        ToggleWindow(false)
+    end)
+
+    Large.MouseButton1Click:Connect(function()
+        IsEnlarged = not IsEnlarged
+        local target = IsEnlarged and LargeSize or NormalSize
+        Library:Tween(DropShadowHolder, TweenInfo.new(0.35, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
+            Size = target
+        })
     end)
 
     Close.MouseButton1Down:Connect(function()
@@ -2169,29 +2213,28 @@ function Library:NewWindow(ConfigWindow)
                 Tag.Name = "Tag"
                 Tag.Parent = SectionList
                 Tag.BackgroundColor3 = cftag.Color
-                Tag.BackgroundTransparency = 0.15
+                Tag.BackgroundTransparency = 0.1
                 Tag.BorderSizePixel = 0
-                Tag.Size = UDim2.new(0, 0, 0, 22)
+                Tag.Size = UDim2.new(0, 0, 0, 18)
                 Tag.AutomaticSize = Enum.AutomaticSize.X
 
-                UICorner_T.CornerRadius = UDim.new(0, 6)
+                UICorner_T.CornerRadius = UDim.new(0, 4)
                 UICorner_T.Parent = Tag
 
                 Title_T.Name = "Title"
                 Title_T.Parent = Tag
                 Title_T.BackgroundTransparency = 1
-                Title_T.Position = UDim2.new(0, 10, 0, 0)
                 Title_T.Size = UDim2.new(0, 0, 1, 0)
                 Title_T.AutomaticSize = Enum.AutomaticSize.X
                 Title_T.Font = Enum.Font.GothamBold
                 Title_T.Text = cftag.Title
-                Title_T.TextColor3 = Library.Theme.Text
-                Title_T.TextSize = 11
+                Title_T.TextColor3 = Color3.fromRGB(255, 255, 255)
+                Title_T.TextSize = 10
 
                 local Pad = Instance.new("UIPadding")
                 Pad.Parent = Tag
-                Pad.PaddingLeft = UDim.new(0, 10)
-                Pad.PaddingRight = UDim.new(0, 10)
+                Pad.PaddingLeft = UDim.new(0, 8)
+                Pad.PaddingRight = UDim.new(0, 8)
             end
 
             function SectionFunc:AddColorpicker(cfcolor)
