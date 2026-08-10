@@ -129,12 +129,66 @@ function Library:BindConfig(Flag, Element)
 end
 function Library:SaveConfig(FileName)
     FileName = tostring(FileName or "kingbanana_config")
+    local payload = {
+        Flags = self.Flags,
+        Theme = self.CurrentTheme,
+        Transparency = self.Transparency,
+        Window = self.WindowGeometry or nil
+    }
     local ok = pcall(function()
         if writefile then
-            writefile(FileName .. ".json", game:GetService("HttpService"):JSONEncode(self.Flags))
+            writefile(FileName .. ".json", game:GetService("HttpService"):JSONEncode(payload))
         end
     end)
     return ok
+end
+function Library:ImportConfig(JsonOrTable)
+    local data = JsonOrTable
+    if type(JsonOrTable) == "string" then
+        local ok, decoded = pcall(function()
+            return game:GetService("HttpService"):JSONDecode(JsonOrTable)
+        end)
+        if not ok then return false end
+        data = decoded
+    end
+    if type(data) ~= "table" then return false end
+    local flags = data.Flags or data
+    if type(flags) == "table" then
+        for k, v in pairs(flags) do
+            self.Flags[k] = v
+            local el = self.ConfigBinds[tostring(k)]
+            if el and el.Set then
+                pcall(function() el:Set(v) end)
+            end
+        end
+    end
+    if data.Theme then pcall(function() self:SetTheme(data.Theme) end) end
+    if data.Transparency then pcall(function() self:SetTransparency(data.Transparency) end) end
+    if data.Window and self.ActiveWindows and self.ActiveWindows[1] then
+        local w = self.ActiveWindows[1]
+        if w.DropShadowHolder and data.Window.Size then
+            pcall(function()
+                w.DropShadowHolder.Size = UDim2.new(0, data.Window.Size.X or 500, 0, data.Window.Size.Y or 350)
+                if data.Window.Pos then
+                    w.DropShadowHolder.Position = UDim2.new(0, data.Window.Pos.X, 0, data.Window.Pos.Y)
+                end
+            end)
+        end
+    end
+    return true
+end
+function Library:ExportConfig()
+    local payload = {
+        Flags = self.Flags,
+        Theme = self.CurrentTheme,
+        Transparency = self.Transparency,
+        Window = self.WindowGeometry
+    }
+    local json = game:GetService("HttpService"):JSONEncode(payload)
+    pcall(function()
+        if setclipboard then setclipboard(json) elseif toclipboard then toclipboard(json) end
+    end)
+    return json
 end
 function Library:LoadConfig(FileName)
     FileName = tostring(FileName or "kingbanana_config")
@@ -145,20 +199,7 @@ function Library:LoadConfig(FileName)
         return nil
     end)
     if ok and typeof(data) == "table" then
-        for k, v in pairs(data) do
-            self.Flags[k] = v
-            local el = self.ConfigBinds[tostring(k)]
-            if el then
-                pcall(function()
-                    if el.Set then
-                        el:Set(v)
-                    elseif el.SetValue then
-                        el:SetValue(v)
-                    end
-                end)
-            end
-        end
-        return true
+        return self:ImportConfig(data)
     end
     return false
 end
@@ -252,7 +293,7 @@ end
 function Library:TweenInstance(Instance, Time, Property, TargetValue, Callback)
     local Tween = TweenService:Create(
         Instance,
-        TweenInfo.new(Time, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+        TweenInfo.new(Time, Enum.EasingStyle.Quint, Enum.EasingDirection.Out),
         { [Property] = TargetValue }
     )
     if Callback then
@@ -485,11 +526,13 @@ function Library:MakeDraggable(DragBar, Object)
     DragBar.InputBegan:Connect(function(Input)
         if Input.UserInputType == Enum.UserInputType.MouseButton1 or Input.UserInputType == Enum.UserInputType.Touch then
             Dragging = true
+            Library.ScrollLocked = true
             DragStart = Input.Position
             StartPosition = Object.Position
             Input.Changed:Connect(function()
                 if Input.UserInputState == Enum.UserInputState.End then
                     Dragging = false
+                    Library.ScrollLocked = false
                 end
             end)
         end
@@ -555,6 +598,26 @@ function Library:ResolveLockConfig(Config)
         Text = LockText,
         Icon = LockIcon
     }
+end
+function Library:ApplyDisabled(Object, Disabled)
+    if not Object then return end
+    Object:SetAttribute("Disabled", Disabled and true or false)
+    local t = Disabled and 0.55 or 0
+    for _, d in ipairs(Object:GetDescendants()) do
+        if d:IsA("TextLabel") or d:IsA("TextButton") or d:IsA("TextBox") then
+            pcall(function() d.TextTransparency = math.max(d.TextTransparency, t) end)
+        elseif d:IsA("ImageLabel") or d:IsA("ImageButton") then
+            pcall(function() d.ImageTransparency = math.max(d.ImageTransparency, t) end)
+        end
+    end
+    if Object:IsA("Frame") then
+        pcall(function()
+            Object.BackgroundTransparency = math.min(0.98, (Object.BackgroundTransparency or 0.9) + (Disabled and 0.05 or 0))
+        end)
+    end
+end
+function Library:IsDisabled(Object)
+    return Object and Object:GetAttribute("Disabled") == true
 end
 function Library:PulseLockBadge(Badge)
     if not Badge then
@@ -848,8 +911,8 @@ function Library:NewWindow(ConfigWindow)
         Parent = Top,
         BackgroundTransparency = 1,
         BorderSizePixel = 0,
-        Position = UDim2.new(1, -74, 0, 0),
-        Size = UDim2.new(0, 74, 1, 0)
+        Position = UDim2.new(1, -120, 0, 0),
+        Size = UDim2.new(0, 120, 1, 0)
     })
 
     Create("UIListLayout", {
@@ -892,6 +955,81 @@ function Library:NewWindow(ConfigWindow)
     end
     local Large = MakeIconButton(Right, "rbxassetid://136452605242985", UDim2.new(0, 18, 0, 18), Vector2.new(580, 194), Vector2.new(96, 96))
     local Close = MakeIconButton(Right, "rbxassetid://105957381820378", UDim2.new(0, 20, 0, 20), Vector2.new(480, 0), Vector2.new(96, 96))
+
+    local ThemeBtn = Create("TextButton", {
+        Parent = Right,
+        BackgroundColor3 = Library.Theme.Background,
+        BorderSizePixel = 0,
+        Size = UDim2.new(0, 36, 0, 22),
+        Font = Enum.Font.GothamBold,
+        Text = "Theme",
+        TextColor3 = Library.Theme.Text,
+        TextSize = 10,
+        AutoButtonColor = false,
+        LayoutOrder = -1,
+        ZIndex = 5
+    })
+    Create("UICorner", {CornerRadius = UDim.new(0, 5), Parent = ThemeBtn})
+    Create("UIStroke", {Parent = ThemeBtn, Color = Library.Theme.Stroke, Transparency = 0.45})
+    local ThemeDrop = Create("Frame", {
+        Name = "ThemeDrop",
+        Parent = DropdownZone,
+        BackgroundColor3 = Color3.fromRGB(18, 18, 18),
+        BorderSizePixel = 0,
+        Size = UDim2.new(0, 140, 0, 0),
+        Visible = false,
+        ZIndex = 40
+    })
+    Create("UICorner", {CornerRadius = UDim.new(0, 6), Parent = ThemeDrop})
+    Create("UIStroke", {Parent = ThemeDrop, Color = Library.Theme.Stroke, Transparency = 0.4})
+    local ThemeList = Create("UIListLayout", {
+        Parent = ThemeDrop,
+        SortOrder = Enum.SortOrder.LayoutOrder,
+        Padding = UDim.new(0, 4)
+    })
+    Create("UIPadding", {Parent = ThemeDrop, PaddingTop = UDim.new(0, 6), PaddingBottom = UDim.new(0, 6), PaddingLeft = UDim.new(0, 6), PaddingRight = UDim.new(0, 6)})
+    local function RefreshThemeList()
+        for _, c in ipairs(ThemeDrop:GetChildren()) do
+            if c:IsA("TextButton") then c:Destroy() end
+        end
+        local names = {}
+        for n in pairs(Library.Themes) do table.insert(names, n) end
+        table.sort(names)
+        for _, n in ipairs(names) do
+            local b = Create("TextButton", {
+                Parent = ThemeDrop,
+                BackgroundColor3 = Library.Theme.Background,
+                BorderSizePixel = 0,
+                Size = UDim2.new(1, 0, 0, 26),
+                Font = Enum.Font.GothamBold,
+                Text = n,
+                TextColor3 = Library.Theme.Text,
+                TextSize = 12,
+                AutoButtonColor = false,
+                ZIndex = 41
+            })
+            Create("UICorner", {CornerRadius = UDim.new(0, 4), Parent = b})
+            b.Activated:Connect(function()
+                Library:SetTheme(n)
+                ThemeDrop.Visible = false
+                Window:CloseOverlay(ThemeDrop)
+            end)
+        end
+        ThemeDrop.Size = UDim2.new(0, 140, 0, 12 + #names * 30)
+    end
+    ThemeBtn.Activated:Connect(function()
+        RefreshThemeList()
+        local abs = ThemeBtn.AbsolutePosition
+        local absS = ThemeBtn.AbsoluteSize
+        ThemeDrop.Position = UDim2.new(0, abs.X, 0, abs.Y + absS.Y + 6)
+        if ThemeDrop.Visible then
+            ThemeDrop.Visible = false
+            Window:CloseOverlay(ThemeDrop)
+        else
+            ThemeDrop.Visible = true
+            Window:OpenOverlay(ThemeDrop)
+        end
+    end)
     local TabFrame = Create("Frame", {
         Name = "TabFrame",
         Parent = Main,
@@ -1086,7 +1224,7 @@ function Library:NewWindow(ConfigWindow)
     do
         local Resizing = false
         local StartPos, StartSize
-        local MinW, MinH = 300, 240
+        local MinW, MinH = 480, 300
         local function BeginResize(Input)
             if Input.UserInputType == Enum.UserInputType.MouseButton1 or Input.UserInputType == Enum.UserInputType.Touch then
                 Resizing = true
@@ -1118,8 +1256,34 @@ function Library:NewWindow(ConfigWindow)
             end
         end)
     end
+    local FpsLabel = Create("TextLabel", {
+        Name = "FpsTag",
+        Parent = DropShadowHolder,
+        AnchorPoint = Vector2.new(0, 0),
+        BackgroundTransparency = 1,
+        Position = UDim2.new(0, 4, 1, 18),
+        Size = UDim2.new(0, 80, 0, 16),
+        Font = Enum.Font.GothamBold,
+        Text = "FPS: --",
+        TextColor3 = Color3.fromRGB(180, 180, 190),
+        TextSize = 11,
+        TextXAlignment = Enum.TextXAlignment.Left,
+        ZIndex = 60
+    })
+    do
+        local frames, last = 0, os.clock()
+        game:GetService("RunService").RenderStepped:Connect(function()
+            frames += 1
+            local now = os.clock()
+            if now - last >= 0.5 then
+                local fps = math.floor(frames / (now - last) + 0.5)
+                FpsLabel.Text = "FPS: " .. tostring(fps)
+                frames = 0
+                last = now
+            end
+        end)
+    end
     local Window = {
-
         ScreenGui = ScreenGui,
         Main = Main,
         DropShadowHolder = DropShadowHolder,
@@ -1128,9 +1292,23 @@ function Library:NewWindow(ConfigWindow)
         FloatingButton = FloatingButton,
         Tabs = {},
         CurrentTab = nil,
-        TitleTags = TitleTags
+        TitleTags = TitleTags,
+        FpsLabel = FpsLabel,
+        Minimized = false
     }
     table.insert(self.ActiveWindows, Window)
+    local function SaveGeometry()
+        local s = DropShadowHolder.AbsoluteSize
+        local p = DropShadowHolder.AbsolutePosition
+        if s.X > 20 and s.Y > 20 then
+            Library.WindowGeometry = {
+                Size = {X = math.floor(s.X), Y = math.floor(s.Y)},
+                Pos = {X = math.floor(p.X), Y = math.floor(p.Y)}
+            }
+        end
+    end
+    DropShadowHolder:GetPropertyChangedSignal("AbsoluteSize"):Connect(SaveGeometry)
+    DropShadowHolder:GetPropertyChangedSignal("AbsolutePosition"):Connect(SaveGeometry)
     self:RegisterThemeObject(NameHub, "TextColor3", "Text")
 
     function Window:AddTag(cftag)
@@ -1661,13 +1839,36 @@ function Library:NewWindow(ConfigWindow)
         end
         ClickTab.Activated:Connect(SelectTab)
 
+        local TabBadge = Create("Frame", {
+            Name = "TabBadge",
+            Parent = TabDisable,
+            AnchorPoint = Vector2.new(1, 0),
+            BackgroundColor3 = Library.Theme.Accent,
+            BorderSizePixel = 0,
+            Position = UDim2.new(1, -4, 0, 4),
+            Size = UDim2.new(0, 16, 0, 16),
+            Visible = false,
+            ZIndex = 5
+        })
+        Create("UICorner", {CornerRadius = UDim.new(1, 0), Parent = TabBadge})
+        local TabBadgeText = Create("TextLabel", {
+            Parent = TabBadge,
+            BackgroundTransparency = 1,
+            Size = UDim2.new(1, 0, 1, 0),
+            Font = Enum.Font.GothamBold,
+            Text = "0",
+            TextColor3 = Color3.new(1, 1, 1),
+            TextSize = 10
+        })
         TabData = {
             Name = name,
             Button = TabDisable,
             NameTab = NameTab,
             Choose = Choose,
             Layout = Layout,
-            Icon = TabIcon
+            Icon = TabIcon,
+            Badge = TabBadge,
+            BadgeText = TabBadgeText
         }
         table.insert(Window.Tabs, TabData)
         if #Window.Tabs == 1 then
@@ -1689,6 +1890,16 @@ function Library:NewWindow(ConfigWindow)
         end
         AllLayouts = AllLayouts + 1
         local TabFunc = {}
+        function TabFunc:SetBadge(Value)
+            if Value == nil or Value == false or Value == 0 or Value == "" then
+                TabBadge.Visible = false
+                return
+            end
+            TabBadge.Visible = true
+            TabBadgeText.Text = tostring(Value)
+            local w = math.max(16, #tostring(Value) * 7 + 8)
+            TabBadge.Size = UDim2.new(0, w, 0, 16)
+        end
         local function MakeCardBase(Parent, BaseHeight)
             local Card = Create("Frame", {
                 Parent = Parent,
@@ -1698,22 +1909,32 @@ function Library:NewWindow(ConfigWindow)
                 Size = UDim2.new(1, 0, 0, BaseHeight)
             })
             Create("UICorner", {
-                CornerRadius = UDim.new(0, 3),
+                CornerRadius = UDim.new(0, 4),
                 Parent = Card
             })
             Library:CreateAccentBar(Card, 7)
             Library:RegisterThemeObject(Card, "BackgroundColor3", "Card")
+            local baseT = Library.Theme.CardTransparency or 0.95
+            Card.MouseEnter:Connect(function()
+                if Card:GetAttribute("Disabled") then return end
+                Library:TweenInstance(Card, 0.15, "BackgroundTransparency", math.max(0.85, baseT - 0.08))
+            end)
+            Card.MouseLeave:Connect(function()
+                Library:TweenInstance(Card, 0.18, "BackgroundTransparency", baseT)
+            end)
             return Card
         end
-        local function MakeGroupbox(RealNameSection, ParentColumn)
+        local function MakeGroupbox(RealNameSection, ParentColumn, StartOpened)
             local NoHeader = (RealNameSection == nil or RealNameSection == "")
+            local Opened = StartOpened ~= false
             local Section = Create("Frame", {
                 Name = "Section",
                 Parent = ParentColumn,
                 BackgroundColor3 = Library.Theme.Section or Color3.fromRGB(255, 255, 255),
                 BackgroundTransparency = Library.Theme.SectionTransparency or 0.98,
                 BorderSizePixel = 0,
-                Size = UDim2.new(1, 0, 0, NoHeader and 20 or 55)
+                Size = UDim2.new(1, 0, 0, NoHeader and 20 or 55),
+                ClipsDescendants = true
             })
             Library:RegisterThemeObject(Section, "BackgroundColor3", "Section")
 
@@ -1728,6 +1949,7 @@ function Library:NewWindow(ConfigWindow)
                 Parent = Section
             })
             local HeaderH = 0
+            local HeaderBtn
             if not NoHeader then
                 local NameSection = Create("Frame", {
                     Name = "NameSection",
@@ -1737,6 +1959,14 @@ function Library:NewWindow(ConfigWindow)
                     Size = UDim2.new(1, 0, 0, 34)
                 })
                 Library:CreateHeaderDecor(NameSection, RealNameSection, 20)
+                HeaderBtn = Create("TextButton", {
+                    Parent = NameSection,
+                    BackgroundTransparency = 1,
+                    Size = UDim2.new(1, 0, 1, 0),
+                    Text = "",
+                    AutoButtonColor = false,
+                    ZIndex = 3
+                })
                 HeaderH = 36
             end
             local SectionList = Create("Frame", {
@@ -1757,11 +1987,29 @@ function Library:NewWindow(ConfigWindow)
             local SectionListLayout = Create("UIListLayout", {
                 Parent = SectionList,
                 SortOrder = Enum.SortOrder.LayoutOrder,
-                Padding = UDim.new(0, 6)
+                Padding = UDim.new(0, 10)
             })
+            local function RefreshSectionSize(anim)
+                local body = Opened and SectionListLayout.AbsoluteContentSize.Y or 0
+                local h = body + (NoHeader and 20 or 56)
+                if not Opened and not NoHeader then h = HeaderH + 8 end
+                if anim then
+                    Library:TweenInstance(Section, 0.22, "Size", UDim2.new(1, 0, 0, h))
+                else
+                    Section.Size = UDim2.new(1, 0, 0, h)
+                end
+                SectionList.Visible = Opened or NoHeader
+            end
             SectionListLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-                Section.Size = UDim2.new(1, 0, 0, SectionListLayout.AbsoluteContentSize.Y + (NoHeader and 20 or 56))
+                RefreshSectionSize(false)
             end)
+            if HeaderBtn then
+                HeaderBtn.Activated:Connect(function()
+                    Opened = not Opened
+                    RefreshSectionSize(true)
+                end)
+            end
+            task.defer(function() RefreshSectionSize(false) end)
 
             local SectionFunc = {}
             function SectionFunc:AddToggle(cftoggle)
