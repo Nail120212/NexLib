@@ -1,4 +1,4 @@
-local Library = loadstring(game:HttpGet("PASTE_RAW_URL_OF_sh1ttybanana.lua_HERE"))()
+local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/Nail120212/NexLib/refs/heads/main/sh1ttybanana/sh1ttybanana.lua"))()
 
 local Window = Library:NewWindow({
     Title = "sh1ttybanana",
@@ -7,8 +7,12 @@ local Window = Library:NewWindow({
     Size = UDim2.new(0, 600, 0, 420),
     Logo = "rbxassetid://89646749075297",
     Icon = "rbxassetid://89646749075297",
+    Transparent = false,
     FloatTransparency = 0.45
 })
+
+Window:Tag({ Title = "v1.0", Color = Color3.fromRGB(236, 162, 1) })
+Window:Tag({ Title = "UI Library", Color = Color3.fromRGB(16, 197, 80) })
 
 local Main = Window:T("General", "home")
 local Settings = Window:T("Settings", "settings")
@@ -32,40 +36,30 @@ Sec1:AddToggle({
     Title = "Enable Feature",
     Description = "Smooth toggle",
     Default = false,
-    Callback = function(v)
-        print("Toggle:", v)
-    end
+    Callback = function(v) print("Toggle:", v) end
 })
 
 Sec1:AddSlider({
     Title = "Speed",
     Description = "0 - 100",
-    Min = 0,
-    Max = 100,
-    Default = 50,
-    Increment = 1,
-    Callback = function(v)
-        print("Slider:", v)
-    end
+    Min = 0, Max = 100, Default = 50, Increment = 1,
+    Callback = function(v) print("Slider:", v) end
 })
 
 Sec1:AddButton({
     Title = "Run Action",
     Description = "Click me",
-    Callback = function()
-        print("Button clicked")
-    end
+    Callback = function() print("Button clicked") end
 })
 
 Sec1:AddKeybind({
     Title = "Toggle Key",
     Description = "Bind a key",
     Default = Enum.KeyCode.RightControl,
-    Callback = function(k)
-        print("Keybind:", k.Name)
-    end
+    Callback = function(k) print("Keybind:", k.Name) end
 })
 
+Sec1:AddSpace(8)
 Sec1:AddDivider()
 
 Sec1:AddInput({
@@ -73,9 +67,7 @@ Sec1:AddInput({
     Description = "Type something",
     PlaceHolder = "Enter name...",
     Default = "",
-    Callback = function(t)
-        print("Input:", t)
-    end
+    Callback = function(t) print("Input:", t) end
 })
 
 Sec1:AddDropdown({
@@ -83,35 +75,26 @@ Sec1:AddDropdown({
     Description = "Select one",
     Values = {"Normal", "Fast", "Extreme"},
     Default = "Normal",
-    Callback = function(v)
-        print("Dropdown:", v)
-    end
+    Callback = function(v) print("Dropdown:", v) end
 })
 
 Sec1:AddColorpicker({
     Title = "Accent Color",
     Description = "Real colorpicker",
     Default = Color3.fromRGB(179, 0, 255),
-    Callback = function(c)
-        print("Color:", c)
-    end
-})
-
-Sec1:AddTag({
-    Title = "BETA",
-    Color = Color3.fromRGB(179, 0, 255)
+    Callback = function(c) print("Color:", c) end
 })
 
 Sec1:AddParagraph({
     Title = "Info",
-    Content = "All new elements included"
+    Content = "Window tags + dialog + popup + space added"
 })
 
 local Sec2 = Settings:AddSection("Appearance")
 
 Sec2:AddToggle({
     Title = "Transparent UI",
-    Default = true,
+    Default = false,
     Callback = function() end
 })
 
@@ -122,24 +105,30 @@ Sec2:AddColorpicker({
 })
 
 Sec2:AddMultiButton({
-    Full = {
-        Title = "Export Config",
-        Callback = function()
-            print("Export config")
-        end
-    },
-    Left = {
-        Title = "Import",
-        Callback = function()
-            print("Import config")
-        end
-    },
-    Right = {
-        Title = "Reset",
-        Callback = function()
-            print("Reset config")
-        end
-    }
+    Full = { Title = "Export Config", Callback = function() print("Export") end },
+    Left = { Title = "Import", Callback = function() print("Import") end },
+    Right = { Title = "Reset", Callback = function() print("Reset") end }
+})
+
+Sec2:AddButton({
+    Title = "Show Dialog",
+    Callback = function()
+        Window:Dialog({
+            Title = "Confirm",
+            Content = "Are you sure you want to continue?",
+            Buttons = {
+                { Title = "Cancel", Variant = "Secondary", Callback = function() end },
+                { Title = "Confirm", Variant = "Primary", Callback = function() print("Confirmed") end }
+            }
+        })
+    end
+})
+
+Sec2:AddButton({
+    Title = "Show Notify",
+    Callback = function()
+        Window:Notify({ Title = "Success", Content = "Action completed", Duration = 3 })
+    end
 })
 
 local Sec3 = Components:AddSection("All Elements")
@@ -151,7 +140,7 @@ Sec3:AddDropdown({ Title = "Dropdown", Values = {"A", "B", "C"}, Callback = func
 Sec3:AddInput({ Title = "Input", PlaceHolder = "Type...", Callback = function() end })
 Sec3:AddColorpicker({ Title = "Colorpicker", Default = Color3.fromRGB(255, 100, 100), Callback = function() end })
 Sec3:AddKeybind({ Title = "Keybind", Default = Enum.KeyCode.F, Callback = function() end })
-Sec3:AddTag({ Title = "NEW", Color = Color3.fromRGB(0, 200, 100) })
+Sec3:AddSpace(6)
 Sec3:AddDivider()
 
 Sec3:AddMultiButton({
@@ -163,38 +152,20 @@ Sec3:AddMultiButton({
 Sec3:AddCodeblock({
     Title = "Code Block",
     Code = "print('Hello from sh1ttybanana')\nprint('Run works')",
-    Callback = function(code)
-        print("Code ran")
-    end
+    Callback = function() print("Code ran") end
 })
 
 Sec3:AddParagraph({ Title = "Paragraph", Content = "Everything is here" })
 
 local SecAdmin = Admin:AddSection("Restricted")
 
-SecAdmin:AddParagraph({
-    Title = "Admin Only",
-    Content = "Password: admin123"
-})
-
-SecAdmin:AddButton({
-    Title = "Secret Action",
-    Callback = function()
-        print("Admin action")
-    end
-})
-
-SecAdmin:AddToggle({
-    Title = "God Mode",
-    Default = false,
-    Callback = function(v)
-        print("God:", v)
-    end
-})
+SecAdmin:AddParagraph({ Title = "Admin Only", Content = "Password: admin123" })
+SecAdmin:AddButton({ Title = "Secret Action", Callback = function() print("Admin action") end })
+SecAdmin:AddToggle({ Title = "God Mode", Default = false, Callback = function(v) print("God:", v) end })
 
 local SecAbout = About:AddSection("Credits")
 
 SecAbout:AddParagraph({
     Title = "sh1ttybanana",
-    Content = "Your original base + real colorpicker, keybind, multibutton, codeblock, lock tabs, floating restyle, smoother animations"
+    Content = "Window:Tag pills, Dialog, Popup, Notify, Space, real colorpicker, keybind, multibutton, codeblock, lock tabs, floating restyle"
 })

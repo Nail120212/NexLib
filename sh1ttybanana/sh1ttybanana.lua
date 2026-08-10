@@ -193,9 +193,12 @@ function Library:NewWindow(ConfigWindow)
         Logo = "rbxassetid://89646749075297",
         Color = Color3.fromRGB(179, 0, 255),
         Size = UDim2.new(0, 580, 0, 380),
+        Transparent = false,
+        FloatTransparency = 0.5,
     }, ConfigWindow or {})
 
     Library.Theme.Accent = ConfigWindow.Color
+    local WindowTags = {}
 
     local TeddyUI_Premium = Instance.new("ScreenGui")
     local DropShadowHolder = Instance.new("Frame")
@@ -268,7 +271,7 @@ function Library:NewWindow(ConfigWindow)
     Main.Parent = DropShadowHolder
     Main.AnchorPoint = Vector2.new(0.5, 0.5)
     Main.BackgroundColor3 = Library.Theme.Main
-    Main.BackgroundTransparency = 0.070
+    Main.BackgroundTransparency = ConfigWindow.Transparent and 0.25 or 0.07
     Main.BorderColor3 = Color3.fromRGB(0, 0, 0)
     Main.BorderSizePixel = 0
     Main.Position = UDim2.new(0.5, 0, 0.5, 0)
@@ -2691,13 +2694,211 @@ function Library:NewWindow(ConfigWindow)
                 end)
             end
 
+            function SectionFunc:AddSpace(amount)
+                local Space = Instance.new("Frame")
+                Space.Name = "Space"
+                Space.Parent = SectionList
+                Space.BackgroundTransparency = 1
+                Space.Size = UDim2.new(1, 0, 0, amount or 10)
+            end
+
             return SectionFunc
         end
 
         return TabFunc
     end
 
-    return Tab
+    local WindowAPI = {}
+
+    function WindowAPI:T(...)
+        return Tab:T(...)
+    end
+
+    function WindowAPI:Tag(cfg)
+        cfg = Library:MakeConfig({
+            Title = "Tag",
+            Color = Color3.fromRGB(48, 255, 106),
+            Icon = nil
+        }, cfg or {})
+
+        local TagHolder = Top:FindFirstChild("TagHolder")
+        if not TagHolder then
+            TagHolder = Instance.new("Frame")
+            TagHolder.Name = "TagHolder"
+            TagHolder.Parent = Top
+            TagHolder.BackgroundTransparency = 1
+            TagHolder.Position = UDim2.new(0, 200, 0, 12)
+            TagHolder.Size = UDim2.new(0, 300, 0, 26)
+
+            local TagList = Instance.new("UIListLayout")
+            TagList.Parent = TagHolder
+            TagList.FillDirection = Enum.FillDirection.Horizontal
+            TagList.Padding = UDim.new(0, 6)
+            TagList.SortOrder = Enum.SortOrder.LayoutOrder
+        end
+
+        local Tag = Instance.new("Frame")
+        Tag.Name = "Tag"
+        Tag.Parent = TagHolder
+        Tag.BackgroundColor3 = cfg.Color
+        Tag.BorderSizePixel = 0
+        Tag.Size = UDim2.new(0, 0, 0, 22)
+        Tag.AutomaticSize = Enum.AutomaticSize.X
+
+        local TC = Instance.new("UICorner")
+        TC.CornerRadius = UDim.new(1, 0)
+        TC.Parent = Tag
+
+        local TL = Instance.new("TextLabel")
+        TL.Parent = Tag
+        TL.BackgroundTransparency = 1
+        TL.Size = UDim2.new(0, 0, 1, 0)
+        TL.AutomaticSize = Enum.AutomaticSize.X
+        TL.Font = Enum.Font.GothamBold
+        TL.Text = cfg.Title
+        TL.TextColor3 = Color3.fromRGB(20, 20, 20)
+        TL.TextSize = 11
+
+        local Pad = Instance.new("UIPadding")
+        Pad.Parent = Tag
+        Pad.PaddingLeft = UDim.new(0, 10)
+        Pad.PaddingRight = UDim.new(0, 10)
+
+        table.insert(WindowTags, Tag)
+        return Tag
+    end
+
+    function WindowAPI:Dialog(cfg)
+        cfg = Library:MakeConfig({
+            Title = "Dialog",
+            Content = "",
+            Buttons = {}
+        }, cfg or {})
+
+        DropdownZone.Visible = true
+        Library:TweenInstance(DropdownZone, 0.25, "BackgroundTransparency", 0.4)
+
+        local Popup = Instance.new("Frame")
+        Popup.Parent = DropdownZone
+        Popup.AnchorPoint = Vector2.new(0.5, 0.5)
+        Popup.BackgroundColor3 = Color3.fromRGB(18, 18, 18)
+        Popup.BorderSizePixel = 0
+        Popup.Position = UDim2.new(0.5, 0, 0.5, 0)
+        Popup.Size = UDim2.new(0, 340, 0, 160)
+
+        local PC = Instance.new("UICorner")
+        PC.CornerRadius = UDim.new(0, 10)
+        PC.Parent = Popup
+
+        local Title = Instance.new("TextLabel")
+        Title.Parent = Popup
+        Title.BackgroundTransparency = 1
+        Title.Position = UDim2.new(0, 18, 0, 14)
+        Title.Size = UDim2.new(1, -36, 0, 22)
+        Title.Font = Enum.Font.GothamBold
+        Title.Text = cfg.Title
+        Title.TextColor3 = Library.Theme.Text
+        Title.TextSize = 15
+        Title.TextXAlignment = Enum.TextXAlignment.Left
+
+        local Content = Instance.new("TextLabel")
+        Content.Parent = Popup
+        Content.BackgroundTransparency = 1
+        Content.Position = UDim2.new(0, 18, 0, 42)
+        Content.Size = UDim2.new(1, -36, 0, 40)
+        Content.Font = Enum.Font.Gotham
+        Content.Text = cfg.Content
+        Content.TextColor3 = Library.Theme.TextDisabled
+        Content.TextSize = 13
+        Content.TextXAlignment = Enum.TextXAlignment.Left
+        Content.TextWrapped = true
+
+        local function Close()
+            Popup:Destroy()
+            Library:TweenInstance(DropdownZone, 0.25, "BackgroundTransparency", 1, function()
+                DropdownZone.Visible = false
+            end)
+        end
+
+        local btnCount = #cfg.Buttons
+        for i, btn in ipairs(cfg.Buttons) do
+            local B = Instance.new("TextButton")
+            B.Parent = Popup
+            B.BackgroundColor3 = (btn.Variant == "Primary") and Library.Theme.Accent or Color3.fromRGB(40, 40, 40)
+            B.BorderSizePixel = 0
+            B.Size = UDim2.new(0, 140, 0, 32)
+            B.Position = UDim2.new(1, -18 - (btnCount - i + 1) * 150 + 10, 1, -48)
+            B.Font = Enum.Font.GothamBold
+            B.Text = btn.Title or "OK"
+            B.TextColor3 = Library.Theme.Text
+            B.TextSize = 13
+
+            local BC = Instance.new("UICorner")
+            BC.CornerRadius = UDim.new(0, 6)
+            BC.Parent = B
+
+            B.MouseButton1Click:Connect(function()
+                if btn.Callback then btn.Callback() end
+                Close()
+            end)
+        end
+
+        return Popup
+    end
+
+    function WindowAPI:Popup(cfg)
+        return WindowAPI:Dialog(cfg)
+    end
+
+    function WindowAPI:Notify(cfg)
+        cfg = Library:MakeConfig({
+            Title = "Notify",
+            Content = "",
+            Duration = 3
+        }, cfg or {})
+
+        local N = Instance.new("Frame")
+        N.Parent = TeddyUI_Premium
+        N.BackgroundColor3 = Color3.fromRGB(18, 18, 18)
+        N.BorderSizePixel = 0
+        N.Position = UDim2.new(1, -280, 1, -80)
+        N.Size = UDim2.new(0, 260, 0, 60)
+        N.ZIndex = 50
+
+        local NC = Instance.new("UICorner")
+        NC.CornerRadius = UDim.new(0, 8)
+        NC.Parent = N
+
+        local NT = Instance.new("TextLabel")
+        NT.Parent = N
+        NT.BackgroundTransparency = 1
+        NT.Position = UDim2.new(0, 12, 0, 8)
+        NT.Size = UDim2.new(1, -24, 0, 18)
+        NT.Font = Enum.Font.GothamBold
+        NT.Text = cfg.Title
+        NT.TextColor3 = Library.Theme.Text
+        NT.TextSize = 13
+        NT.TextXAlignment = Enum.TextXAlignment.Left
+        NT.ZIndex = 51
+
+        local ND = Instance.new("TextLabel")
+        ND.Parent = N
+        ND.BackgroundTransparency = 1
+        ND.Position = UDim2.new(0, 12, 0, 28)
+        ND.Size = UDim2.new(1, -24, 0, 24)
+        ND.Font = Enum.Font.Gotham
+        ND.Text = cfg.Content
+        ND.TextColor3 = Library.Theme.TextDisabled
+        ND.TextSize = 12
+        ND.TextXAlignment = Enum.TextXAlignment.Left
+        ND.ZIndex = 51
+
+        task.delay(cfg.Duration or 3, function()
+            if N then N:Destroy() end
+        end)
+    end
+
+    return WindowAPI
 end
 
 return Library
