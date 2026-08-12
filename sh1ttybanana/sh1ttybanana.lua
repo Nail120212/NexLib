@@ -2348,11 +2348,11 @@ function Library:NewWindow(ConfigWindow)
                 SliderFrame.Name = "SliderFrame"
                 SliderFrame.Parent = Slider
                 SliderFrame.AnchorPoint = Vector2.new(0, 0.5)
-                SliderFrame.BackgroundColor3 = Library.Theme.Background
+                SliderFrame.BackgroundColor3 = Color3.fromRGB(40, 40, 45)
                 SliderFrame.BorderColor3 = Color3.fromRGB(0, 0, 0)
                 SliderFrame.BorderSizePixel = 0
                 SliderFrame.Position = UDim2.new(1, -140, 0.5, 0)
-                SliderFrame.Size = UDim2.new(0, 130, 0, 8)
+                SliderFrame.Size = UDim2.new(0, 130, 0, 6)
 
                 UICorner_11.CornerRadius = UDim.new(1, 0)
                 UICorner_11.Parent = SliderFrame
@@ -2369,15 +2369,22 @@ function Library:NewWindow(ConfigWindow)
 
                 Circle.Name = "Circle"
                 Circle.Parent = SliderDraggable
-                Circle.AnchorPoint = Vector2.new(0, 0.100000001)
-                Circle.BackgroundColor3 = Library.Theme.Text
+                Circle.AnchorPoint = Vector2.new(0.5, 0.5)
+                Circle.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
                 Circle.BorderColor3 = Color3.fromRGB(0, 0, 0)
                 Circle.BorderSizePixel = 0
-                Circle.Position = UDim2.new(1, -6, 0, 0)
-                Circle.Size = UDim2.new(0, 12, 0, 12)
+                Circle.Position = UDim2.new(1, 0, 0.5, 0)
+                Circle.Size = UDim2.new(0, 14, 0, 14)
+                Circle.ZIndex = 2
 
                 UICorner_13.CornerRadius = UDim.new(1, 0)
                 UICorner_13.Parent = Circle
+
+                local CircleStroke = Instance.new("UIStroke")
+                CircleStroke.Parent = Circle
+                CircleStroke.Color = Library.Theme.Accent
+                CircleStroke.Thickness = 2
+                CircleStroke.Transparency = 0.2
 
                 SliderValue.Name = "SliderValue"
                 SliderValue.Parent = Slider
@@ -2666,26 +2673,41 @@ function Library:NewWindow(ConfigWindow)
                 ColorBox.Name = "ColorBox"
                 ColorBox.Parent = Colorpicker
                 ColorBox.AnchorPoint = Vector2.new(0, 0.5)
-                ColorBox.BackgroundColor3 = cfcolor.Default
+                ColorBox.BackgroundColor3 = cfcolor.Default or Color3.fromRGB(255, 255, 255)
+                ColorBox.BackgroundTransparency = 0
                 ColorBox.BorderSizePixel = 0
                 ColorBox.Position = UDim2.new(1, -42, 0.5, 0)
                 ColorBox.Size = UDim2.new(0, 28, 0, 28)
+                ColorBox.ZIndex = 3
 
                 UICorner_CB.CornerRadius = UDim.new(0, 6)
                 UICorner_CB.Parent = ColorBox
+
+                local ColorStroke = Instance.new("UIStroke")
+                ColorStroke.Parent = ColorBox
+                ColorStroke.Color = Color3.fromRGB(255, 255, 255)
+                ColorStroke.Transparency = 0.55
+                ColorStroke.Thickness = 1.2
 
                 ColorBtn.Parent = ColorBox
                 ColorBtn.BackgroundTransparency = 1
                 ColorBtn.Size = UDim2.new(1, 0, 1, 0)
                 ColorBtn.Text = ""
+                ColorBtn.ZIndex = 4
 
-                local ColorFunc = { Value = cfcolor.Default }
+                local ColorFunc = { Value = cfcolor.Default or Color3.fromRGB(255, 255, 255) }
 
                 function ColorFunc:Set(c)
+                    if typeof(c) ~= "Color3" then return end
                     ColorFunc.Value = c
                     ColorBox.BackgroundColor3 = c
+                    ColorBox.BackgroundTransparency = 0
                     cfcolor.Callback(c)
                 end
+
+                task.defer(function()
+                    ColorFunc:Set(ColorFunc.Value)
+                end)
 
                 ColorBtn.MouseButton1Click:Connect(function()
                     DropdownZone.Visible = true
@@ -3082,6 +3104,127 @@ function Library:NewWindow(ConfigWindow)
     end
 
     local WindowAPI = {}
+
+    function WindowAPI:Section(cfg)
+        if type(cfg) == "string" then
+            cfg = { Title = cfg, Opened = true }
+        end
+        cfg = Library:MakeConfig({
+            Title = "Section",
+            Icon = nil,
+            Opened = true
+        }, cfg or {})
+
+        local Opened = cfg.Opened ~= false
+        local SectionTabs = {}
+
+        local SecFrame = Instance.new("Frame")
+        SecFrame.Name = "TabSection"
+        SecFrame.Parent = ScrollingTab
+        SecFrame.BackgroundTransparency = 1
+        SecFrame.BorderSizePixel = 0
+        SecFrame.Size = UDim2.new(1, 0, 0, 28)
+        SecFrame.ClipsDescendants = true
+
+        local Header = Instance.new("TextButton")
+        Header.Name = "Header"
+        Header.Parent = SecFrame
+        Header.BackgroundTransparency = 1
+        Header.Size = UDim2.new(1, 0, 0, 28)
+        Header.Text = ""
+        Header.AutoButtonColor = false
+
+        local Title = Instance.new("TextLabel")
+        Title.Parent = Header
+        Title.BackgroundTransparency = 1
+        Title.Position = UDim2.new(0, 8, 0, 0)
+        Title.Size = UDim2.new(1, -36, 1, 0)
+        Title.Font = Enum.Font.GothamBold
+        Title.Text = cfg.Title
+        Title.TextColor3 = Library.Theme.TextDisabled
+        Title.TextSize = 12
+        Title.TextXAlignment = Enum.TextXAlignment.Left
+        Title.TextTransparency = 0.15
+
+        local Chevron = Instance.new("TextLabel")
+        Chevron.Parent = Header
+        Chevron.BackgroundTransparency = 1
+        Chevron.Position = UDim2.new(1, -22, 0, 0)
+        Chevron.Size = UDim2.new(0, 16, 1, 0)
+        Chevron.Font = Enum.Font.GothamBold
+        Chevron.Text = ""
+        Chevron.TextColor3 = Library.Theme.TextDisabled
+        Chevron.TextSize = 12
+        Chevron.Visible = false
+
+        local TabsHolder = Instance.new("Frame")
+        TabsHolder.Name = "TabsHolder"
+        TabsHolder.Parent = SecFrame
+        TabsHolder.BackgroundTransparency = 1
+        TabsHolder.Position = UDim2.new(0, 0, 0, 28)
+        TabsHolder.Size = UDim2.new(1, 0, 0, 0)
+        TabsHolder.Visible = Opened
+        TabsHolder.ClipsDescendants = true
+
+        local TabsLayout = Instance.new("UIListLayout")
+        TabsLayout.Parent = TabsHolder
+        TabsLayout.SortOrder = Enum.SortOrder.LayoutOrder
+        TabsLayout.Padding = UDim.new(0, 2)
+
+        local function Refresh()
+            local hasTabs = #SectionTabs > 0
+            Chevron.Visible = hasTabs
+            if hasTabs then
+                Chevron.Text = Opened and "⌃" or "⌄"
+                if Opened then
+                    local h = TabsLayout.AbsoluteContentSize.Y
+                    TabsHolder.Size = UDim2.new(1, 0, 0, h)
+                    TabsHolder.Visible = true
+                    SecFrame.Size = UDim2.new(1, 0, 0, 28 + h)
+                else
+                    TabsHolder.Size = UDim2.new(1, 0, 0, 0)
+                    TabsHolder.Visible = false
+                    SecFrame.Size = UDim2.new(1, 0, 0, 28)
+                end
+            else
+                TabsHolder.Visible = false
+                SecFrame.Size = UDim2.new(1, 0, 0, 28)
+            end
+        end
+
+        TabsLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(Refresh)
+
+        Header.MouseButton1Click:Connect(function()
+            if #SectionTabs == 0 then return end
+            Opened = not Opened
+            Refresh()
+        end)
+
+        local SectionAPI = {}
+
+        function SectionAPI:Tab(nameOrConfig, iconName)
+            local tabResult = Tab:T(nameOrConfig, iconName)
+            local lastTab = nil
+            for _, child in ipairs(ScrollingTab:GetChildren()) do
+                if child:IsA("Frame") and child.Name == "TabDisable" then
+                    lastTab = child
+                end
+            end
+            if lastTab then
+                lastTab.Parent = TabsHolder
+                table.insert(SectionTabs, lastTab)
+                task.defer(Refresh)
+            end
+            return tabResult
+        end
+
+        function SectionAPI:T(...)
+            return SectionAPI:Tab(...)
+        end
+
+        task.defer(Refresh)
+        return SectionAPI
+    end
 
     function WindowAPI:T(...)
         return Tab:T(...)

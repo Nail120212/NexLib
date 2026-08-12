@@ -14,9 +14,15 @@ local Window = Library:NewWindow({
 Window:Tag({ Title = "v1.0", Color = Color3.fromRGB(236, 162, 1), Icon = "tag" })
 Window:Tag({ Title = "UI Library", Color = Color3.fromRGB(16, 197, 80), Icon = "box" })
 
-local Main = Window:T("General", "home")
-local Settings = Window:T("Settings", "settings")
-local Components = Window:T("Components", "layout-grid")
+Window:Section({ Title = "Section without tabs" })
+
+local OpenedSec = Window:Section({ Title = "Opened Section", Opened = true })
+local Main = OpenedSec:Tab("General", "home")
+local Settings = OpenedSec:Tab("Settings", "settings")
+
+local ClosedSec = Window:Section({ Title = "Closed Section", Opened = false })
+local Components = ClosedSec:Tab("Components", "layout-grid")
+local About = ClosedSec:Tab("About", "info")
 
 local Admin = Window:T({
     Title = "Admin",
@@ -27,8 +33,6 @@ local Admin = Window:T({
     LockDesc = "Enter the password to unlock",
     RememberKey = "sh1ttybanana_admin"
 })
-
-local About = Window:T("About", "info")
 
 local Sec1 = Main:AddSection("Main Controls")
 
@@ -59,28 +63,21 @@ Sec1:AddKeybind({
     Callback = function(k) print("Key:", k.Name) end
 })
 
-local Collapsed = Main:AddTabSection({ Title = "Collapsible Section", Opened = true })
-Collapsed:AddToggle({ Title = "Inside TabSection", Default = true, Callback = function() end })
-Collapsed:AddSlider({ Title = "Nested Slider", Min = 0, Max = 10, Default = 3, Callback = function() end })
-Collapsed:AddButton({ Title = "Nested Button", Callback = function()
-    Window:Notify({ Title = "TabSection", Content = "Works", Type = "Info" })
-end })
-
 Sec1:AddSpace(6)
 Sec1:AddDivider()
 
 Sec1:AddInput({ Title = "Username", PlaceHolder = "Enter name...", Callback = function(t) print(t) end })
 Sec1:AddDropdown({ Title = "Mode", Values = {"Normal", "Fast", "Extreme"}, Default = "Normal", Callback = function(v) print(v) end })
 Sec1:AddColorpicker({ Title = "Accent", Default = Color3.fromRGB(179, 0, 255), Callback = function(c) print(c) end })
-Sec1:AddParagraph({ Title = "Info", Content = "TabSection · Theme fix · Resize · Drag · Notifications" })
+Sec1:AddParagraph({ Title = "Info", Content = "Sidebar TabSection · Colorpicker fix · Slider polish · Stacked notifies" })
 
 local Sec2 = Settings:AddSection("Appearance & Config")
 
 Sec2:AddToggle({
-    Title = "Light Theme Test",
+    Title = "Light Theme Hint",
     Default = false,
-    Callback = function(v)
-        Window:Notify({ Title = "Theme", Content = "Use top palette button to switch Dark/Light", Type = "Info" })
+    Callback = function()
+        Window:Notify({ Title = "Theme", Content = "Use palette icon top-right", Type = "Info" })
     end
 })
 
@@ -120,11 +117,11 @@ Sec2:AddButton({
     Title = "Test All Notifies",
     Callback = function()
         Window:Notify({ Title = "Info", Content = "Info type", Type = "Info", Duration = 3 })
-        task.wait(0.3)
+        task.wait(0.25)
         Window:Notify({ Title = "Success", Content = "Success type", Type = "Success", Duration = 3 })
-        task.wait(0.3)
+        task.wait(0.25)
         Window:Notify({ Title = "Warn", Content = "Warn type", Type = "Warn", Duration = 3 })
-        task.wait(0.3)
+        task.wait(0.25)
         Window:Notify({ Title = "Error", Content = "Error type", Type = "Error", Duration = 3 })
     end
 })
@@ -153,10 +150,6 @@ Sec3:AddCodeblock({
     Callback = function() end
 })
 
-local Nested = Components:AddTabSection({ Title = "More Options", Opened = false })
-Nested:AddParagraph({ Title = "Collapsed by default", Content = "Open me" })
-Nested:AddToggle({ Title = "Nested toggle", Default = false, Callback = function() end })
-
 local SecAdmin = Admin:AddSection("Restricted")
 SecAdmin:AddParagraph({ Title = "Admin Only", Content = "Password: admin123" })
 SecAdmin:AddButton({ Title = "Secret", Callback = function()
@@ -167,5 +160,7 @@ SecAdmin:AddToggle({ Title = "God Mode", Default = false, Callback = function(v)
 local SecAbout = About:AddSection("Credits")
 SecAbout:AddParagraph({
     Title = "sh1ttybanana",
-    Content = "TabSection · Theme text fix · Resize · Drag · Stacked notifies · AutoScale · Config · Lock tabs"
+    Content = "Window:Section (sidebar TabSection) · Colorpicker color fix · Wind-style slider · Stacked typed notifies"
 })
+
+Window:Notify({ Title = "Loaded", Content = "sh1ttybanana ready", Type = "Success", Duration = 3 })
