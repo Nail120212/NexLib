@@ -1,27 +1,44 @@
-local src
-local okFetch, body = pcall(function()
-    if type(game.HttpGet) == "function" then
-        return game:HttpGet("https://raw.githubusercontent.com/Nail120212/NexLib/refs/heads/main/sh1ttybanana/sh1ttybanana.lua")
+local function Fetch(url)
+    local ok, res = pcall(function()
+        if type(game.HttpGet) == "function" then
+            return game:HttpGet(url)
+        end
+        if type(game.HttpGetAsync) == "function" then
+            return game:HttpGetAsync(url)
+        end
+        if syn and syn.request then
+            return syn.request({Url = url, Method = "GET"}).Body
+        end
+        if request then
+            return request({Url = url, Method = "GET"}).Body
+        end
+        if http_request then
+            return http_request({Url = url, Method = "GET"}).Body
+        end
+        return game:GetService("HttpService"):GetAsync(url)
+    end)
+    if ok and type(res) == "string" and #res > 50 then
+        return res
     end
-    if request then
-        return request({Url = "https://raw.githubusercontent.com/Nail120212/NexLib/refs/heads/main/sh1ttybanana/sh1ttybanana.lua", Method = "GET"}).Body
-    end
-    if syn and syn.request then
-        return syn.request({Url = "https://raw.githubusercontent.com/Nail120212/NexLib/refs/heads/main/sh1ttybanana/sh1ttybanana.lua", Method = "GET"}).Body
-    end
-    return game:GetService("HttpService"):GetAsync("https://raw.githubusercontent.com/Nail120212/NexLib/refs/heads/main/sh1ttybanana/sh1ttybanana.lua")
-end)
-if okFetch and body and #body > 100 then
-    src = body
+    return nil
 end
-if (not src) and readfile and isfile and isfile("sh1ttybanana.lua") then
-    src = readfile("sh1ttybanana.lua")
-end
-assert(src, "failed to load sh1ttybanana source")
 
-src = src:gsub(
-    'local UIIcons = loadstring%(Get%("https://raw%.githubusercontent%.com/DSP%-V1/NextGen/refs/heads/main/UILib/icons/UIIcons%.lua"%)%)%(%)%s*UIIcons%.SetIconsType%("lucide"%)',
-    [[local UIIcons
+local src = nil
+if readfile and isfile and isfile("sh1ttybanana.lua") then
+    local ok, data = pcall(readfile, "sh1ttybanana.lua")
+    if ok and type(data) == "string" and #data > 50 then
+        src = data
+    end
+end
+if not src then
+    src = Fetch("https://raw.githubusercontent.com/Nail120212/NexLib/refs/heads/main/sh1ttybanana/sh1ttybanana.lua")
+end
+assert(src, "failed to download sh1ttybanana source")
+
+if not src:find("UIIcons failed to load", 1, true) and src:find("UIIcons.SetIconsType", 1, true) then
+    src = src:gsub(
+        "local UIIcons%s*=%s*loadstring%s*%(%s*Get%s*%(%s*[\"'][^\"']+[\"']%s*%)%s*%)%s*%(%s*%)%s*UIIcons%.SetIconsType%s*%(%s*[\"'][^\"']+[\"']%s*%)",
+        [[local UIIcons
 do
     local ok, result = pcall(function()
         local s = Get("https://raw.githubusercontent.com/DSP-V1/NextGen/refs/heads/main/UILib/icons/UIIcons.lua")
@@ -32,16 +49,35 @@ do
     end)
     if ok and type(result) == "table" then
         UIIcons = result
-        pcall(function() if UIIcons.SetIconsType then UIIcons.SetIconsType("lucide") end end)
+        pcall(function()
+            if UIIcons.SetIconsType then
+                UIIcons.SetIconsType("lucide")
+            end
+        end)
     else
-        UIIcons = { SetIconsType = function() end, Icon2 = function() return nil end, Icon = function() return nil end }
+        UIIcons = {
+            SetIconsType = function() end,
+            Icon2 = function() return nil end,
+            Icon = function() return nil end
+        }
         warn("[sh1ttybanana] UIIcons fallback:", result)
     end
 end]]
-)
+    )
+end
 
-local Library = loadstring(src)()
-assert(Library and Library.NewWindow, "library load failed")
+local chunk, compileErr = loadstring(src)
+if not chunk then
+    error("sh1ttybanana compile error: " .. tostring(compileErr))
+end
+
+local okLib, Library = pcall(chunk)
+if not okLib then
+    error("sh1ttybanana runtime error: " .. tostring(Library))
+end
+if type(Library) ~= "table" or type(Library.NewWindow) ~= "function" then
+    error("sh1ttybanana did not return Library table")
+end
 
 local Window = Library:NewWindow({
     Title = "sh1ttybanana",
@@ -361,7 +397,7 @@ C:AddColorpicker({
 C:AddDivider()
 C:AddParagraph({
     Title = "Tip",
-    Content = "use the AI button at the bottom left of the sidebar to ask about features. player card is next to it."
+    Content = "sidebar bottom bar has Reorder, AI Assistant, and Player Card buttons"
 })
 
 local V = Visuals:AddSection({Title = "ESP"})
@@ -575,7 +611,7 @@ S:AddSpace(10)
 S:AddSeperator("AI Setup")
 S:AddInput({
     Title = "Groq API Key",
-    Description = "paste key then press set below",
+    Description = "paste key then tab out to apply",
     PlaceHolder = "gsk_...",
     Default = "",
     Callback = function(key)
