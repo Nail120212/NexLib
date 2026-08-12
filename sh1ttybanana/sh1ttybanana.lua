@@ -618,64 +618,946 @@ function Library:NewWindow(ConfigWindow)
     local ReorderBtn, ReorderIcon = MakeBottomBtn("Reorder", "list-ordered", 1, function(btn, icon)
         ReorderMode = not ReorderMode
         if ReorderMode then
-            btn.BackgroundColor3 = Color3.fromRGB(0, 120, 255)
+            Library:TweenInstance(btn, 0.2, "BackgroundColor3", Color3.fromRGB(0, 120, 255))
             Library:SetIcon(icon, "list-ordered", Color3.fromRGB(255, 255, 255))
             for _, t in ipairs(TabElements) do
                 if t.DragIcon then t.DragIcon.Visible = true end
+                if t.DragBtn then t.DragBtn.Visible = true end
             end
         else
-            btn.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+            Library:TweenInstance(btn, 0.2, "BackgroundColor3", Color3.fromRGB(30, 30, 30))
             Library:SetIcon(icon, "list-ordered", Library.Theme.Text)
             for _, t in ipairs(TabElements) do
                 if t.DragIcon then t.DragIcon.Visible = false end
+                if t.DragBtn then t.DragBtn.Visible = false end
             end
         end
     end)
 
+    -- AI Window state
+    local AIWindow = nil
+    local AIOpen = false
+    local AIMessages = {} -- {role, text}[]
+
+    local function HideMainContent()
+        TabFrame.Visible = false
+        LayoutFrame.Visible = false
+    end
+
+    local function ShowMainContent()
+        TabFrame.Visible = true
+        LayoutFrame.Visible = true
+    end
+
+    local function CloseAI()
+        if AIWindow then
+            Library:Tween(AIWindow, TweenInfo.new(0.25, Enum.EasingStyle.Quart, Enum.EasingDirection.In), {
+                Size = UDim2.new(1, 0, 0, 0),
+                Position = UDim2.new(0, 0, 1, 0)
+            }, function()
+                if AIWindow then AIWindow:Destroy() AIWindow = nil end
+            end)
+        end
+        AIOpen = false
+        ShowMainContent()
+    end
+
+    -- Parse AI response: detects [tab:TabName] clickable links
+    local function ParseAndRenderAIResponse(parent, text, selectTabCallback)
+        -- Split text on [tab:...] tokens
+        local segments = {}
+        local pos = 1
+        while pos <= #text do
+            local s, e, tabName = text:find("%[tab:([^%]]+)%]", pos)
+            if s then
+                if s > pos then
+                    table.insert(segments, { type = "text", content = text:sub(pos, s - 1) })
+                end
+                table.insert(segments, { type = "tab", content = tabName })
+                pos = e + 1
+            else
+                table.insert(segments, { type = "text", content = text:sub(pos) })
+                break
+            end
+        end
+
+        local container = Instance.new("Frame")
+        container.BackgroundTransparency = 1
+        container.Size = UDim2.new(1, 0, 0, 0)
+        container.AutomaticSize = Enum.AutomaticSize.Y
+        container.Parent = parent
+
+        local list = Instance.new("UIListLayout")
+        list.Parent = container
+        list.SortOrder = Enum.SortOrder.LayoutOrder
+        list.Padding = UDim.new(0, 2)
+
+        local order = 0
+        for _, seg in ipairs(segments) do
+            if seg.type == "text" and seg.content ~= "" then
+                local lbl = Instance.new("TextLabel")
+                lbl.Parent = container
+                lbl.BackgroundTransparency = 1
+                lbl.Size = UDim2.new(1, 0, 0, 0)
+                lbl.AutomaticSize = Enum.AutomaticSize.Y
+                lbl.Font = Enum.Font.Gotham
+                lbl.Text = seg.content
+                lbl.TextColor3 = Color3.fromRGB(220, 220, 220)
+                lbl.TextSize = 12
+                lbl.TextWrapped = true
+                lbl.TextXAlignment = Enum.TextXAlignment.Left
+                lbl.LayoutOrder = order
+                order = order + 1
+            elseif seg.type == "tab" then
+                local btn = Instance.new("TextButton")
+                btn.Parent = container
+                btn.BackgroundColor3 = Library.Theme.Accent
+                btn.BackgroundTransparency = 0.75
+                btn.BorderSizePixel = 0
+                btn.Size = UDim2.new(0, 0, 0, 22)
+                btn.AutomaticSize = Enum.AutomaticSize.X
+                btn.Font = Enum.Font.GothamBold
+                btn.Text = "  → " .. seg.content .. "  "
+                btn.TextColor3 = Library.Theme.Accent
+                btn.TextSize = 12
+                btn.LayoutOrder = order
+                order = order + 1
+                local bc = Instance.new("UICorner")
+                bc.CornerRadius = UDim.new(0, 4)
+                bc.Parent = btn
+                btn.MouseButton1Click:Connect(function()
+                    CloseAI()
+                    task.wait(0.3)
+                    if selectTabCallback then selectTabCallback(seg.content) end
+                end)
+                btn.MouseEnter:Connect(function()
+                    Library:TweenInstance(btn, 0.15, "BackgroundTransparency", 0.5)
+                end)
+                btn.MouseLeave:Connect(function()
+                    Library:TweenInstance(btn, 0.15, "BackgroundTransparency", 0.75)
+                end)
+            end
+        end
+        return container
+    end
+
     MakeBottomBtn("AI", "bot", 2, function()
-        local N = Instance.new("Frame")
-        N.Parent = TeddyUI_Premium
-        N.BackgroundColor3 = Color3.fromRGB(18, 18, 18)
-        N.BorderSizePixel = 0
-        N.Position = UDim2.new(1, -280, 1, -80)
-        N.Size = UDim2.new(0, 260, 0, 50)
-        N.ZIndex = 50
-        local NC = Instance.new("UICorner")
-        NC.CornerRadius = UDim.new(0, 8)
-        NC.Parent = N
-        local NT = Instance.new("TextLabel")
-        NT.Parent = N
-        NT.BackgroundTransparency = 1
-        NT.Size = UDim2.new(1, 0, 1, 0)
-        NT.Font = Enum.Font.GothamBold
-        NT.Text = "AI — indev"
-        NT.TextColor3 = Color3.fromRGB(255, 255, 255)
-        NT.TextSize = 13
-        NT.ZIndex = 51
-        task.delay(2, function() if N then N:Destroy() end end)
+        if AIOpen then CloseAI() return end
+        AIOpen = true
+        HideMainContent()
+
+        AIWindow = Instance.new("Frame")
+        AIWindow.Name = "AIWindow"
+        AIWindow.Parent = Main
+        AIWindow.BackgroundColor3 = Color3.fromRGB(11, 11, 13)
+        AIWindow.BackgroundTransparency = 0
+        AIWindow.BorderSizePixel = 0
+        AIWindow.Position = UDim2.new(0, 0, 1, 0)
+        AIWindow.Size = UDim2.new(1, 0, 0, 0)
+        AIWindow.ZIndex = 20
+        AIWindow.ClipsDescendants = true
+
+        local AWC = Instance.new("UICorner")
+        AWC.CornerRadius = UDim.new(0, 8)
+        AWC.Parent = AIWindow
+
+        -- Animate in
+        Library:Tween(AIWindow, TweenInfo.new(0.35, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+            Position = UDim2.new(0, 0, 0, 50),
+            Size = UDim2.new(1, 0, 1, -50)
+        })
+
+        -- Header
+        local AIHeader = Instance.new("Frame")
+        AIHeader.Name = "Header"
+        AIHeader.Parent = AIWindow
+        AIHeader.BackgroundColor3 = Color3.fromRGB(16, 16, 18)
+        AIHeader.BorderSizePixel = 0
+        AIHeader.Size = UDim2.new(1, 0, 0, 44)
+        AIHeader.ZIndex = 21
+
+        local AHC = Instance.new("UICorner")
+        AHC.CornerRadius = UDim.new(0, 8)
+        AHC.Parent = AIHeader
+
+        local AHFix = Instance.new("Frame")
+        AHFix.BackgroundColor3 = Color3.fromRGB(16, 16, 18)
+        AHFix.BorderSizePixel = 0
+        AHFix.Position = UDim2.new(0, 0, 0.5, 0)
+        AHFix.Size = UDim2.new(1, 0, 0.5, 0)
+        AHFix.Parent = AIHeader
+
+        local AIBotIcon = Instance.new("ImageLabel")
+        AIBotIcon.Parent = AIHeader
+        AIBotIcon.BackgroundTransparency = 1
+        AIBotIcon.Position = UDim2.new(0, 12, 0.5, -9)
+        AIBotIcon.Size = UDim2.new(0, 18, 0, 18)
+        AIBotIcon.ZIndex = 22
+        Library:SetIcon(AIBotIcon, "bot", Library.Theme.Accent)
+
+        local AITitle = Instance.new("TextLabel")
+        AITitle.Parent = AIHeader
+        AITitle.BackgroundTransparency = 1
+        AITitle.Position = UDim2.new(0, 36, 0, 0)
+        AITitle.Size = UDim2.new(1, -80, 1, 0)
+        AITitle.Font = Enum.Font.GothamBold
+        AITitle.Text = "Assistant"
+        AITitle.TextColor3 = Library.Theme.Text
+        AITitle.TextSize = 13
+        AITitle.TextXAlignment = Enum.TextXAlignment.Left
+        AITitle.ZIndex = 22
+
+        local AIClearBtn = Instance.new("TextButton")
+        AIClearBtn.Parent = AIHeader
+        AIClearBtn.BackgroundTransparency = 1
+        AIClearBtn.Position = UDim2.new(1, -76, 0.5, -12)
+        AIClearBtn.Size = UDim2.new(0, 24, 0, 24)
+        AIClearBtn.Text = ""
+        AIClearBtn.ZIndex = 22
+        local AIClearI = Instance.new("ImageLabel")
+        AIClearI.Parent = AIClearBtn
+        AIClearI.BackgroundTransparency = 1
+        AIClearI.AnchorPoint = Vector2.new(0.5, 0.5)
+        AIClearI.Position = UDim2.new(0.5, 0, 0.5, 0)
+        AIClearI.Size = UDim2.new(0, 16, 0, 16)
+        AIClearI.ZIndex = 23
+        Library:SetIcon(AIClearI, "trash-2", Library.Theme.TextDisabled)
+
+        local AICloseBtn = Instance.new("TextButton")
+        AICloseBtn.Parent = AIHeader
+        AICloseBtn.BackgroundTransparency = 1
+        AICloseBtn.Position = UDim2.new(1, -44, 0.5, -12)
+        AICloseBtn.Size = UDim2.new(0, 24, 0, 24)
+        AICloseBtn.Text = ""
+        AICloseBtn.ZIndex = 22
+        local AICloseI = Instance.new("ImageLabel")
+        AICloseI.Parent = AICloseBtn
+        AICloseI.BackgroundTransparency = 1
+        AICloseI.AnchorPoint = Vector2.new(0.5, 0.5)
+        AICloseI.Position = UDim2.new(0.5, 0, 0.5, 0)
+        AICloseI.Size = UDim2.new(0, 16, 0, 16)
+        AICloseI.ZIndex = 23
+        Library:SetIcon(AICloseI, "x", Library.Theme.Accent)
+
+        AICloseBtn.MouseButton1Click:Connect(CloseAI)
+
+        AIClearBtn.MouseButton1Click:Connect(function()
+            AIMessages = {}
+            for _, ch in ipairs(AIScroll:GetChildren()) do
+                if ch:IsA("Frame") or ch:IsA("TextLabel") then
+                    ch:Destroy()
+                end
+            end
+        end)
+
+        -- Scroll area for messages
+        local AIScroll = Instance.new("ScrollingFrame")
+        AIScroll.Name = "AIScroll"
+        AIScroll.Parent = AIWindow
+        AIScroll.BackgroundTransparency = 1
+        AIScroll.BorderSizePixel = 0
+        AIScroll.Position = UDim2.new(0, 0, 0, 44)
+        AIScroll.Size = UDim2.new(1, 0, 1, -100)
+        AIScroll.ScrollBarThickness = 2
+        AIScroll.ScrollBarImageColor3 = Library.Theme.Accent
+        AIScroll.ScrollBarImageTransparency = 0.5
+        AIScroll.CanvasSize = UDim2.new(0, 0, 0, 0)
+        AIScroll.ZIndex = 21
+        AIScroll.AutomaticCanvasSize = Enum.AutomaticCanvasSize.Y
+
+        local AIList = Instance.new("UIListLayout")
+        AIList.Parent = AIScroll
+        AIList.SortOrder = Enum.SortOrder.LayoutOrder
+        AIList.Padding = UDim.new(0, 8)
+
+        local AIPad = Instance.new("UIPadding")
+        AIPad.Parent = AIScroll
+        AIPad.PaddingLeft = UDim.new(0, 10)
+        AIPad.PaddingRight = UDim.new(0, 10)
+        AIPad.PaddingTop = UDim.new(0, 10)
+        AIPad.PaddingBottom = UDim.new(0, 10)
+
+        -- Tab select callback (wired up after WindowAPI is built - stored for AI to use)
+        local function SelectTabByName(tabName)
+            for _, child in ipairs(ScrollingTab:GetChildren()) do
+                if child:IsA("Frame") and child:FindFirstChild("NameTab") then
+                    local raw = child.NameTab:GetAttribute("RawName") or child.NameTab.Text or ""
+                    if string.lower(raw) == string.lower(tabName) then
+                        local clickBtn = child:FindFirstChild("Click_Tab")
+                        if clickBtn then clickBtn:Activated:Connect(function() end) end
+                        -- fire via LayoutOrder
+                        local lo = child.LayoutOrder
+                        if lo then
+                            TextLabel.Text = raw
+                            for _, c2 in ipairs(ScrollingTab:GetChildren()) do
+                                if c2:IsA("Frame") and c2:FindFirstChild("NameTab") then
+                                    Library:TweenInstance(c2.NameTab, 0.28, "TextTransparency", 0.35)
+                                    if c2:FindFirstChild("Choose") then c2.Choose.Visible = false end
+                                end
+                            end
+                            Library:TweenInstance(child.NameTab, 0.22, "TextTransparency", 0)
+                            UIPageLayout:JumpToIndex(lo)
+                            if child:FindFirstChild("Choose") then child.Choose.Visible = true end
+                        end
+                        return
+                    end
+                end
+            end
+        end
+
+        local function AddMessage(role, text)
+            table.insert(AIMessages, { role = role, text = text })
+
+            local isUser = (role == "user")
+            local bubble = Instance.new("Frame")
+            bubble.Name = role .. "Bubble"
+            bubble.Parent = AIScroll
+            bubble.BackgroundTransparency = 1
+            bubble.Size = UDim2.new(1, 0, 0, 0)
+            bubble.AutomaticSize = Enum.AutomaticSize.Y
+            bubble.LayoutOrder = #AIMessages
+
+            if isUser then
+                -- User: right-aligned pill
+                local pill = Instance.new("Frame")
+                pill.Parent = bubble
+                pill.AnchorPoint = Vector2.new(1, 0)
+                pill.BackgroundColor3 = Library.Theme.Accent
+                pill.BackgroundTransparency = 0.65
+                pill.BorderSizePixel = 0
+                pill.Position = UDim2.new(1, 0, 0, 0)
+                pill.Size = UDim2.new(0.8, 0, 0, 0)
+                pill.AutomaticSize = Enum.AutomaticSize.Y
+
+                local pc = Instance.new("UICorner")
+                pc.CornerRadius = UDim.new(0, 8)
+                pc.Parent = pill
+
+                local pp = Instance.new("UIPadding")
+                pp.Parent = pill
+                pp.PaddingLeft = UDim.new(0, 10)
+                pp.PaddingRight = UDim.new(0, 10)
+                pp.PaddingTop = UDim.new(0, 6)
+                pp.PaddingBottom = UDim.new(0, 6)
+
+                local lbl = Instance.new("TextLabel")
+                lbl.Parent = pill
+                lbl.BackgroundTransparency = 1
+                lbl.Size = UDim2.new(1, 0, 0, 0)
+                lbl.AutomaticSize = Enum.AutomaticSize.Y
+                lbl.Font = Enum.Font.Gotham
+                lbl.Text = text
+                lbl.TextColor3 = Color3.fromRGB(240, 240, 240)
+                lbl.TextSize = 12
+                lbl.TextWrapped = true
+                lbl.TextXAlignment = Enum.TextXAlignment.Left
+            else
+                -- AI: left-aligned with icon
+                local row = Instance.new("Frame")
+                row.Parent = bubble
+                row.BackgroundTransparency = 1
+                row.Size = UDim2.new(1, 0, 0, 0)
+                row.AutomaticSize = Enum.AutomaticSize.Y
+
+                local iconF = Instance.new("Frame")
+                iconF.Parent = row
+                iconF.BackgroundColor3 = Library.Theme.Accent
+                iconF.BackgroundTransparency = 0.8
+                iconF.BorderSizePixel = 0
+                iconF.Position = UDim2.new(0, 0, 0, 2)
+                iconF.Size = UDim2.new(0, 22, 0, 22)
+                local iconFC = Instance.new("UICorner")
+                iconFC.CornerRadius = UDim.new(1, 0)
+                iconFC.Parent = iconF
+                local iconImg = Instance.new("ImageLabel")
+                iconImg.Parent = iconF
+                iconImg.BackgroundTransparency = 1
+                iconImg.AnchorPoint = Vector2.new(0.5, 0.5)
+                iconImg.Position = UDim2.new(0.5, 0, 0.5, 0)
+                iconImg.Size = UDim2.new(0, 14, 0, 14)
+                Library:SetIcon(iconImg, "bot", Library.Theme.Accent)
+
+                local msgFrame = Instance.new("Frame")
+                msgFrame.Parent = row
+                msgFrame.BackgroundColor3 = Color3.fromRGB(22, 22, 26)
+                msgFrame.BackgroundTransparency = 0
+                msgFrame.BorderSizePixel = 0
+                msgFrame.Position = UDim2.new(0, 28, 0, 0)
+                msgFrame.Size = UDim2.new(1, -28, 0, 0)
+                msgFrame.AutomaticSize = Enum.AutomaticSize.Y
+
+                local mfc = Instance.new("UICorner")
+                mfc.CornerRadius = UDim.new(0, 8)
+                mfc.Parent = msgFrame
+
+                local mfp = Instance.new("UIPadding")
+                mfp.Parent = msgFrame
+                mfp.PaddingLeft = UDim.new(0, 10)
+                mfp.PaddingRight = UDim.new(0, 10)
+                mfp.PaddingTop = UDim.new(0, 6)
+                mfp.PaddingBottom = UDim.new(0, 6)
+
+                ParseAndRenderAIResponse(msgFrame, text, SelectTabByName)
+            end
+
+            -- Auto scroll to bottom
+            task.defer(function()
+                AIScroll.CanvasPosition = Vector2.new(0, math.huge)
+            end)
+        end
+
+        -- Thinking indicator
+        local thinkFrame = nil
+        local function ShowThinking()
+            thinkFrame = Instance.new("Frame")
+            thinkFrame.Name = "Thinking"
+            thinkFrame.Parent = AIScroll
+            thinkFrame.BackgroundColor3 = Color3.fromRGB(22, 22, 26)
+            thinkFrame.BackgroundTransparency = 0
+            thinkFrame.BorderSizePixel = 0
+            thinkFrame.Size = UDim2.new(0, 70, 0, 30)
+            thinkFrame.LayoutOrder = 9999
+            local tfc = Instance.new("UICorner")
+            tfc.CornerRadius = UDim.new(0, 8)
+            tfc.Parent = thinkFrame
+            local dots = Instance.new("TextLabel")
+            dots.Parent = thinkFrame
+            dots.BackgroundTransparency = 1
+            dots.Size = UDim2.new(1, 0, 1, 0)
+            dots.Font = Enum.Font.GothamBold
+            dots.Text = "..."
+            dots.TextColor3 = Library.Theme.Accent
+            dots.TextSize = 18
+            local dotCount = 0
+            local dotConn
+            dotConn = game:GetService("RunService").Heartbeat:Connect(function()
+                dotCount = (dotCount + 1) % 60
+                local n = math.floor(dotCount / 20) + 1
+                dots.Text = string.rep("•", n) .. string.rep(" ", 3 - n)
+            end)
+            thinkFrame:GetPropertyChangedSignal("Parent"):Connect(function()
+                if not thinkFrame.Parent then dotConn:Disconnect() end
+            end)
+            task.defer(function()
+                AIScroll.CanvasPosition = Vector2.new(0, math.huge)
+            end)
+        end
+
+        local function HideThinking()
+            if thinkFrame then thinkFrame:Destroy() thinkFrame = nil end
+        end
+
+        -- Groq API call
+        local groqApiKey = ""
+        local groqSystemPrompt = ""
+
+        local function CallGroq(userMsg)
+            if groqApiKey == "" then
+                AddMessage("assistant", "⚠ No API key set. Pass groqapi and groqprompt to Window:SetGroqConfig().")
+                return
+            end
+
+            local msgs = {}
+            for _, m in ipairs(AIMessages) do
+                if m.role ~= "assistant" or m.text:sub(1, 1) ~= "⚠" then
+                    table.insert(msgs, { role = m.role, content = m.text })
+                end
+            end
+
+            ShowThinking()
+
+            task.spawn(function()
+                local ok, result = pcall(function()
+                    local body = HttpService:JSONEncode({
+                        model = "llama-3.3-70b-versatile",
+                        messages = msgs,
+                        max_tokens = 1024,
+                        temperature = 0.7
+                    })
+                    local resp = game:HttpGet("https://api.groq.com/openai/v1/chat/completions", {
+                        Method = "POST",
+                        Headers = {
+                            ["Authorization"] = "Bearer " .. groqApiKey,
+                            ["Content-Type"] = "application/json"
+                        },
+                        Body = body
+                    })
+                    local data = HttpService:JSONDecode(resp)
+                    return data.choices[1].message.content
+                end)
+
+                HideThinking()
+
+                if ok and result then
+                    AddMessage("assistant", result)
+                else
+                    AddMessage("assistant", "⚠ Error: " .. tostring(result))
+                end
+            end)
+        end
+
+        -- Input bar
+        local AIInputBar = Instance.new("Frame")
+        AIInputBar.Name = "InputBar"
+        AIInputBar.Parent = AIWindow
+        AIInputBar.AnchorPoint = Vector2.new(0, 1)
+        AIInputBar.BackgroundColor3 = Color3.fromRGB(16, 16, 18)
+        AIInputBar.BorderSizePixel = 0
+        AIInputBar.Position = UDim2.new(0, 0, 1, 0)
+        AIInputBar.Size = UDim2.new(1, 0, 0, 52)
+        AIInputBar.ZIndex = 21
+
+        local AIBC = Instance.new("UICorner")
+        AIBC.CornerRadius = UDim.new(0, 8)
+        AIBC.Parent = AIInputBar
+
+        local AIBFix = Instance.new("Frame")
+        AIBFix.BackgroundColor3 = Color3.fromRGB(16, 16, 18)
+        AIBFix.BorderSizePixel = 0
+        AIBFix.Position = UDim2.new(0, 0, 0, 0)
+        AIBFix.Size = UDim2.new(1, 0, 0.5, 0)
+        AIBFix.Parent = AIInputBar
+
+        local AITextFrame = Instance.new("Frame")
+        AITextFrame.Parent = AIInputBar
+        AITextFrame.BackgroundColor3 = Color3.fromRGB(24, 24, 28)
+        AITextFrame.BackgroundTransparency = 0
+        AITextFrame.BorderSizePixel = 0
+        AITextFrame.Position = UDim2.new(0, 8, 0, 8)
+        AITextFrame.Size = UDim2.new(1, -50, 0, 36)
+        AITextFrame.ZIndex = 22
+
+        local AITFC = Instance.new("UICorner")
+        AITFC.CornerRadius = UDim.new(0, 8)
+        AITFC.Parent = AITextFrame
+
+        local AITextBox = Instance.new("TextBox")
+        AITextBox.Parent = AITextFrame
+        AITextBox.BackgroundTransparency = 1
+        AITextBox.Position = UDim2.new(0, 12, 0, 0)
+        AITextBox.Size = UDim2.new(1, -12, 1, 0)
+        AITextBox.Font = Enum.Font.Gotham
+        AITextBox.PlaceholderText = "Ask me anything..."
+        AITextBox.PlaceholderColor3 = Color3.fromRGB(80, 80, 85)
+        AITextBox.Text = ""
+        AITextBox.TextColor3 = Library.Theme.Text
+        AITextBox.TextSize = 13
+        AITextBox.TextXAlignment = Enum.TextXAlignment.Left
+        AITextBox.ClearTextOnFocus = false
+        AITextBox.ZIndex = 23
+
+        local AISendBtn = Instance.new("TextButton")
+        AISendBtn.Parent = AIInputBar
+        AISendBtn.AnchorPoint = Vector2.new(1, 0.5)
+        AISendBtn.BackgroundColor3 = Library.Theme.Accent
+        AISendBtn.BackgroundTransparency = 0
+        AISendBtn.BorderSizePixel = 0
+        AISendBtn.Position = UDim2.new(1, -8, 0.5, 0)
+        AISendBtn.Size = UDim2.new(0, 36, 0, 36)
+        AISendBtn.Text = ""
+        AISendBtn.ZIndex = 22
+
+        local ASBC = Instance.new("UICorner")
+        ASBC.CornerRadius = UDim.new(0, 8)
+        ASBC.Parent = AISendBtn
+
+        local ASSendI = Instance.new("ImageLabel")
+        ASSendI.Parent = AISendBtn
+        ASSendI.BackgroundTransparency = 1
+        ASSendI.AnchorPoint = Vector2.new(0.5, 0.5)
+        ASSendI.Position = UDim2.new(0.5, 0, 0.5, 0)
+        ASSendI.Size = UDim2.new(0, 18, 0, 18)
+        ASSendI.ZIndex = 23
+        Library:SetIcon(ASSendI, "send", Color3.fromRGB(255, 255, 255))
+
+        local function SendMessage()
+            local txt = AITextBox.Text
+            if txt == "" or txt:match("^%s*$") then return end
+            AITextBox.Text = ""
+            AddMessage("user", txt)
+            CallGroq(txt)
+        end
+
+        AISendBtn.MouseButton1Click:Connect(SendMessage)
+        AISendBtn.MouseEnter:Connect(function()
+            Library:TweenInstance(AISendBtn, 0.15, "BackgroundTransparency", 0.3)
+        end)
+        AISendBtn.MouseLeave:Connect(function()
+            Library:TweenInstance(AISendBtn, 0.15, "BackgroundTransparency", 0)
+        end)
+
+        UserInputService.InputBegan:Connect(function(input, gpe)
+            if gpe then return end
+            if input.KeyCode == Enum.KeyCode.Return and AITextBox:IsFocused() then
+                SendMessage()
+            end
+        end)
+
+        -- Wire config from pending or future calls
+        if WindowAPI._pendingGroqKey then
+            groqApiKey = WindowAPI._pendingGroqKey
+            groqSystemPrompt = WindowAPI._pendingGroqPrompt or ""
+            if groqSystemPrompt ~= "" and #AIMessages == 0 then
+                AIMessages = { { role = "system", content = groqSystemPrompt } }
+            end
+        end
+
+        WindowAPI._activeSetGroqConfig = function(apiKey, systemPrompt)
+            groqApiKey = apiKey or ""
+            groqSystemPrompt = systemPrompt or ""
+            if groqSystemPrompt ~= "" then
+                if #AIMessages == 0 then
+                    AIMessages = { { role = "system", content = groqSystemPrompt } }
+                else
+                    AIMessages[1] = { role = "system", content = groqSystemPrompt }
+                end
+            end
+        end
+        WindowAPI_SetGroqConfig = WindowAPI._activeSetGroqConfig
     end)
 
+    local PCWindow = nil
+    local PCOpen = false
+
+    local function ClosePlayerCard()
+        if PCWindow then
+            Library:Tween(PCWindow, TweenInfo.new(0.25, Enum.EasingStyle.Quart, Enum.EasingDirection.In), {
+                Size = UDim2.new(1, 0, 0, 0),
+                Position = UDim2.new(0, 0, 1, 0)
+            }, function()
+                if PCWindow then PCWindow:Destroy() PCWindow = nil end
+            end)
+        end
+        PCOpen = false
+        ShowMainContent()
+    end
+
     MakeBottomBtn("PlayerCard", "contact", 3, function()
-        local N = Instance.new("Frame")
-        N.Parent = TeddyUI_Premium
-        N.BackgroundColor3 = Color3.fromRGB(18, 18, 18)
-        N.BorderSizePixel = 0
-        N.Position = UDim2.new(1, -280, 1, -80)
-        N.Size = UDim2.new(0, 260, 0, 50)
-        N.ZIndex = 50
-        local NC = Instance.new("UICorner")
-        NC.CornerRadius = UDim.new(0, 8)
-        NC.Parent = N
-        local NT = Instance.new("TextLabel")
-        NT.Parent = N
-        NT.BackgroundTransparency = 1
-        NT.Size = UDim2.new(1, 0, 1, 0)
-        NT.Font = Enum.Font.GothamBold
-        NT.Text = "PlayerCard — indev"
-        NT.TextColor3 = Color3.fromRGB(255, 255, 255)
-        NT.TextSize = 13
-        NT.ZIndex = 51
-        task.delay(2, function() if N then N:Destroy() end end)
+        if PCOpen then ClosePlayerCard() return end
+        PCOpen = true
+        HideMainContent()
+
+        PCWindow = Instance.new("Frame")
+        PCWindow.Name = "PlayerCard"
+        PCWindow.Parent = Main
+        PCWindow.BackgroundColor3 = Color3.fromRGB(11, 11, 13)
+        PCWindow.BackgroundTransparency = 0
+        PCWindow.BorderSizePixel = 0
+        PCWindow.Position = UDim2.new(0, 0, 1, 0)
+        PCWindow.Size = UDim2.new(1, 0, 0, 0)
+        PCWindow.ZIndex = 20
+        PCWindow.ClipsDescendants = true
+
+        local PWC = Instance.new("UICorner")
+        PWC.CornerRadius = UDim.new(0, 8)
+        PWC.Parent = PCWindow
+
+        Library:Tween(PCWindow, TweenInfo.new(0.35, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+            Position = UDim2.new(0, 0, 0, 50),
+            Size = UDim2.new(1, 0, 1, -50)
+        })
+
+        -- Header
+        local PCHeader = Instance.new("Frame")
+        PCHeader.Parent = PCWindow
+        PCHeader.BackgroundColor3 = Color3.fromRGB(16, 16, 18)
+        PCHeader.BorderSizePixel = 0
+        PCHeader.Size = UDim2.new(1, 0, 0, 44)
+        PCHeader.ZIndex = 21
+        local PCHC = Instance.new("UICorner") PCHC.CornerRadius = UDim.new(0, 8) PCHC.Parent = PCHeader
+        local PCHFix = Instance.new("Frame")
+        PCHFix.BackgroundColor3 = Color3.fromRGB(16, 16, 18)
+        PCHFix.BorderSizePixel = 0
+        PCHFix.Position = UDim2.new(0, 0, 0.5, 0)
+        PCHFix.Size = UDim2.new(1, 0, 0.5, 0)
+        PCHFix.Parent = PCHeader
+
+        local PCHIcon = Instance.new("ImageLabel")
+        PCHIcon.Parent = PCHeader
+        PCHIcon.BackgroundTransparency = 1
+        PCHIcon.Position = UDim2.new(0, 12, 0.5, -9)
+        PCHIcon.Size = UDim2.new(0, 18, 0, 18)
+        PCHIcon.ZIndex = 22
+        Library:SetIcon(PCHIcon, "contact", Library.Theme.Accent)
+
+        local PCHTit = Instance.new("TextLabel")
+        PCHTit.Parent = PCHeader
+        PCHTit.BackgroundTransparency = 1
+        PCHTit.Position = UDim2.new(0, 36, 0, 0)
+        PCHTit.Size = UDim2.new(1, -70, 1, 0)
+        PCHTit.Font = Enum.Font.GothamBold
+        PCHTit.Text = "Player Card"
+        PCHTit.TextColor3 = Library.Theme.Text
+        PCHTit.TextSize = 13
+        PCHTit.TextXAlignment = Enum.TextXAlignment.Left
+        PCHTit.ZIndex = 22
+
+        local PCCloseBtn = Instance.new("TextButton")
+        PCCloseBtn.Parent = PCHeader
+        PCCloseBtn.BackgroundTransparency = 1
+        PCCloseBtn.Position = UDim2.new(1, -38, 0.5, -12)
+        PCCloseBtn.Size = UDim2.new(0, 24, 0, 24)
+        PCCloseBtn.Text = ""
+        PCCloseBtn.ZIndex = 22
+        local PCCloseI = Instance.new("ImageLabel")
+        PCCloseI.Parent = PCCloseBtn
+        PCCloseI.BackgroundTransparency = 1
+        PCCloseI.AnchorPoint = Vector2.new(0.5, 0.5)
+        PCCloseI.Position = UDim2.new(0.5, 0, 0.5, 0)
+        PCCloseI.Size = UDim2.new(0, 16, 0, 16)
+        PCCloseI.ZIndex = 23
+        Library:SetIcon(PCCloseI, "x", Library.Theme.Accent)
+        PCCloseBtn.MouseButton1Click:Connect(ClosePlayerCard)
+
+        -- Content scroll
+        local PCScroll = Instance.new("ScrollingFrame")
+        PCScroll.Parent = PCWindow
+        PCScroll.BackgroundTransparency = 1
+        PCScroll.BorderSizePixel = 0
+        PCScroll.Position = UDim2.new(0, 0, 0, 44)
+        PCScroll.Size = UDim2.new(1, 0, 1, -44)
+        PCScroll.ScrollBarThickness = 2
+        PCScroll.ScrollBarImageColor3 = Library.Theme.Accent
+        PCScroll.ScrollBarImageTransparency = 0.5
+        PCScroll.ZIndex = 21
+        PCScroll.AutomaticCanvasSize = Enum.AutomaticCanvasSize.Y
+        PCScroll.CanvasSize = UDim2.new(0, 0, 0, 0)
+
+        local PCList = Instance.new("UIListLayout")
+        PCList.Parent = PCScroll
+        PCList.SortOrder = Enum.SortOrder.LayoutOrder
+        PCList.Padding = UDim.new(0, 10)
+        PCList.HorizontalAlignment = Enum.HorizontalAlignment.Center
+
+        local PCPad = Instance.new("UIPadding")
+        PCPad.Parent = PCScroll
+        PCPad.PaddingLeft = UDim.new(0, 12)
+        PCPad.PaddingRight = UDim.new(0, 12)
+        PCPad.PaddingTop = UDim.new(0, 12)
+        PCPad.PaddingBottom = UDim.new(0, 12)
+
+        -- Avatar + name hero card
+        local HeroCard = Instance.new("Frame")
+        HeroCard.Name = "HeroCard"
+        HeroCard.Parent = PCScroll
+        HeroCard.BackgroundColor3 = Color3.fromRGB(18, 18, 22)
+        HeroCard.BackgroundTransparency = 0
+        HeroCard.BorderSizePixel = 0
+        HeroCard.Size = UDim2.new(1, 0, 0, 110)
+        HeroCard.ZIndex = 22
+        HeroCard.LayoutOrder = 1
+        local HCC = Instance.new("UICorner") HCC.CornerRadius = UDim.new(0, 10) HCC.Parent = HeroCard
+
+        -- Gradient banner top
+        local Banner = Instance.new("Frame")
+        Banner.Parent = HeroCard
+        Banner.BackgroundColor3 = Library.Theme.Accent
+        Banner.BackgroundTransparency = 0
+        Banner.BorderSizePixel = 0
+        Banner.Size = UDim2.new(1, 0, 0, 38)
+        Banner.ZIndex = 22
+        local BanC = Instance.new("UICorner") BanC.CornerRadius = UDim.new(0, 10) BanC.Parent = Banner
+        local BanFix = Instance.new("Frame")
+        BanFix.BackgroundColor3 = Library.Theme.Accent
+        BanFix.BorderSizePixel = 0
+        BanFix.Position = UDim2.new(0, 0, 0.5, 0)
+        BanFix.Size = UDim2.new(1, 0, 0.5, 0)
+        BanFix.Parent = Banner
+        local BanGrad = Instance.new("UIGradient")
+        BanGrad.Color = ColorSequence.new(Library.Theme.Accent, Color3.fromRGB(60, 0, 90))
+        BanGrad.Rotation = 90
+        BanGrad.Parent = Banner
+
+        -- Avatar image
+        local AvatarFrame = Instance.new("Frame")
+        AvatarFrame.Parent = HeroCard
+        AvatarFrame.BackgroundColor3 = Color3.fromRGB(11, 11, 13)
+        AvatarFrame.BorderSizePixel = 0
+        AvatarFrame.Position = UDim2.new(0, 12, 0, 18)
+        AvatarFrame.Size = UDim2.new(0, 58, 0, 58)
+        AvatarFrame.ZIndex = 24
+        local AFC = Instance.new("UICorner") AFC.CornerRadius = UDim.new(1, 0) AFC.Parent = AvatarFrame
+        local AFStroke = Instance.new("UIStroke")
+        AFStroke.Color = Library.Theme.Accent
+        AFStroke.Thickness = 2
+        AFStroke.Parent = AvatarFrame
+
+        local AvatarImg = Instance.new("ImageLabel")
+        AvatarImg.Parent = AvatarFrame
+        AvatarImg.BackgroundTransparency = 1
+        AvatarImg.Size = UDim2.new(1, 0, 1, 0)
+        AvatarImg.ZIndex = 25
+        local AIMC = Instance.new("UICorner") AIMC.CornerRadius = UDim.new(1, 0) AIMC.Parent = AvatarImg
+
+        -- Load avatar async
+        task.spawn(function()
+            local ok, tid = pcall(function()
+                return Players:GetUserThumbnailAsync(Player.UserId, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size180x180)
+            end)
+            if ok then AvatarImg.Image = tid end
+        end)
+
+        -- Username
+        local DispName = Instance.new("TextLabel")
+        DispName.Parent = HeroCard
+        DispName.BackgroundTransparency = 1
+        DispName.Position = UDim2.new(0, 78, 0, 42)
+        DispName.Size = UDim2.new(1, -90, 0, 20)
+        DispName.Font = Enum.Font.GothamBold
+        DispName.Text = Player.DisplayName
+        DispName.TextColor3 = Color3.fromRGB(255, 255, 255)
+        DispName.TextSize = 16
+        DispName.TextXAlignment = Enum.TextXAlignment.Left
+        DispName.ZIndex = 24
+
+        local UserName = Instance.new("TextLabel")
+        UserName.Parent = HeroCard
+        UserName.BackgroundTransparency = 1
+        UserName.Position = UDim2.new(0, 78, 0, 62)
+        UserName.Size = UDim2.new(1, -90, 0, 16)
+        UserName.Font = Enum.Font.Gotham
+        UserName.Text = "@" .. Player.Name
+        UserName.TextColor3 = Library.Theme.TextDisabled
+        UserName.TextSize = 12
+        UserName.TextXAlignment = Enum.TextXAlignment.Left
+        UserName.ZIndex = 24
+
+        -- Copy username button
+        local CopyBtn = Instance.new("TextButton")
+        CopyBtn.Parent = HeroCard
+        CopyBtn.BackgroundColor3 = Library.Theme.Accent
+        CopyBtn.BackgroundTransparency = 0.7
+        CopyBtn.BorderSizePixel = 0
+        CopyBtn.Position = UDim2.new(1, -70, 0, 75)
+        CopyBtn.Size = UDim2.new(0, 58, 0, 22)
+        CopyBtn.Font = Enum.Font.GothamBold
+        CopyBtn.Text = "Copy"
+        CopyBtn.TextColor3 = Library.Theme.Accent
+        CopyBtn.TextSize = 11
+        CopyBtn.ZIndex = 24
+        local CBC = Instance.new("UICorner") CBC.CornerRadius = UDim.new(0, 5) CBC.Parent = CopyBtn
+        CopyBtn.MouseButton1Click:Connect(function()
+            if setclipboard then pcall(setclipboard, Player.Name) end
+            CopyBtn.Text = "✓"
+            task.delay(1.5, function() if CopyBtn and CopyBtn.Parent then CopyBtn.Text = "Copy" end end)
+        end)
+
+        -- Info rows helper
+        local function MakeInfoCard(order, icon, label, value, accent)
+            local card = Instance.new("Frame")
+            card.Parent = PCScroll
+            card.BackgroundColor3 = Color3.fromRGB(18, 18, 22)
+            card.BorderSizePixel = 0
+            card.Size = UDim2.new(1, 0, 0, 44)
+            card.ZIndex = 22
+            card.LayoutOrder = order
+            local cc = Instance.new("UICorner") cc.CornerRadius = UDim.new(0, 8) cc.Parent = card
+
+            local ic = Instance.new("Frame")
+            ic.Parent = card
+            ic.BackgroundColor3 = accent or Library.Theme.Accent
+            ic.BackgroundTransparency = 0.8
+            ic.BorderSizePixel = 0
+            ic.Position = UDim2.new(0, 10, 0.5, -12)
+            ic.Size = UDim2.new(0, 24, 0, 24)
+            ic.ZIndex = 23
+            local icc = Instance.new("UICorner") icc.CornerRadius = UDim.new(0, 6) icc.Parent = ic
+            local ii = Instance.new("ImageLabel")
+            ii.Parent = ic
+            ii.BackgroundTransparency = 1
+            ii.AnchorPoint = Vector2.new(0.5, 0.5)
+            ii.Position = UDim2.new(0.5, 0, 0.5, 0)
+            ii.Size = UDim2.new(0, 14, 0, 14)
+            ii.ZIndex = 24
+            Library:SetIcon(ii, icon, accent or Library.Theme.Accent)
+
+            local lbl = Instance.new("TextLabel")
+            lbl.Parent = card
+            lbl.BackgroundTransparency = 1
+            lbl.Position = UDim2.new(0, 42, 0, 7)
+            lbl.Size = UDim2.new(1, -52, 0, 14)
+            lbl.Font = Enum.Font.Gotham
+            lbl.Text = label
+            lbl.TextColor3 = Library.Theme.TextDisabled
+            lbl.TextSize = 10
+            lbl.TextXAlignment = Enum.TextXAlignment.Left
+            lbl.ZIndex = 23
+
+            local val = Instance.new("TextLabel")
+            val.Parent = card
+            val.BackgroundTransparency = 1
+            val.Position = UDim2.new(0, 42, 0, 22)
+            val.Size = UDim2.new(1, -52, 0, 16)
+            val.Font = Enum.Font.GothamBold
+            val.Text = tostring(value)
+            val.TextColor3 = Color3.fromRGB(230, 230, 230)
+            val.TextSize = 12
+            val.TextXAlignment = Enum.TextXAlignment.Left
+            val.TextTruncate = Enum.TextTruncate.AtEnd
+            val.ZIndex = 23
+            return val
+        end
+
+        -- Generate HWID-like string from UserId + machine hash
+        local function GetHWID()
+            local uid = tostring(Player.UserId)
+            local hash = 0
+            for i = 1, #uid do
+                hash = (hash * 31 + uid:byte(i)) % 0xFFFFFFFF
+            end
+            local h1 = string.format("%08X", hash)
+            local h2 = string.format("%08X", (hash * 0x9E3779B9) % 0xFFFFFFFF)
+            local h3 = string.format("%08X", (hash * 0x6C62272E) % 0xFFFFFFFF)
+            return h1:sub(1,8) .. "-" .. h2:sub(1,4) .. "-" .. h2:sub(5,8) .. "-" .. h3:sub(1,4) .. "-" .. h3:sub(5,8) .. "00" .. h1:sub(1,4)
+        end
+
+        -- Account age
+        local function GetAccountAge()
+            local age = Player.AccountAge
+            if age < 30 then return age .. " days"
+            elseif age < 365 then return math.floor(age/30) .. " months"
+            else return math.floor(age/365) .. " years, " .. math.floor((age%365)/30) .. " mo"
+            end
+        end
+
+        MakeInfoCard(2, "hash", "User ID", tostring(Player.UserId))
+        MakeInfoCard(3, "fingerprint", "HWID", GetHWID(), Color3.fromRGB(255, 160, 50))
+        MakeInfoCard(4, "calendar", "Account Age", GetAccountAge(), Color3.fromRGB(100, 200, 100))
+        MakeInfoCard(5, "users", "Team", Player.Team and Player.Team.Name or "None")
+
+        -- Session timer card
+        local sessionStart = tick()
+        local timeVal = MakeInfoCard(6, "timer", "Session Time", "00:00", Color3.fromRGB(130, 130, 255))
+
+        -- Membership card
+        local memStr = "None"
+        if Player.MembershipType == Enum.MembershipType.BuildersClub then memStr = "Builders Club"
+        elseif Player.MembershipType == Enum.MembershipType.TurboBuildersClub then memStr = "Turbo BC"
+        elseif Player.MembershipType == Enum.MembershipType.OutrageousBuildersClub then memStr = "Outrageous BC"
+        end
+        MakeInfoCard(7, "star", "Membership", memStr, Color3.fromRGB(255, 220, 80))
+
+        -- Ping/server info
+        local pingVal = MakeInfoCard(8, "wifi", "Ping", "measuring...", Color3.fromRGB(80, 200, 180))
+        task.spawn(function()
+            local stats = game:GetService("Stats")
+            while PCWindow and PCWindow.Parent do
+                local elapsed = math.floor(tick() - sessionStart)
+                local m = math.floor(elapsed / 60)
+                local s = elapsed % 60
+                if timeVal and timeVal.Parent then
+                    timeVal.Text = string.format("%02d:%02d", m, s)
+                end
+                local ping = math.floor(stats.Network.ServerStatsItem["Data Ping"]:GetValue())
+                if pingVal and pingVal.Parent then
+                    pingVal.Text = tostring(ping) .. " ms"
+                    pingVal.TextColor3 = ping < 80 and Color3.fromRGB(100, 240, 120)
+                        or ping < 150 and Color3.fromRGB(255, 220, 80)
+                        or Color3.fromRGB(255, 80, 80)
+                end
+                task.wait(1)
+            end
+        end)
     end)
 
     LayoutFrame.Name = "LayoutFrame"
@@ -1092,7 +1974,19 @@ function Library:NewWindow(ConfigWindow)
         DragIcon.Position = UDim2.new(1, -22, 0.5, -7)
         DragIcon.Size = UDim2.new(0, 14, 0, 14)
         DragIcon.Visible = false
+        DragIcon.ZIndex = 3
         Library:SetIcon(DragIcon, "grip-vertical", Library.Theme.TextDisabled)
+
+        -- Invisible button overlay so DragIcon actually receives input
+        local DragBtn = Instance.new("TextButton")
+        DragBtn.Name = "DragBtn"
+        DragBtn.Parent = TabDisable
+        DragBtn.BackgroundTransparency = 1
+        DragBtn.Position = UDim2.new(1, -26, 0, 0)
+        DragBtn.Size = UDim2.new(0, 26, 1, 0)
+        DragBtn.Text = ""
+        DragBtn.ZIndex = 4
+        DragBtn.Visible = false
 
         Click_Tab_2.Name = "Click_Tab"
         Click_Tab_2.Parent = TabDisable
@@ -1110,7 +2004,7 @@ function Library:NewWindow(ConfigWindow)
         local tabDragging = false
         local tabDragStartY = 0
 
-        DragIcon.InputBegan:Connect(function(input)
+        DragBtn.InputBegan:Connect(function(input)
             if not ReorderMode then return end
             if input.UserInputType ~= Enum.UserInputType.MouseButton1 and input.UserInputType ~= Enum.UserInputType.Touch then return end
             tabDragging = true
@@ -1154,9 +2048,6 @@ function Library:NewWindow(ConfigWindow)
                         break
                     end
                 end
-                Library:TweenInstance(prev, 0.18, "BackgroundTransparency", 0.7, function()
-                    Library:TweenInstance(prev, 0.18, "BackgroundTransparency", 1)
-                end)
             elseif dy > 18 and myIdx < #tabs then
                 -- Swap with next
                 local next = tabs[myIdx + 1]
@@ -1174,9 +2065,6 @@ function Library:NewWindow(ConfigWindow)
                         break
                     end
                 end
-                Library:TweenInstance(next, 0.18, "BackgroundTransparency", 0.7, function()
-                    Library:TweenInstance(next, 0.18, "BackgroundTransparency", 1)
-                end)
             end
         end)
 
@@ -1194,12 +2082,7 @@ function Library:NewWindow(ConfigWindow)
         Divider.Position = UDim2.new(0, 8, 1, -1)
         Divider.Size = UDim2.new(1, -16, 0, 1)
 
-        -- BUGFIX: every TabDisable defaulted to LayoutOrder 0, so the reorder
-        -- logic below was swapping "0 with 0" (no-op). Give each tab a real
-        -- distinct order matching insertion order, same as Layout below.
-        TabDisable.LayoutOrder = AllLayouts
-
-        table.insert(TabElements, { Frame = TabDisable, DragIcon = DragIcon, Name = name })
+        table.insert(TabElements, { Frame = TabDisable, DragIcon = DragIcon, DragBtn = DragBtn, Name = name })
 
         Layout.Name = "Layout"
         Layout.Parent = LayoutList
@@ -1236,15 +2119,6 @@ function Library:NewWindow(ConfigWindow)
             Library:TweenInstance(NameTab_2, 0.22, "TextTransparency", 0)
             UIPageLayout:JumpToIndex(Layout.LayoutOrder)
             Choose_2.Visible = true
-        end
-
-        -- Register the select function so other UI (e.g. the AI assistant)
-        -- can programmatically jump to this tab by name.
-        for _, e in ipairs(TabElements) do
-            if e.Frame == TabDisable then
-                e.Select = SelectThisTab
-                break
-            end
         end
 
         if AllLayouts == 0 and Unlocked then
@@ -2310,12 +3184,13 @@ function Library:NewWindow(ConfigWindow)
                 Title_7.BorderColor3 = Color3.fromRGB(0, 0, 0)
                 Title_7.BorderSizePixel = 0
                 Title_7.Position = UDim2.new(0, 10, 0, 0)
-                Title_7.Size = UDim2.new(1, -60, 1, 0)
+                Title_7.Size = UDim2.new(1, -140, 1, 0)
                 Title_7.Font = Enum.Font.GothamBold
                 Title_7.Text = cftextbox.Title
                 Title_7.TextColor3 = Library.Theme.Text
                 Title_7.TextSize = 13.000
                 Title_7.TextXAlignment = Enum.TextXAlignment.Left
+                Title_7.TextTruncate = Enum.TextTruncate.AtEnd
 
                 Content_5.Name = "Content"
                 Content_5.Parent = Input
@@ -2335,12 +3210,12 @@ function Library:NewWindow(ConfigWindow)
 
                 TextboxFrame.Name = "TextboxFrame"
                 TextboxFrame.Parent = Input
-                TextboxFrame.AnchorPoint = Vector2.new(0, 0.5)
+                TextboxFrame.AnchorPoint = Vector2.new(1, 0.5)
                 TextboxFrame.BackgroundColor3 = Library.Theme.Background
                 TextboxFrame.BorderColor3 = Color3.fromRGB(0, 0, 0)
                 TextboxFrame.BorderSizePixel = 0
-                TextboxFrame.Position = UDim2.new(1, -140, 0.5, 0)
-                TextboxFrame.Size = UDim2.new(0, 130, 0, 28)
+                TextboxFrame.Position = UDim2.new(1, -8, 0.5, 0)
+                TextboxFrame.Size = UDim2.new(0, 120, 0, 26)
 
                 UICorner_18.CornerRadius = UDim.new(0, 3)
                 UICorner_18.Parent = TextboxFrame
@@ -3653,6 +4528,38 @@ function Library:NewWindow(ConfigWindow)
         return ConfigFlags[flag]
     end
 
+    function WindowAPI:SetGroqConfig(apiKey, systemPrompt)
+        if self._activeSetGroqConfig then
+            self._activeSetGroqConfig(apiKey, systemPrompt)
+        else
+            -- store for when AI window opens next time
+            self._pendingGroqKey = apiKey
+            self._pendingGroqPrompt = systemPrompt
+        end
+    end
+
+    function WindowAPI:SelectTab(tabName)
+        for _, child in ipairs(ScrollingTab:GetChildren()) do
+            if child:IsA("Frame") and child:FindFirstChild("NameTab") then
+                local raw = child.NameTab:GetAttribute("RawName") or child.NameTab.Text or ""
+                if string.lower(raw) == string.lower(tostring(tabName)) then
+                    TextLabel.Text = raw
+                    for _, c2 in ipairs(ScrollingTab:GetChildren()) do
+                        if c2:IsA("Frame") and c2:FindFirstChild("NameTab") then
+                            Library:TweenInstance(c2.NameTab, 0.28, "TextTransparency", 0.35)
+                            if c2:FindFirstChild("Choose") then c2.Choose.Visible = false end
+                        end
+                    end
+                    Library:TweenInstance(child.NameTab, 0.22, "TextTransparency", 0)
+                    UIPageLayout:JumpToIndex(child.LayoutOrder)
+                    if child:FindFirstChild("Choose") then child.Choose.Visible = true end
+                    return true
+                end
+            end
+        end
+        return false
+    end
+
     function WindowAPI:Dialog(cfg)
         cfg = Library:MakeConfig({
             Title = "Dialog",
@@ -3877,753 +4784,6 @@ function Library:NewWindow(ConfigWindow)
         tweenBar.Completed:Connect(function()
             if not isClosing then closeUI() end
         end)
-    end
-
-    -- ============================================================
-    -- Jump to a tab by name (used by the AI assistant's clickable
-    -- tab links, but also just a public helper you can call).
-    -- ============================================================
-    function WindowAPI:GoToTab(tabName)
-        for _, e in ipairs(TabElements) do
-            if e.Name == tabName and e.Select then
-                e.Select()
-                return true
-            end
-        end
-        return false
-    end
-
-    -- ============================================================
-    -- AI Assistant window (Groq-only)
-    -- ============================================================
-    -- cfg.GroqAPIKey    (string, required)  -- groqapi
-    -- cfg.GroqPrompt    (string)            -- groqprompt / system prompt
-    -- cfg.Model         (string, default "llama-3.3-70b-versatile")
-    -- cfg.Title         (string, default "Control Panel")
-    -- cfg.Version       (string, default "v2.4.6")
-    -- cfg.AccentColor   (Color3, default green like the reference photo)
-    function WindowAPI:AI(cfg)
-        cfg = Library:MakeConfig({
-            GroqAPIKey = "",
-            GroqPrompt = "You are a helpful assistant embedded in a Roblox script UI. Keep answers short.",
-            Model = "llama-3.3-70b-versatile",
-            Title = "Control Panel",
-            Version = "v2.4.6",
-            AccentColor = Color3.fromRGB(0, 200, 120),
-        }, cfg or {})
-
-        local groqapi = cfg.GroqAPIKey
-        local groqprompt = cfg.GroqPrompt
-        local Accent = cfg.AccentColor
-
-        -- Pick whatever HTTP-with-headers function the executor exposes.
-        local Requester = (syn and syn.request) or http_request or (fluxus and fluxus.request) or request
-
-        local ChatHistory = { { role = "system", content = groqprompt } }
-
-        ------------------------------------------------------------------
-        -- Root window
-        ------------------------------------------------------------------
-        local AIGui = Instance.new("Frame")
-        AIGui.Name = "AIAssistant"
-        AIGui.Parent = TeddyUI_Premium
-        AIGui.AnchorPoint = Vector2.new(0.5, 0.5)
-        AIGui.Position = UDim2.new(0.5, 0, 0.5, 0)
-        AIGui.Size = UDim2.new(0, 0, 0, 0)
-        AIGui.BackgroundColor3 = Color3.fromRGB(10, 16, 12)
-        AIGui.BorderSizePixel = 0
-        AIGui.ClipsDescendants = true
-        AIGui.ZIndex = 90
-
-        local AICorner = Instance.new("UICorner")
-        AICorner.CornerRadius = UDim.new(0, 14)
-        AICorner.Parent = AIGui
-
-        local AIStroke = Instance.new("UIStroke")
-        AIStroke.Color = Accent
-        AIStroke.Transparency = 0.6
-        AIStroke.Thickness = 1
-        AIStroke.Parent = AIGui
-
-        -- Soft glow gradient like the reference screenshot
-        local Glow = Instance.new("ImageLabel")
-        Glow.Parent = AIGui
-        Glow.BackgroundTransparency = 1
-        Glow.Image = "rbxassetid://131730424556100" -- radial glow blob
-        Glow.ImageColor3 = Accent
-        Glow.ImageTransparency = 0.75
-        Glow.ScaleType = Enum.ScaleType.Crop
-        Glow.Size = UDim2.new(1.4, 0, 1.6, 0)
-        Glow.Position = UDim2.new(-0.2, 0, -0.5, 0)
-        Glow.ZIndex = 90
-
-        -- Top bar
-        local TopBar = Instance.new("Frame")
-        TopBar.Name = "TopBar"
-        TopBar.Parent = AIGui
-        TopBar.BackgroundTransparency = 1
-        TopBar.Size = UDim2.new(1, 0, 0, 44)
-        TopBar.ZIndex = 92
-
-        local TBIcon = Instance.new("ImageLabel")
-        TBIcon.Parent = TopBar
-        TBIcon.BackgroundTransparency = 1
-        TBIcon.Position = UDim2.new(0, 14, 0.5, -10)
-        TBIcon.Size = UDim2.new(0, 20, 0, 20)
-        TBIcon.ZIndex = 92
-        Library:SetIcon(TBIcon, "layout-grid", Accent)
-
-        local TBTitle = Instance.new("TextLabel")
-        TBTitle.Parent = TopBar
-        TBTitle.BackgroundTransparency = 1
-        TBTitle.Position = UDim2.new(0, 42, 0, 4)
-        TBTitle.Size = UDim2.new(0, 220, 0, 18)
-        TBTitle.Font = Enum.Font.GothamBold
-        TBTitle.Text = cfg.Title
-        TBTitle.TextColor3 = Library.Theme.Text
-        TBTitle.TextSize = 14
-        TBTitle.TextXAlignment = Enum.TextXAlignment.Left
-        TBTitle.ZIndex = 92
-
-        local TBVersion = Instance.new("TextLabel")
-        TBVersion.Parent = TopBar
-        TBVersion.BackgroundTransparency = 1
-        TBVersion.Position = UDim2.new(0, 42, 0, 21)
-        TBVersion.Size = UDim2.new(0, 220, 0, 14)
-        TBVersion.Font = Enum.Font.Gotham
-        TBVersion.Text = cfg.Version
-        TBVersion.TextColor3 = Library.Theme.TextDisabled
-        TBVersion.TextSize = 11
-        TBVersion.TextXAlignment = Enum.TextXAlignment.Left
-        TBVersion.ZIndex = 92
-
-        local function TopButton(iconName, xOffsetFromRight)
-            local B = Instance.new("ImageButton")
-            B.Parent = TopBar
-            B.BackgroundTransparency = 1
-            B.AnchorPoint = Vector2.new(1, 0.5)
-            B.Position = UDim2.new(1, xOffsetFromRight, 0.5, 0)
-            B.Size = UDim2.new(0, 18, 0, 18)
-            B.ZIndex = 92
-            Library:SetIcon(B, iconName, Library.Theme.TextDisabled)
-            B.MouseEnter:Connect(function() Library:TweenInstance(B, 0.15, "ImageColor3", Library.Theme.Text) end)
-            B.MouseLeave:Connect(function() Library:TweenInstance(B, 0.15, "ImageColor3", Library.Theme.TextDisabled) end)
-            return B
-        end
-
-        local CloseBtn = TopButton("x", -14)
-        local FullscreenBtn = TopButton("maximize-2", -44)
-        local MinimizeBtn = TopButton("minus", -74)
-        local SearchBtn = TopButton("search", -104)
-
-        self:MakeDraggable(TopBar, AIGui)
-
-        -- Divider under top bar
-        local TopDivider = Instance.new("Frame")
-        TopDivider.Parent = AIGui
-        TopDivider.BackgroundColor3 = Accent
-        TopDivider.BackgroundTransparency = 0.85
-        TopDivider.BorderSizePixel = 0
-        TopDivider.Position = UDim2.new(0, 0, 0, 44)
-        TopDivider.Size = UDim2.new(1, 0, 0, 1)
-        TopDivider.ZIndex = 92
-
-        ------------------------------------------------------------------
-        -- Sidebar: mirrors the real tabs registered on this window so
-        -- "go to Home > Changelog"-style requests always stay accurate.
-        ------------------------------------------------------------------
-        local Sidebar = Instance.new("Frame")
-        Sidebar.Parent = AIGui
-        Sidebar.BackgroundTransparency = 1
-        Sidebar.Position = UDim2.new(0, 0, 0, 45)
-        Sidebar.Size = UDim2.new(0, 150, 1, -45)
-        Sidebar.ZIndex = 92
-
-        local SidebarList = Instance.new("UIListLayout")
-        SidebarList.Parent = Sidebar
-        SidebarList.SortOrder = Enum.SortOrder.LayoutOrder
-        SidebarList.Padding = UDim.new(0, 2)
-
-        local SidePad = Instance.new("UIPadding")
-        SidePad.Parent = Sidebar
-        SidePad.PaddingTop = UDim.new(0, 8)
-        SidePad.PaddingLeft = UDim.new(0, 8)
-        SidePad.PaddingRight = UDim.new(0, 8)
-
-        local function BuildSidebar()
-            for _, c in ipairs(Sidebar:GetChildren()) do
-                if c:IsA("TextButton") then c:Destroy() end
-            end
-            for i, e in ipairs(TabElements) do
-                local Btn = Instance.new("TextButton")
-                Btn.Parent = Sidebar
-                Btn.LayoutOrder = i
-                Btn.BackgroundTransparency = 1
-                Btn.Size = UDim2.new(1, 0, 0, 32)
-                Btn.Font = Enum.Font.GothamBold
-                Btn.Text = "   " .. e.Name
-                Btn.TextColor3 = Library.Theme.TextDisabled
-                Btn.TextSize = 12
-                Btn.TextXAlignment = Enum.TextXAlignment.Left
-                Btn.ZIndex = 92
-                local BtnCorner = Instance.new("UICorner")
-                BtnCorner.CornerRadius = UDim.new(0, 8)
-                BtnCorner.Parent = Btn
-                Btn.MouseEnter:Connect(function() Library:TweenInstance(Btn, 0.15, "TextColor3", Library.Theme.Text) end)
-                Btn.MouseLeave:Connect(function() Library:TweenInstance(Btn, 0.15, "TextColor3", Library.Theme.TextDisabled) end)
-                Btn.MouseButton1Click:Connect(function()
-                    if e.Select then e.Select() end
-                end)
-            end
-        end
-        BuildSidebar()
-
-        ------------------------------------------------------------------
-        -- Chat panel
-        ------------------------------------------------------------------
-        local ChatPanel = Instance.new("Frame")
-        ChatPanel.Parent = AIGui
-        ChatPanel.BackgroundColor3 = Color3.fromRGB(6, 10, 8)
-        ChatPanel.BackgroundTransparency = 0.15
-        ChatPanel.BorderSizePixel = 0
-        ChatPanel.Position = UDim2.new(0, 158, 0, 53)
-        ChatPanel.Size = UDim2.new(1, -166, 1, -61)
-        ChatPanel.ZIndex = 92
-
-        local ChatCorner = Instance.new("UICorner")
-        ChatCorner.CornerRadius = UDim.new(0, 10)
-        ChatCorner.Parent = ChatPanel
-
-        local ChatHeader = Instance.new("Frame")
-        ChatHeader.Parent = ChatPanel
-        ChatHeader.BackgroundTransparency = 1
-        ChatHeader.Size = UDim2.new(1, 0, 0, 36)
-        ChatHeader.ZIndex = 93
-
-        local ChatHeaderIcon = Instance.new("ImageLabel")
-        ChatHeaderIcon.Parent = ChatHeader
-        ChatHeaderIcon.BackgroundTransparency = 1
-        ChatHeaderIcon.Position = UDim2.new(0, 12, 0.5, -8)
-        ChatHeaderIcon.Size = UDim2.new(0, 16, 0, 16)
-        ChatHeaderIcon.ZIndex = 93
-        Library:SetIcon(ChatHeaderIcon, "sparkles", Accent)
-
-        local ChatHeaderLabel = Instance.new("TextLabel")
-        ChatHeaderLabel.Parent = ChatHeader
-        ChatHeaderLabel.BackgroundTransparency = 1
-        ChatHeaderLabel.Position = UDim2.new(0, 34, 0, 0)
-        ChatHeaderLabel.Size = UDim2.new(1, -80, 1, 0)
-        ChatHeaderLabel.Font = Enum.Font.GothamBold
-        ChatHeaderLabel.Text = "Assistant"
-        ChatHeaderLabel.TextColor3 = Library.Theme.Text
-        ChatHeaderLabel.TextSize = 13
-        ChatHeaderLabel.TextXAlignment = Enum.TextXAlignment.Left
-        ChatHeaderLabel.ZIndex = 93
-
-        local ClearBtn = Instance.new("ImageButton")
-        ClearBtn.Parent = ChatHeader
-        ClearBtn.BackgroundTransparency = 1
-        ClearBtn.AnchorPoint = Vector2.new(1, 0.5)
-        ClearBtn.Position = UDim2.new(1, -12, 0.5, 0)
-        ClearBtn.Size = UDim2.new(0, 16, 0, 16)
-        ClearBtn.ZIndex = 93
-        Library:SetIcon(ClearBtn, "trash-2", Library.Theme.TextDisabled)
-
-        local MessagesScroll = Instance.new("ScrollingFrame")
-        MessagesScroll.Parent = ChatPanel
-        MessagesScroll.BackgroundTransparency = 1
-        MessagesScroll.BorderSizePixel = 0
-        MessagesScroll.Position = UDim2.new(0, 0, 0, 36)
-        MessagesScroll.Size = UDim2.new(1, 0, 1, -96)
-        MessagesScroll.ScrollBarThickness = 3
-        MessagesScroll.ScrollBarImageColor3 = Accent
-        MessagesScroll.CanvasSize = UDim2.new(0, 0, 0, 0)
-        MessagesScroll.ZIndex = 92
-
-        local MessagesList = Instance.new("UIListLayout")
-        MessagesList.Parent = MessagesScroll
-        MessagesList.SortOrder = Enum.SortOrder.LayoutOrder
-        MessagesList.Padding = UDim.new(0, 10)
-
-        local MessagesPad = Instance.new("UIPadding")
-        MessagesPad.Parent = MessagesScroll
-        MessagesPad.PaddingLeft = UDim.new(0, 12)
-        MessagesPad.PaddingRight = UDim.new(0, 12)
-        MessagesPad.PaddingTop = UDim.new(0, 8)
-        Library:UpdateScrolling(MessagesScroll, MessagesList)
-
-        ClearBtn.MouseButton1Click:Connect(function()
-            for _, c in ipairs(MessagesScroll:GetChildren()) do
-                if c:IsA("Frame") then c:Destroy() end
-            end
-            ChatHistory = { { role = "system", content = groqprompt } }
-        end)
-
-        -- Renders one bubble. If fromAI, scans the text for any real tab
-        -- name and turns that word/phrase into a clickable button that
-        -- jumps to the tab via WindowAPI:GoToTab.
-        local function AddBubble(text, fromAI)
-            local Row = Instance.new("Frame")
-            Row.Parent = MessagesScroll
-            Row.BackgroundTransparency = 1
-            Row.AutomaticSize = Enum.AutomaticSize.Y
-            Row.Size = UDim2.new(1, 0, 0, 0)
-            Row.ZIndex = 92
-
-            local Bubble = Instance.new("Frame")
-            Bubble.Parent = Row
-            Bubble.AutomaticSize = Enum.AutomaticSize.Y
-            Bubble.Size = UDim2.new(1, 0, 0, 0)
-            Bubble.BackgroundColor3 = fromAI and Color3.fromRGB(16, 24, 19) or Color3.fromRGB(20, 20, 20)
-            Bubble.BackgroundTransparency = 0.1
-            Bubble.BorderSizePixel = 0
-            Bubble.ZIndex = 92
-            Bubble.BackgroundTransparency = 1 -- fade in via tween below
-
-            local BCorner = Instance.new("UICorner")
-            BCorner.CornerRadius = UDim.new(0, 8)
-            BCorner.Parent = Bubble
-
-            local BPad = Instance.new("UIPadding")
-            BPad.Parent = Bubble
-            BPad.PaddingLeft = UDim.new(0, 10)
-            BPad.PaddingRight = UDim.new(0, 10)
-            BPad.PaddingTop = UDim.new(0, 8)
-            BPad.PaddingBottom = UDim.new(0, 8)
-
-            local TextLbl = Instance.new("TextLabel")
-            TextLbl.Parent = Bubble
-            TextLbl.BackgroundTransparency = 1
-            TextLbl.Size = UDim2.new(1, 0, 0, 0)
-            TextLbl.AutomaticSize = Enum.AutomaticSize.Y
-            TextLbl.Font = Enum.Font.Gotham
-            TextLbl.Text = text
-            TextLbl.TextColor3 = Library.Theme.Text
-            TextLbl.TextSize = 13
-            TextLbl.TextWrapped = true
-            TextLbl.TextXAlignment = Enum.TextXAlignment.Left
-            TextLbl.RichText = true
-            TextLbl.ZIndex = 93
-
-            -- Clickable tab-name detection: wrap matched tab names in
-            -- underline + accent color rich text and give the label a
-            -- click handler for the *whole* bubble that re-checks which
-            -- tab name is present (simple, robust for short AI replies).
-            if fromAI then
-                local matched = nil
-                for _, e in ipairs(TabElements) do
-                    if text:find(e.Name, 1, true) then
-                        matched = e
-                        local colorHex = string.format("#%02X%02X%02X", Accent.R * 255, Accent.G * 255, Accent.B * 255)
-                        local escaped = e.Name:gsub("([%^%$%(%)%%%.%[%]%*%+%-%?])", "%%%1")
-                        TextLbl.Text = text:gsub(escaped, string.format('<u><font color="%s">%s</font></u>', colorHex, e.Name))
-                        break
-                    end
-                end
-                if matched then
-                    local ClickCatcher = Instance.new("TextButton")
-                    ClickCatcher.Parent = Bubble
-                    ClickCatcher.BackgroundTransparency = 1
-                    ClickCatcher.Size = UDim2.new(1, 0, 1, 0)
-                    ClickCatcher.Text = ""
-                    ClickCatcher.ZIndex = 94
-                    ClickCatcher.MouseButton1Click:Connect(function()
-                        if matched.Select then matched.Select() end
-                    end)
-                end
-            end
-
-            Library:TweenInstance(Bubble, 0.25, "BackgroundTransparency", fromAI and 0.1 or 0.3)
-            task.wait()
-            MessagesScroll.CanvasPosition = Vector2.new(0, math.huge)
-            return TextLbl
-        end
-
-        ------------------------------------------------------------------
-        -- Input bar
-        ------------------------------------------------------------------
-        local InputBar = Instance.new("Frame")
-        InputBar.Parent = ChatPanel
-        InputBar.BackgroundColor3 = Color3.fromRGB(14, 20, 16)
-        InputBar.BorderSizePixel = 0
-        InputBar.AnchorPoint = Vector2.new(0, 1)
-        InputBar.Position = UDim2.new(0, 8, 1, -10)
-        InputBar.Size = UDim2.new(1, -16, 0, 42)
-        InputBar.ZIndex = 92
-
-        local InputCorner = Instance.new("UICorner")
-        InputCorner.CornerRadius = UDim.new(0, 8)
-        InputCorner.Parent = InputBar
-
-        local InputBox = Instance.new("TextBox")
-        InputBox.Parent = InputBar
-        InputBox.BackgroundTransparency = 1
-        InputBox.Position = UDim2.new(0, 12, 0, 0)
-        InputBox.Size = UDim2.new(1, -54, 1, 0)
-        InputBox.Font = Enum.Font.Gotham
-        InputBox.PlaceholderText = "Ask me anything..."
-        InputBox.PlaceholderColor3 = Library.Theme.TextDisabled
-        InputBox.Text = ""
-        InputBox.TextColor3 = Library.Theme.Text
-        InputBox.TextSize = 13
-        InputBox.TextXAlignment = Enum.TextXAlignment.Left
-        InputBox.ClearTextOnFocus = false
-        InputBox.ZIndex = 93
-
-        local SendBtn = Instance.new("ImageButton")
-        SendBtn.Parent = InputBar
-        SendBtn.BackgroundColor3 = Accent
-        SendBtn.AnchorPoint = Vector2.new(1, 0.5)
-        SendBtn.Position = UDim2.new(1, -8, 0.5, 0)
-        SendBtn.Size = UDim2.new(0, 28, 0, 28)
-        SendBtn.ZIndex = 93
-        Library:SetIcon(SendBtn, "send", Color3.fromRGB(10, 10, 10))
-        local SendCorner = Instance.new("UICorner")
-        SendCorner.CornerRadius = UDim.new(1, 0)
-        SendCorner.Parent = SendBtn
-
-        local Typing = false
-        local function SetTyping(state)
-            Typing = state
-            Library:TweenInstance(SendBtn, 0.15, "BackgroundTransparency", state and 0.5 or 0)
-        end
-
-        local function AskGroq(userText)
-            table.insert(ChatHistory, { role = "user", content = userText })
-            if not groqapi or groqapi == "" then
-                AddBubble("No Groq API key set (cfg.GroqAPIKey / groqapi).", true)
-                return
-            end
-            if not Requester then
-                AddBubble("This executor doesn't expose a headers-capable request function, so Groq can't be called.", true)
-                return
-            end
-            SetTyping(true)
-            local TypingLbl = AddBubble("...", true)
-            local ok, result = pcall(function()
-                local res = Requester({
-                    Url = "https://api.groq.com/openai/v1/chat/completions",
-                    Method = "POST",
-                    Headers = {
-                        ["Content-Type"] = "application/json",
-                        ["Authorization"] = "Bearer " .. groqapi,
-                    },
-                    Body = HttpService:JSONEncode({
-                        model = cfg.Model,
-                        messages = ChatHistory,
-                    }),
-                })
-                local decoded = HttpService:JSONDecode(res.Body)
-                return decoded.choices[1].message.content
-            end)
-
-            TypingLbl.Text = ok and result or ("Error: " .. tostring(result))
-            if ok then
-                table.insert(ChatHistory, { role = "assistant", content = result })
-                -- Re-run the click-detection now that the real text is in.
-                local Bubble = TypingLbl.Parent
-                for _, e in ipairs(TabElements) do
-                    if result:find(e.Name, 1, true) then
-                        local colorHex = string.format("#%02X%02X%02X", Accent.R * 255, Accent.G * 255, Accent.B * 255)
-                        local escaped = e.Name:gsub("([%^%$%(%)%%%.%[%]%*%+%-%?])", "%%%1")
-                        TypingLbl.Text = result:gsub(escaped, string.format('<u><font color="%s">%s</font></u>', colorHex, e.Name))
-                        local ClickCatcher = Instance.new("TextButton")
-                        ClickCatcher.Parent = Bubble
-                        ClickCatcher.BackgroundTransparency = 1
-                        ClickCatcher.Size = UDim2.new(1, 0, 1, 0)
-                        ClickCatcher.Text = ""
-                        ClickCatcher.ZIndex = 94
-                        ClickCatcher.MouseButton1Click:Connect(function()
-                            e.Select()
-                        end)
-                        break
-                    end
-                end
-            end
-            SetTyping(false)
-            MessagesScroll.CanvasPosition = Vector2.new(0, math.huge)
-        end
-
-        local function Send()
-            local text = InputBox.Text
-            if text == "" or Typing then return end
-            InputBox.Text = ""
-            AddBubble(text, false)
-            task.spawn(AskGroq, text)
-        end
-
-        SendBtn.MouseButton1Click:Connect(Send)
-        InputBox.FocusLost:Connect(function(enterPressed)
-            if enterPressed then Send() end
-        end)
-
-        ------------------------------------------------------------------
-        -- Open animation + window controls
-        ------------------------------------------------------------------
-        local TargetSize = UDim2.new(0, 560, 0, 380)
-        local minimized = false
-        local fullscreen = false
-        local preFullscreenSize = TargetSize
-
-        Library:TweenInstance(AIGui, 0.3, "Size", TargetSize)
-
-        CloseBtn.MouseButton1Click:Connect(function()
-            Library:TweenInstance(AIGui, 0.22, "Size", UDim2.new(0, 0, 0, 0), function()
-                AIGui:Destroy()
-            end)
-        end)
-
-        MinimizeBtn.MouseButton1Click:Connect(function()
-            minimized = not minimized
-            Library:TweenInstance(AIGui, 0.28, "Size", minimized and UDim2.new(0, 560, 0, 44) or TargetSize)
-        end)
-
-        FullscreenBtn.MouseButton1Click:Connect(function()
-            fullscreen = not fullscreen
-            if fullscreen then
-                preFullscreenSize = AIGui.Size
-                Library:TweenInstance(AIGui, 0.28, "Size", UDim2.new(0, 900, 0, 600))
-            else
-                Library:TweenInstance(AIGui, 0.28, "Size", preFullscreenSize)
-            end
-        end)
-
-        return {
-            Gui = AIGui,
-            Ask = AskGroq,
-            RefreshTabs = BuildSidebar,
-        }
-    end
-
-    -- ============================================================
-    -- Player Card
-    -- ============================================================
-    -- cfg.Parent      -- where to put it (defaults to same ScreenGui)
-    -- cfg.AccentColor
-    function WindowAPI:PlayerCard(cfg)
-        cfg = Library:MakeConfig({
-            AccentColor = Library.Theme.Accent,
-        }, cfg or {})
-
-        local Accent = cfg.AccentColor
-        local joinTime = os.time()
-
-        local Card = Instance.new("Frame")
-        Card.Name = "PlayerCard"
-        Card.Parent = TeddyUI_Premium
-        Card.AnchorPoint = Vector2.new(0.5, 0.5)
-        Card.Position = UDim2.new(0.5, 0, 0.5, 0)
-        Card.Size = UDim2.new(0, 0, 0, 0)
-        Card.BackgroundColor3 = Color3.fromRGB(14, 14, 16)
-        Card.BorderSizePixel = 0
-        Card.ClipsDescendants = true
-        Card.ZIndex = 90
-
-        local CardCorner = Instance.new("UICorner")
-        CardCorner.CornerRadius = UDim.new(0, 16)
-        CardCorner.Parent = Card
-
-        local CardStroke = Instance.new("UIStroke")
-        CardStroke.Color = Accent
-        CardStroke.Transparency = 0.55
-        CardStroke.Parent = Card
-
-        -- Banner / header gradient
-        local Banner = Instance.new("Frame")
-        Banner.Parent = Card
-        Banner.BackgroundColor3 = Accent
-        Banner.BorderSizePixel = 0
-        Banner.Size = UDim2.new(1, 0, 0, 70)
-        Banner.ZIndex = 91
-
-        local BannerGrad = Instance.new("UIGradient")
-        BannerGrad.Color = ColorSequence.new(Accent, Color3.fromRGB(10, 10, 10))
-        BannerGrad.Rotation = 90
-        BannerGrad.Parent = Banner
-
-        local BannerCorner = Instance.new("UICorner")
-        BannerCorner.CornerRadius = UDim.new(0, 16)
-        BannerCorner.Parent = Banner
-
-        local CloseCard = Instance.new("ImageButton")
-        CloseCard.Parent = Banner
-        CloseCard.BackgroundTransparency = 1
-        CloseCard.AnchorPoint = Vector2.new(1, 0)
-        CloseCard.Position = UDim2.new(1, -10, 0, 10)
-        CloseCard.Size = UDim2.new(0, 16, 0, 16)
-        CloseCard.ZIndex = 92
-        Library:SetIcon(CloseCard, "x", Color3.fromRGB(255, 255, 255))
-
-        -- Avatar
-        local AvatarHolder = Instance.new("Frame")
-        AvatarHolder.Parent = Card
-        AvatarHolder.AnchorPoint = Vector2.new(0.5, 0)
-        AvatarHolder.Position = UDim2.new(0.5, 0, 0, 36)
-        AvatarHolder.Size = UDim2.new(0, 72, 0, 72)
-        AvatarHolder.BackgroundColor3 = Color3.fromRGB(14, 14, 16)
-        AvatarHolder.ZIndex = 93
-
-        local AvatarCorner = Instance.new("UICorner")
-        AvatarCorner.CornerRadius = UDim.new(1, 0)
-        AvatarCorner.Parent = AvatarHolder
-
-        local AvatarStroke = Instance.new("UIStroke")
-        AvatarStroke.Color = Accent
-        AvatarStroke.Thickness = 3
-        AvatarStroke.Parent = AvatarHolder
-
-        local Avatar = Instance.new("ImageLabel")
-        Avatar.Parent = AvatarHolder
-        Avatar.BackgroundTransparency = 1
-        Avatar.Position = UDim2.new(0, 3, 0, 3)
-        Avatar.Size = UDim2.new(1, -6, 1, -6)
-        Avatar.ZIndex = 94
-        local AvatarInnerCorner = Instance.new("UICorner")
-        AvatarInnerCorner.CornerRadius = UDim.new(1, 0)
-        AvatarInnerCorner.Parent = Avatar
-
-        local ok, thumb = pcall(function()
-            return Players:GetUserThumbnailAsync(Player.UserId, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size180x180)
-        end)
-        Avatar.Image = ok and thumb or "rbxasset://textures/ui/GuiImagePlaceholder.png"
-
-        -- Online dot
-        local OnlineDot = Instance.new("Frame")
-        OnlineDot.Parent = AvatarHolder
-        OnlineDot.AnchorPoint = Vector2.new(1, 1)
-        OnlineDot.Position = UDim2.new(1, 2, 1, 2)
-        OnlineDot.Size = UDim2.new(0, 16, 0, 16)
-        OnlineDot.BackgroundColor3 = Color3.fromRGB(60, 220, 100)
-        OnlineDot.ZIndex = 95
-        local OnlineDotCorner = Instance.new("UICorner")
-        OnlineDotCorner.CornerRadius = UDim.new(1, 0)
-        OnlineDotCorner.Parent = OnlineDot
-        local OnlineDotStroke = Instance.new("UIStroke")
-        OnlineDotStroke.Color = Color3.fromRGB(14, 14, 16)
-        OnlineDotStroke.Thickness = 3
-        OnlineDotStroke.Parent = OnlineDot
-
-        -- Display name / @username
-        local DisplayNameLbl = Instance.new("TextLabel")
-        DisplayNameLbl.Parent = Card
-        DisplayNameLbl.BackgroundTransparency = 1
-        DisplayNameLbl.Position = UDim2.new(0, 0, 0, 114)
-        DisplayNameLbl.Size = UDim2.new(1, 0, 0, 20)
-        DisplayNameLbl.Font = Enum.Font.GothamBold
-        DisplayNameLbl.Text = Player.DisplayName
-        DisplayNameLbl.TextColor3 = Library.Theme.Text
-        DisplayNameLbl.TextSize = 16
-        DisplayNameLbl.ZIndex = 92
-
-        local UsernameLbl = Instance.new("TextLabel")
-        UsernameLbl.Parent = Card
-        UsernameLbl.BackgroundTransparency = 1
-        UsernameLbl.Position = UDim2.new(0, 0, 0, 134)
-        UsernameLbl.Size = UDim2.new(1, 0, 0, 16)
-        UsernameLbl.Font = Enum.Font.Gotham
-        UsernameLbl.Text = "@" .. Player.Name
-        UsernameLbl.TextColor3 = Library.Theme.TextDisabled
-        UsernameLbl.TextSize = 12
-        UsernameLbl.ZIndex = 92
-
-        -- Stat rows: HWID, session time, account age, join date
-        local StatsHolder = Instance.new("Frame")
-        StatsHolder.Parent = Card
-        StatsHolder.BackgroundTransparency = 1
-        StatsHolder.Position = UDim2.new(0, 16, 0, 164)
-        StatsHolder.Size = UDim2.new(1, -32, 0, 140)
-        StatsHolder.ZIndex = 92
-
-        local StatsList = Instance.new("UIListLayout")
-        StatsList.Parent = StatsHolder
-        StatsList.SortOrder = Enum.SortOrder.LayoutOrder
-        StatsList.Padding = UDim.new(0, 8)
-
-        local function GetHWID()
-            local ok2, id = pcall(function()
-                return (gethwid and gethwid())
-                    or (get_hwid and get_hwid())
-                    or (game:GetService("RbxAnalyticsService"):GetClientId())
-            end)
-            return ok2 and id or "Unavailable"
-        end
-
-        local function StatRow(icon, label, value)
-            local Row = Instance.new("Frame")
-            Row.Parent = StatsHolder
-            Row.BackgroundColor3 = Color3.fromRGB(22, 22, 24)
-            Row.BackgroundTransparency = 0.2
-            Row.BorderSizePixel = 0
-            Row.Size = UDim2.new(1, 0, 0, 34)
-            Row.ZIndex = 92
-            local RC = Instance.new("UICorner")
-            RC.CornerRadius = UDim.new(0, 8)
-            RC.Parent = Row
-
-            local Icon = Instance.new("ImageLabel")
-            Icon.Parent = Row
-            Icon.BackgroundTransparency = 1
-            Icon.Position = UDim2.new(0, 10, 0.5, -8)
-            Icon.Size = UDim2.new(0, 16, 0, 16)
-            Icon.ZIndex = 93
-            Library:SetIcon(Icon, icon, Accent)
-
-            local Lbl = Instance.new("TextLabel")
-            Lbl.Parent = Row
-            Lbl.BackgroundTransparency = 1
-            Lbl.Position = UDim2.new(0, 34, 0, 0)
-            Lbl.Size = UDim2.new(0.5, -34, 1, 0)
-            Lbl.Font = Enum.Font.Gotham
-            Lbl.Text = label
-            Lbl.TextColor3 = Library.Theme.TextDisabled
-            Lbl.TextSize = 12
-            Lbl.TextXAlignment = Enum.TextXAlignment.Left
-            Lbl.ZIndex = 93
-
-            local ValLbl = Instance.new("TextLabel")
-            ValLbl.Parent = Row
-            ValLbl.BackgroundTransparency = 1
-            ValLbl.Position = UDim2.new(0.5, 0, 0, 0)
-            ValLbl.Size = UDim2.new(0.5, -10, 1, 0)
-            ValLbl.Font = Enum.Font.GothamBold
-            ValLbl.Text = value
-            ValLbl.TextColor3 = Library.Theme.Text
-            ValLbl.TextSize = 12
-            ValLbl.TextXAlignment = Enum.TextXAlignment.Right
-            ValLbl.TextTruncate = Enum.TextTruncate.AtEnd
-            ValLbl.ZIndex = 93
-
-            return ValLbl
-        end
-
-        StatRow("hash", "User ID", tostring(Player.UserId))
-        local HWIDVal = StatRow("fingerprint", "HWID", GetHWID())
-        local TimeLiveVal = StatRow("clock", "Time Live", "0s")
-        StatRow("calendar", "Account Age", Player.AccountAge .. " days")
-
-        task.spawn(function()
-            while Card.Parent do
-                local elapsed = os.time() - joinTime
-                local h = math.floor(elapsed / 3600)
-                local m = math.floor((elapsed % 3600) / 60)
-                local s = elapsed % 60
-                TimeLiveVal.Text = (h > 0 and (h .. "h ") or "") .. (m > 0 and (m .. "m ") or "") .. s .. "s"
-                task.wait(1)
-            end
-        end)
-
-        Card.Size = UDim2.new(0, 0, 0, 0)
-        Library:TweenInstance(Card, 0.3, "Size", UDim2.new(0, 300, 0, 320))
-
-        CloseCard.MouseButton1Click:Connect(function()
-            Library:TweenInstance(Card, 0.22, "Size", UDim2.new(0, 0, 0, 0), function()
-                Card:Destroy()
-            end)
-        end)
-
-        self:MakeDraggable(Banner, Card)
-
-        return { Gui = Card }
     end
 
     return WindowAPI
