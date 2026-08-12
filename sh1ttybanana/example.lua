@@ -1,33 +1,6 @@
 local src = game:HttpGet("https://raw.githubusercontent.com/Nail120212/NexLib/refs/heads/main/sh1ttybanana/sh1ttybanana.lua")
 src = src:gsub("clickBtn:Activated:Connect", "clickBtn.Activated:Connect")
-src = src:gsub("AIWindow%.ClipsDescendants = true", "AIWindow.ClipsDescendants = false")
-src = src:gsub(
-    "for i, v in next, ScrollingTab:GetChildren%(%) do\n%s*if v:IsA%(\"Frame\"%) and v:FindFirstChild%(\"NameTab\"%) then\n%s*Library:TweenInstance%(v%.NameTab, 0%.28, \"TextTransparency\", 0%.35%)\n%s*if v:FindFirstChild%(\"Choose\"%) then\n%s*v%.Choose%.Visible = false\n%s*end\n%s*end\n%s*end",
-    [[for _, v in ipairs(ScrollingTab:GetDescendants()) do
-                if v:IsA("Frame") and v.Name == "Choose" then
-                    v.Visible = false
-                end
-                if v:IsA("TextLabel") and v.Name == "NameTab" then
-                    Library:TweenInstance(v, 0.28, "TextTransparency", 0.35)
-                end
-            end]]
-)
-src = src:gsub(
-    "for _, c2 in ipairs%(ScrollingTab:GetChildren%(%)%) do\n%s*if c2:IsA%(\"Frame\"%) and c2:FindFirstChild%(\"NameTab\"%) then\n%s*Library:TweenInstance%(c2%.NameTab, 0%.28, \"TextTransparency\", 0%.35%)\n%s*if c2:FindFirstChild%(\"Choose\"%) then c2%.Choose%.Visible = false end\n%s*end\n%s*end",
-    [[for _, c2 in ipairs(ScrollingTab:GetDescendants()) do
-                        if c2:IsA("Frame") and c2.Name == "Choose" then
-                            c2.Visible = false
-                        end
-                        if c2:IsA("TextLabel") and c2.Name == "NameTab" then
-                            Library:TweenInstance(c2, 0.28, "TextTransparency", 0.35)
-                        end
-                    end]]
-)
-src = src:gsub('AITextBox%.PlaceholderColor3 = Color3%.fromRGB%(80, 80, 85%)', 'AITextBox.PlaceholderColor3 = Color3.fromRGB(140, 140, 150)\n        AITextBox.TextTransparency = 0\n        AITextBox.Visible = true\n        AITextBox.Active = true')
-src = src:gsub('AITextBox%.ZIndex = 23', 'AITextBox.ZIndex = 30')
-src = src:gsub('AIInputBar%.ZIndex = 21', 'AIInputBar.ZIndex = 40\n        AIInputBar.Visible = true')
-src = src:gsub('AITextFrame%.ZIndex = 22', 'AITextFrame.ZIndex = 41\n        AITextFrame.Visible = true')
-
+src = src:gsub("Layout%.CanvasSize = UDim2%.new%(0, 0, 1, 0%)", "Layout.CanvasSize = UDim2.new(0, 0, 0, 0)\n        Layout.AutomaticCanvasSize = Enum.AutomaticCanvasSize.Y\n        Layout.ScrollBarThickness = 2")
 local Library = loadstring(src)()
 
 local Window = Library:NewWindow({
@@ -40,74 +13,79 @@ local Window = Library:NewWindow({
     AutoScale = true
 })
 
-Window:SetGroqConfig(
-    "YOUR_GROQ_API_KEY_HERE",
-    "You are a helpful assistant for this Roblox hub. Suggest tabs with [tab:TabName]."
-)
-
+Window:SetGroqConfig("YOUR_GROQ_API_KEY_HERE", "You are a helpful assistant. Suggest tabs with [tab:TabName].")
 Window:Tag({Title = "FULL", Color = Color3.fromRGB(48, 255, 106)})
 
-local PlayerSec = Window:Section({Title = "Player", Opened = true})
-local WorldSec = Window:Section({Title = "World", Opened = true})
-local ConfigSec = Window:Section({Title = "Config", Opened = true})
+local Main = Window:T("Main", "home")
+local Combat = Window:T("Combat", "swords")
+local Visuals = Window:T("Visuals", "eye")
+local Misc = Window:T("Misc", "settings")
+local Settings = Window:T("Settings", "sliders-horizontal")
 
-local Main = PlayerSec:T({Title = "Main", Icon = "home"})
-local Combat = PlayerSec:T({Title = "Combat", Icon = "swords"})
-local Visuals = WorldSec:T({Title = "Visuals", Icon = "eye"})
-local Misc = WorldSec:T({Title = "Misc", Icon = "settings"})
-local Settings = ConfigSec:T({Title = "Settings", Icon = "sliders-horizontal"})
-
-local G = Main:AddSection({Title = "General"})
-G:AddToggle({Title = "Master Enable", Default = false, Callback = function(v) print("Master:", v) end})
-G:AddButton({Title = "Notify", Callback = function()
-    Window:Notify({Title = "OK", Content = "working", Type = "Success", Duration = 3})
+local G = Main:AddSection("General")
+G:AddToggle({Title = "Master Enable", Description = "main switch", Default = false, Callback = function(v) print("Master:", v) end})
+G:AddButton({Title = "Notify Success", Description = "test notify", Callback = function()
+    Window:Notify({Title = "Success", Content = "working", Type = "Success", Duration = 3})
+end})
+G:AddButton({Title = "Notify Error", Callback = function()
+    Window:Notify({Title = "Error", Content = "failed", Type = "Error", Duration = 3})
 end})
 G:AddButton({Title = "Dialog", Callback = function()
     Window:Dialog({
         Title = "Confirm",
-        Content = "continue?",
+        Content = "are you sure?",
         Buttons = {
-            {Title = "Yes", Variant = "Primary", Callback = function() end},
-            {Title = "No", Callback = function() end}
+            {Title = "Yes", Variant = "Primary", Callback = function() print("yes") end},
+            {Title = "No", Callback = function() print("no") end}
         }
     })
 end})
 G:AddDivider()
-G:AddSlider({Title = "WalkSpeed", Min = 16, Max = 200, Default = 16, Increment = 1, Callback = function(v)
+G:AddSlider({Title = "WalkSpeed", Description = "speed", Min = 16, Max = 200, Default = 16, Increment = 1, Callback = function(v)
     local c = game.Players.LocalPlayer.Character
     if c and c:FindFirstChild("Humanoid") then c.Humanoid.WalkSpeed = v end
 end})
-G:AddDropdown({Title = "Mode", Values = {"Normal", "Rage", "Legit"}, Default = "Normal", Callback = function(v) print(v) end})
-G:AddInput({Title = "Target", PlaceHolder = "username", Default = "", Callback = function(v) print(v) end})
-G:AddKeybind({Title = "Panic", Default = Enum.KeyCode.P, Callback = function(k) print(k.Name) end})
-G:AddColorpicker({Title = "Accent", Default = Color3.fromRGB(179, 0, 255), Callback = function(c) end})
+G:AddSlider({Title = "JumpPower", Min = 50, Max = 200, Default = 50, Increment = 1, Callback = function(v)
+    local c = game.Players.LocalPlayer.Character
+    if c and c:FindFirstChild("Humanoid") then c.Humanoid.JumpPower = v end
+end})
+G:AddDropdown({Title = "Mode", Description = "play style", Values = {"Normal", "Rage", "Legit", "Custom"}, Default = "Normal", Callback = function(v) print(v) end})
+G:AddInput({Title = "Target", Description = "player name", PlaceHolder = "username", Default = "", Callback = function(v) print(v) end})
+G:AddKeybind({Title = "Panic Key", Description = "hide key", Default = Enum.KeyCode.P, Callback = function(k) print(k.Name) end})
+G:AddColorpicker({Title = "Accent", Description = "color", Default = Color3.fromRGB(179, 0, 255), Callback = function(c) end})
 G:AddTag({Title = "LIVE", Color = Color3.fromRGB(48, 255, 106)})
+G:AddSeperator("Actions")
 G:AddMultiButton({
-    Full = {Title = "Full Action", Callback = function() end},
+    Full = {Title = "Full Action", Callback = function() Window:Notify({Title = "Full", Content = "pressed", Type = "Info", Duration = 2}) end},
     Left = {Title = "Left", Callback = function() end},
     Right = {Title = "Right", Callback = function() end}
 })
-G:AddCodeblock({Title = "Runner", Code = "print('hello')", Callback = function() end})
-G:AddParagraph({Title = "AI", Content = "sidebar bottom: Reorder | AI | PlayerCard"})
-G:AddSpace(6)
+G:AddCodeblock({Title = "Lua Runner", Code = "print('hello from sh1ttybanana')", Callback = function() end})
+G:AddParagraph({Title = "Info", Content = "AI bot icon is on the sidebar bottom bar. Set Groq key in Settings."})
+G:AddSpace(8)
 
-local C = Combat:AddSection({Title = "Aim"})
+local C = Combat:AddSection("Aim")
 C:AddToggle({Title = "Aimbot", Default = false, Callback = function(v) end})
+C:AddToggle({Title = "Silent Aim", Default = false, Callback = function(v) end})
 C:AddSlider({Title = "FOV", Min = 50, Max = 500, Default = 120, Increment = 5, Callback = function(v) end})
-C:AddDropdown({Title = "Part", Values = {"Head", "Torso", "HumanoidRootPart"}, Default = "Head", Callback = function(v) end})
+C:AddSlider({Title = "Smoothness", Min = 1, Max = 20, Default = 5, Increment = 1, Callback = function(v) end})
+C:AddDropdown({Title = "Target Part", Values = {"Head", "Torso", "HumanoidRootPart"}, Default = "Head", Callback = function(v) end})
+C:AddDropdown({Title = "Priority", Values = {"Closest", "Lowest HP", "Highest HP"}, Default = "Closest", Callback = function(v) end})
 C:AddKeybind({Title = "Aim Key", Default = Enum.KeyCode.E, Callback = function(k) end})
 C:AddColorpicker({Title = "FOV Color", Default = Color3.fromRGB(255, 50, 50), Callback = function(c) end})
 
-local V = Visuals:AddSection({Title = "ESP"})
+local V = Visuals:AddSection("ESP")
 V:AddToggle({Title = "Box ESP", Default = false, Callback = function(v) end})
-V:AddToggle({Title = "Names", Default = false, Callback = function(v) end})
-V:AddSlider({Title = "Distance", Min = 100, Max = 5000, Default = 1000, Increment = 50, Callback = function(v) end})
-V:AddColorpicker({Title = "Enemy", Default = Color3.fromRGB(255, 60, 60), Callback = function(c) end})
+V:AddToggle({Title = "Name ESP", Default = false, Callback = function(v) end})
+V:AddToggle({Title = "Tracer", Default = false, Callback = function(v) end})
+V:AddSlider({Title = "Max Distance", Min = 100, Max = 5000, Default = 1000, Increment = 50, Callback = function(v) end})
+V:AddColorpicker({Title = "Enemy Color", Default = Color3.fromRGB(255, 60, 60), Callback = function(c) end})
+V:AddColorpicker({Title = "Team Color", Default = Color3.fromRGB(60, 255, 120), Callback = function(c) end})
 V:AddSeperator("Chams")
 V:AddToggle({Title = "Chams", Default = false, Callback = function(v) end})
-V:AddDropdown({Title = "Style", Values = {"Outline", "Fill", "Both"}, Default = "Outline", Callback = function(v) end})
+V:AddDropdown({Title = "Chams Style", Values = {"Outline", "Fill", "Both"}, Default = "Outline", Callback = function(v) end})
 
-local M = Misc:AddSection({Title = "World"})
+local M = Misc:AddSection("World")
 M:AddToggle({Title = "Fullbright", Default = false, Callback = function(v)
     if v then
         game.Lighting.Brightness = 2
@@ -119,8 +97,13 @@ M:AddToggle({Title = "Fullbright", Default = false, Callback = function(v)
         game.Lighting.GlobalShadows = true
     end
 end})
-M:AddSlider({Title = "Time", Min = 0, Max = 24, Default = 14, Increment = 0.5, Callback = function(v) game.Lighting.ClockTime = v end})
-M:AddInput({Title = "Teleport", PlaceHolder = "player", Default = "", Callback = function(name)
+M:AddToggle({Title = "No Fog", Default = false, Callback = function(v)
+    game.Lighting.FogEnd = v and 100000 or 1000
+end})
+M:AddSlider({Title = "Time of Day", Min = 0, Max = 24, Default = 14, Increment = 0.5, Callback = function(v)
+    game.Lighting.ClockTime = v
+end})
+M:AddInput({Title = "Teleport To", PlaceHolder = "player name", Default = "", Callback = function(name)
     local p = game.Players:FindFirstChild(name)
     local lp = game.Players.LocalPlayer
     if p and p.Character and lp.Character and lp.Character:FindFirstChild("HumanoidRootPart") and p.Character:FindFirstChild("HumanoidRootPart") then
@@ -130,8 +113,13 @@ end})
 M:AddButton({Title = "Rejoin", Callback = function()
     game:GetService("TeleportService"):TeleportToPlaceInstance(game.PlaceId, game.JobId, game.Players.LocalPlayer)
 end})
+M:AddMultiButton({
+    Full = {Title = "Server Hop", Callback = function() end},
+    Left = {Title = "Copy JobId", Callback = function() if setclipboard then setclipboard(game.JobId) end end},
+    Right = {Title = "Copy PlaceId", Callback = function() if setclipboard then setclipboard(tostring(game.PlaceId)) end end}
+})
 
-local S = Settings:AddSection({Title = "Config"})
+local S = Settings:AddSection("Config")
 S:AddInput({
     Title = "Groq API Key",
     PlaceHolder = "gsk_...",
@@ -149,12 +137,13 @@ S:AddButton({Title = "Load Config", Callback = function()
     Window:LoadConfig("sh1ttybanana_config")
     Window:Notify({Title = "Loaded", Content = "ok", Type = "Success", Duration = 2})
 end})
-S:AddSlider({Title = "Transparency", Min = 0, Max = 80, Default = 7, Increment = 1, Callback = function(v)
+S:AddSlider({Title = "UI Transparency", Min = 0, Max = 80, Default = 7, Increment = 1, Callback = function(v)
     Window:SetTransparency(v / 100)
 end})
 S:AddDropdown({Title = "Jump Tab", Values = {"Main", "Combat", "Visuals", "Misc", "Settings"}, Default = "Main", Callback = function(n)
     Window:SelectTab(n)
 end})
-S:AddParagraph({Title = "AI", Content = "SetGroqConfig(key, prompt). Open AI from bot icon on sidebar bottom bar."})
+S:AddKeybind({Title = "UI Toggle", Default = Enum.KeyCode.RightControl, Callback = function(k) end})
+S:AddParagraph({Title = "AI", Content = "Window:SetGroqConfig(key, prompt). Open AI from the bot icon on the sidebar bottom bar."})
 
-Window:Notify({Title = "Loaded", Content = "ready", Type = "Success", Duration = 3})
+Window:Notify({Title = "Loaded", Content = "all components ready", Type = "Success", Duration = 3})

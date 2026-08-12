@@ -309,7 +309,7 @@ function Library:NewWindow(ConfigWindow)
     local UIListLayout_2 = Instance.new("UIListLayout")
     local LayoutFrame = Instance.new("Frame")
     local RealLayout = Instance.new("Frame")
-    local LayoutList = Instance.new("Folder")
+    local LayoutList = Instance.new("Frame")
     local UIPageLayout = Instance.new("UIPageLayout")
     local LayoutName = Instance.new("Frame")
     local TextLabel = Instance.new("TextLabel")
@@ -1655,6 +1655,10 @@ function Library:NewWindow(ConfigWindow)
 
     LayoutList.Name = "Layout List"
     LayoutList.Parent = RealLayout
+    LayoutList.BackgroundTransparency = 1
+    LayoutList.BorderSizePixel = 0
+    LayoutList.Size = UDim2.new(1, 0, 1, 0)
+    LayoutList.ClipsDescendants = true
 
     UIPageLayout.Parent = LayoutList
     UIPageLayout.SortOrder = Enum.SortOrder.LayoutOrder
@@ -2166,8 +2170,10 @@ function Library:NewWindow(ConfigWindow)
         Layout.BorderSizePixel = 0
         Layout.Selectable = false
         Layout.Size = UDim2.new(1, 0, 1, 0)
-        Layout.CanvasSize = UDim2.new(0, 0, 1, 0)
-        Layout.ScrollBarThickness = 0
+        Layout.CanvasSize = UDim2.new(0, 0, 0, 0)
+        Layout.ScrollBarThickness = 2
+        Layout.ScrollBarImageColor3 = Library.Theme.Accent
+        Layout.AutomaticCanvasSize = Enum.AutomaticCanvasSize.Y
         Layout.LayoutOrder = AllLayouts
         Library:UpdateScrolling(Layout, UIListLayout_3)
 
@@ -2550,6 +2556,10 @@ function Library:NewWindow(ConfigWindow)
         end
 
         function TabFunc:AddSection(RealNameSection)
+            if type(RealNameSection) == "table" then
+                RealNameSection = RealNameSection.Title or RealNameSection.Name or "Section"
+            end
+            RealNameSection = tostring(RealNameSection or "Section")
             local Section = Instance.new("Frame")
             local UICorner_5 = Instance.new("UICorner")
             local UIStroke_2 = Instance.new("UIStroke")
@@ -2620,7 +2630,8 @@ function Library:NewWindow(ConfigWindow)
             SectionList.BorderColor3 = Color3.fromRGB(0, 0, 0)
             SectionList.BorderSizePixel = 0
             SectionList.Position = UDim2.new(0, 0, 0, 35)
-            SectionList.Size = UDim2.new(1, 0, 1, -35)
+            SectionList.Size = UDim2.new(1, 0, 0, 0)
+            SectionList.AutomaticSize = Enum.AutomaticSize.Y
 
             UIPadding_4.Parent = SectionList
             UIPadding_4.PaddingBottom = UDim.new(0, 10)
@@ -2631,9 +2642,11 @@ function Library:NewWindow(ConfigWindow)
             UIListLayout_4.Parent = SectionList
             UIListLayout_4.SortOrder = Enum.SortOrder.LayoutOrder
             UIListLayout_4.Padding = UDim.new(0, 8)
-            UIListLayout_4:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-                Section.Size = UDim2.new(1, 0, 0, UIListLayout_4.AbsoluteContentSize.Y + 55)
-            end)
+            local function UpdateSectionSize()
+                Section.Size = UDim2.new(1, 0, 0, math.max(UIListLayout_4.AbsoluteContentSize.Y + 55, 55))
+            end
+            UIListLayout_4:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(UpdateSectionSize)
+            task.defer(UpdateSectionSize)
 
             local SectionFunc = {}
 
