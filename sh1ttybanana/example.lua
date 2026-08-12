@@ -1,10 +1,39 @@
 local src = game:HttpGet("https://raw.githubusercontent.com/Nail120212/NexLib/refs/heads/main/sh1ttybanana/sh1ttybanana.lua")
 src = src:gsub("clickBtn:Activated:Connect", "clickBtn.Activated:Connect")
+src = src:gsub("AIWindow%.ClipsDescendants = true", "AIWindow.ClipsDescendants = false")
+src = src:gsub(
+    "for i, v in next, ScrollingTab:GetChildren%(%) do\n%s*if v:IsA%(\"Frame\"%) and v:FindFirstChild%(\"NameTab\"%) then\n%s*Library:TweenInstance%(v%.NameTab, 0%.28, \"TextTransparency\", 0%.35%)\n%s*if v:FindFirstChild%(\"Choose\"%) then\n%s*v%.Choose%.Visible = false\n%s*end\n%s*end\n%s*end",
+    [[for _, v in ipairs(ScrollingTab:GetDescendants()) do
+                if v:IsA("Frame") and v.Name == "Choose" then
+                    v.Visible = false
+                end
+                if v:IsA("TextLabel") and v.Name == "NameTab" then
+                    Library:TweenInstance(v, 0.28, "TextTransparency", 0.35)
+                end
+            end]]
+)
+src = src:gsub(
+    "for _, c2 in ipairs%(ScrollingTab:GetChildren%(%)%) do\n%s*if c2:IsA%(\"Frame\"%) and c2:FindFirstChild%(\"NameTab\"%) then\n%s*Library:TweenInstance%(c2%.NameTab, 0%.28, \"TextTransparency\", 0%.35%)\n%s*if c2:FindFirstChild%(\"Choose\"%) then c2%.Choose%.Visible = false end\n%s*end\n%s*end",
+    [[for _, c2 in ipairs(ScrollingTab:GetDescendants()) do
+                        if c2:IsA("Frame") and c2.Name == "Choose" then
+                            c2.Visible = false
+                        end
+                        if c2:IsA("TextLabel") and c2.Name == "NameTab" then
+                            Library:TweenInstance(c2, 0.28, "TextTransparency", 0.35)
+                        end
+                    end]]
+)
+src = src:gsub('AITextBox%.PlaceholderColor3 = Color3%.fromRGB%(80, 80, 85%)', 'AITextBox.PlaceholderColor3 = Color3.fromRGB(140, 140, 150)\n        AITextBox.TextTransparency = 0\n        AITextBox.Visible = true\n        AITextBox.Active = true')
+src = src:gsub('AITextBox%.ZIndex = 23', 'AITextBox.ZIndex = 30')
+src = src:gsub('AIInputBar%.ZIndex = 21', 'AIInputBar.ZIndex = 40\n        AIInputBar.Visible = true')
+src = src:gsub('AITextFrame%.ZIndex = 22', 'AITextFrame.ZIndex = 41\n        AITextFrame.Visible = true')
+
 local Library = loadstring(src)()
 
 local Window = Library:NewWindow({
     Title = "sh1ttybanana",
     Description = "full demo",
+    Logo = "rbxassetid://89646749075297",
     Color = Color3.fromRGB(179, 0, 255),
     Size = UDim2.new(0, 620, 0, 420),
     Transparent = 0.07,

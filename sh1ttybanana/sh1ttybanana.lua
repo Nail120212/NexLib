@@ -822,7 +822,7 @@ function Library:NewWindow(ConfigWindow)
         AIWindow.Position = UDim2.new(0, 0, 1, 0)
         AIWindow.Size = UDim2.new(1, 0, 0, 0)
         AIWindow.ZIndex = 20
-        AIWindow.ClipsDescendants = true
+        AIWindow.ClipsDescendants = false
 
         local AWC = Instance.new("UICorner")
         AWC.CornerRadius = UDim.new(0, 8)
@@ -956,10 +956,12 @@ function Library:NewWindow(ConfigWindow)
                         local lo = child.LayoutOrder
                         if lo then
                             TextLabel.Text = raw
-                            for _, c2 in ipairs(ScrollingTab:GetChildren()) do
-                                if c2:IsA("Frame") and c2:FindFirstChild("NameTab") then
-                                    Library:TweenInstance(c2.NameTab, 0.28, "TextTransparency", 0.35)
-                                    if c2:FindFirstChild("Choose") then c2.Choose.Visible = false end
+                            for _, c2 in ipairs(ScrollingTab:GetDescendants()) do
+                                if c2:IsA("Frame") and c2.Name == "Choose" then
+                                    c2.Visible = false
+                                end
+                                if c2:IsA("TextLabel") and c2.Name == "NameTab" then
+                                    Library:TweenInstance(c2, 0.28, "TextTransparency", 0.35)
                                 end
                             end
                             Library:TweenInstance(child.NameTab, 0.22, "TextTransparency", 0)
@@ -1172,7 +1174,8 @@ function Library:NewWindow(ConfigWindow)
         AIInputBar.BorderSizePixel = 0
         AIInputBar.Position = UDim2.new(0, 0, 1, 0)
         AIInputBar.Size = UDim2.new(1, 0, 0, 52)
-        AIInputBar.ZIndex = 21
+        AIInputBar.ZIndex = 40
+        AIInputBar.Visible = true
 
         local AIBC = Instance.new("UICorner")
         AIBC.CornerRadius = UDim.new(0, 8)
@@ -1192,7 +1195,8 @@ function Library:NewWindow(ConfigWindow)
         AITextFrame.BorderSizePixel = 0
         AITextFrame.Position = UDim2.new(0, 8, 0, 8)
         AITextFrame.Size = UDim2.new(1, -50, 0, 36)
-        AITextFrame.ZIndex = 22
+        AITextFrame.ZIndex = 41
+        AITextFrame.Visible = true
 
         local AITFC = Instance.new("UICorner")
         AITFC.CornerRadius = UDim.new(0, 8)
@@ -1205,13 +1209,16 @@ function Library:NewWindow(ConfigWindow)
         AITextBox.Size = UDim2.new(1, -12, 1, 0)
         AITextBox.Font = Enum.Font.Gotham
         AITextBox.PlaceholderText = "Ask me anything..."
-        AITextBox.PlaceholderColor3 = Color3.fromRGB(80, 80, 85)
+        AITextBox.PlaceholderColor3 = Color3.fromRGB(140, 140, 150)
         AITextBox.Text = ""
-        AITextBox.TextColor3 = Library.Theme.Text
+        AITextBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+        AITextBox.TextTransparency = 0
         AITextBox.TextSize = 13
         AITextBox.TextXAlignment = Enum.TextXAlignment.Left
         AITextBox.ClearTextOnFocus = false
-        AITextBox.ZIndex = 23
+        AITextBox.Visible = true
+        AITextBox.Active = true
+        AITextBox.ZIndex = 30
 
         local AISendBtn = Instance.new("TextButton")
         AISendBtn.Parent = AIInputBar
@@ -2175,12 +2182,12 @@ function Library:NewWindow(ConfigWindow)
 
         local function SelectThisTab()
             TextLabel.Text = name
-            for i, v in next, ScrollingTab:GetChildren() do
-                if v:IsA("Frame") and v:FindFirstChild("NameTab") then
-                    Library:TweenInstance(v.NameTab, 0.28, "TextTransparency", 0.35)
-                    if v:FindFirstChild("Choose") then
-                        v.Choose.Visible = false
-                    end
+            for _, v in ipairs(ScrollingTab:GetDescendants()) do
+                if v:IsA("Frame") and v.Name == "Choose" then
+                    v.Visible = false
+                end
+                if v:IsA("TextLabel") and v.Name == "NameTab" then
+                    Library:TweenInstance(v, 0.28, "TextTransparency", 0.35)
                 end
             end
             Library:TweenInstance(NameTab_2, 0.22, "TextTransparency", 0)
@@ -4611,10 +4618,12 @@ function Library:NewWindow(ConfigWindow)
                 local raw = child.NameTab:GetAttribute("RawName") or child.NameTab.Text or ""
                 if string.lower(raw) == string.lower(tostring(tabName)) then
                     TextLabel.Text = raw
-                    for _, c2 in ipairs(ScrollingTab:GetChildren()) do
-                        if c2:IsA("Frame") and c2:FindFirstChild("NameTab") then
-                            Library:TweenInstance(c2.NameTab, 0.28, "TextTransparency", 0.35)
-                            if c2:FindFirstChild("Choose") then c2.Choose.Visible = false end
+                    for _, c2 in ipairs(ScrollingTab:GetDescendants()) do
+                        if c2:IsA("Frame") and c2.Name == "Choose" then
+                            c2.Visible = false
+                        end
+                        if c2:IsA("TextLabel") and c2.Name == "NameTab" then
+                            Library:TweenInstance(c2, 0.28, "TextTransparency", 0.35)
                         end
                     end
                     Library:TweenInstance(child.NameTab, 0.22, "TextTransparency", 0)
