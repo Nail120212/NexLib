@@ -951,7 +951,7 @@ function Library:NewWindow(ConfigWindow)
                     local raw = child.NameTab:GetAttribute("RawName") or child.NameTab.Text or ""
                     if string.lower(raw) == string.lower(tabName) then
                         local clickBtn = child:FindFirstChild("Click_Tab")
-                        if clickBtn then clickBtn:Activated:Connect(function() end) end
+                        if clickBtn then clickBtn.Activated:Connect(function() end) end
                         -- fire via LayoutOrder
                         local lo = child.LayoutOrder
                         if lo then
