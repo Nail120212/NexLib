@@ -6,14 +6,64 @@ local HttpService = game:GetService("HttpService")
 local Player = Players.LocalPlayer
 
 local function Get(url)
-    if game.HttpGet then
-        return game:HttpGet(url)
-    end
-    return HttpService:GetAsync(url)
+    local ok, res = pcall(function()
+        if type(game.HttpGet) == "function" then
+            return game:HttpGet(url)
+        end
+        if type(game.HttpGetAsync) == "function" then
+            return game:HttpGetAsync(url)
+        end
+        if syn and syn.request then
+            local r = syn.request({Url = url, Method = "GET"})
+            return r.Body
+        end
+        if request then
+            local r = request({Url = url, Method = "GET"})
+            return r.Body
+        end
+        if http_request then
+            local r = http_request({Url = url, Method = "GET"})
+            return r.Body
+        end
+        return HttpService:GetAsync(url)
+    end)
+    if ok then return res end
+    error("Get failed: " .. tostring(res))
 end
 
-local UIIcons = loadstring(Get("https://raw.githubusercontent.com/DSP-V1/NextGen/refs/heads/main/UILib/icons/UIIcons.lua"))()
-UIIcons.SetIconsType("lucide")
+local UIIcons
+do
+    local ok, result = pcall(function()
+        local src = Get("https://raw.githubusercontent.com/DSP-V1/NextGen/refs/heads/main/UILib/icons/UIIcons.lua")
+        if not src or src == "" then
+            error("UIIcons empty")
+        end
+        local fn = loadstring(src)
+        if not fn then
+            error("UIIcons compile fail")
+        end
+        return fn()
+    end)
+    if ok and type(result) == "table" then
+        UIIcons = result
+        pcall(function()
+            if UIIcons.SetIconsType then
+                UIIcons.SetIconsType("lucide")
+            end
+        end)
+    else
+        UIIcons = {
+            SetIconsType = function() end,
+            Icon2 = function()
+                return nil
+            end,
+            Icon = function()
+                return nil
+            end
+        }
+        warn("[sh1ttybanana] UIIcons failed to load, using fallback:", result)
+    end
+end
 
 Library.DefaultIcons = {
     Minimize = "minus",
@@ -69,14 +119,31 @@ function Library:NormalizeIconName(IconName)
 end
 
 function Library:SetIcon(Object, IconName, IconColor, IconType)
-    local NormalizedIconName = self:NormalizeIconName(IconName or Library.DefaultIcons.Tab)
-    local IconData = UIIcons.Icon2(NormalizedIconName, IconType or "lucide")
-    if not IconData then
+    if not Object then
         return
     end
-    Object.Image = IconData[1]
-    Object.ImageRectOffset = IconData[2].ImageRectPosition
-    Object.ImageRectSize = IconData[2].ImageRectSize
+    local NormalizedIconName = self:NormalizeIconName(IconName or Library.DefaultIcons.Tab)
+    local ok, IconData = pcall(function()
+        return UIIcons.Icon2(NormalizedIconName, IconType or "lucide")
+    end)
+    if not ok or not IconData then
+        return
+    end
+    if type(IconData) == "string" then
+        Object.Image = IconData
+        return
+    end
+    if type(IconData) == "table" and IconData[1] then
+        Object.Image = IconData[1]
+        if IconData[2] then
+            if IconData[2].ImageRectPosition then
+                Object.ImageRectOffset = IconData[2].ImageRectPosition
+            end
+            if IconData[2].ImageRectSize then
+                Object.ImageRectSize = IconData[2].ImageRectSize
+            end
+        end
+    end
     if IconColor then
         Object.ImageColor3 = IconColor
     end
