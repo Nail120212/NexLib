@@ -1,4 +1,4 @@
-local Library = loadstring(game:HttpGet("YOUR_RAW_URL_HERE"))()
+local Library = https://raw.githubusercontent.com/Nail120212/NexLib/refs/heads/main/sh1ttybanana/sh1ttybanana.lua
 
 Library:SetGroq(
     "gsk_YOUR_GROQ_KEY_HERE",
