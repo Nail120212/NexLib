@@ -1,4 +1,4 @@
-local Library = loadstring(game:HttpGet("YOUR_RAW_URL_HERE"))()
+local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/Nail120212/NexLib/refs/heads/main/sh1ttybanana/sh1ttybanana.lua"))()
 
 local groqapi = "gsk_YOURKEYHERE"
 local groqprompt = "You are a helpful assistant inside a Roblox cheat menu called sh1ttybanana. Help users understand features. Use **bold** for important things. To send the user to a tab write [TAB:TabName]. Keep replies short."
