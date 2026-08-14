@@ -347,18 +347,26 @@ function Library:MakeDraggable(DragBar, Object, OnMoved)
             Input.Changed:Connect(function()
                 if Input.UserInputState == Enum.UserInputState.End then
                     Dragging = false
-                    -- Snap to screen edges
-                    local VP = workspace.CurrentCamera.ViewportSize
-                    local AbsPos = Object.AbsolutePosition
-                    local AbsSize = Object.AbsoluteSize
-                    local snapX = AbsPos.X < VP.X * 0.08 and 0.04
-                        or AbsPos.X + AbsSize.X > VP.X * 0.92 and (VP.X - AbsSize.X) / VP.X - 0.04
-                        or nil
-                    if snapX then
-                        Library:Tween(Object, TweenInfo.new(0.22, Quart, Out), {
-                            Position = UDim2.new(snapX + AbsSize.X / (2*VP.X), 0, Object.Position.Y.Scale, Object.Position.Y.Offset)
-                        })
-                    end
+                    -- Clamp window to screen bounds
+                    task.defer(function()
+                        local VP = workspace.CurrentCamera.ViewportSize
+                        local AbsPos = Object.AbsolutePosition
+                        local AbsSize = Object.AbsoluteSize
+                        local midX = AbsPos.X + AbsSize.X * 0.5
+                        local midY = AbsPos.Y + AbsSize.Y * 0.5
+                        local clampedX = math.clamp(midX, AbsSize.X * 0.5 + 4, VP.X - AbsSize.X * 0.5 - 4)
+                        local clampedY = math.clamp(midY, AbsSize.Y * 0.5 + 4, VP.Y - AbsSize.Y * 0.5 - 4)
+                        if math.abs(clampedX - midX) > 2 or math.abs(clampedY - midY) > 2 then
+                            Library:Tween(Object, TweenInfo.new(0.22, Quart, Out), {
+                                Position = UDim2.new(
+                                    StartPosition.X.Scale,
+                                    Object.Position.X.Offset + (clampedX - midX),
+                                    StartPosition.Y.Scale,
+                                    Object.Position.Y.Offset + (clampedY - midY)
+                                )
+                            })
+                        end
+                    end)
                 end
             end)
         end
@@ -571,6 +579,7 @@ function Library:NewWindow(ConfigWindow)
     Main.Size = UDim2.new(1, 0, 1, 0)
     Library:Themed(Main, "BackgroundColor3", "Main")
     Library:Corner(Main, 12)
+    Main.ClipsDescendants = true
 
     local MainStroke = Library:Stroke(Main, Library.Theme.Accent, 0.55, 1.4)
     Library:Themed(MainStroke, "Color", "Accent")
@@ -591,6 +600,7 @@ function Library:NewWindow(ConfigWindow)
     Top.Size = UDim2.new(1, 0, 0, 54)
     Top.Active = true
     Top.ZIndex = 5
+    Top.ClipsDescendants = false
 
     local Line = Instance.new("Frame")
     Line.Name = "Line"
@@ -607,11 +617,12 @@ function Library:NewWindow(ConfigWindow)
 
     local LogoHolder = Instance.new("Frame")
     LogoHolder.Name = "LogoHolder"
-    LogoHolder.Parent = Left
+    LogoHolder.Parent = Top
     LogoHolder.BackgroundTransparency = 0.86
     LogoHolder.BorderSizePixel = 0
-    LogoHolder.Position = UDim2.new(0, 12, 0, 10)
-    LogoHolder.Size = UDim2.new(0, 34, 0, 34)
+    LogoHolder.Position = UDim2.new(0, 10, 0, 9)
+    LogoHolder.Size = UDim2.new(0, 36, 0, 36)
+    LogoHolder.ZIndex = 6
     Library:Themed(LogoHolder, "BackgroundColor3", "Accent")
     Library:Corner(LogoHolder, 9)
     local LogoStroke = Library:Stroke(LogoHolder, Library.Theme.Accent, 0.62, 1)
@@ -944,6 +955,11 @@ function Library:NewWindow(ConfigWindow)
             Callback(Data)
         end)
 
+        Button.TouchTap:Connect(function()
+            Library:Flash(Button)
+            Callback(Data)
+        end)
+
         BottomButtons[Name] = Data
         return Data
     end
@@ -992,9 +1008,12 @@ function Library:NewWindow(ConfigWindow)
     RealLayout.Position = UDim2.new(0, 0, 0, 42)
     RealLayout.Size = UDim2.new(1, 0, 1, -42)
 
-    local LayoutList = Instance.new("Folder")
+    local LayoutList = Instance.new("Frame")
     LayoutList.Name = "Layout List"
     LayoutList.Parent = RealLayout
+    LayoutList.BackgroundTransparency = 1
+    LayoutList.BorderSizePixel = 0
+    LayoutList.Size = UDim2.new(1, 0, 1, 0)
 
     local UIPageLayout = Instance.new("UIPageLayout")
     UIPageLayout.Parent = LayoutList
@@ -5534,13 +5553,14 @@ function Library:NewWindow(ConfigWindow)
         if not TagHolder then
             TagHolder = Instance.new("Frame")
             TagHolder.Name = "TagHolder"
-            TagHolder.Parent = Left
+            TagHolder.Parent = Top
             TagHolder.AnchorPoint = Vector2.new(0, 0.5)
             TagHolder.BackgroundTransparency = 1
             TagHolder.BorderSizePixel = 0
-            TagHolder.Position = UDim2.new(0, 212, 0, 9)
-            TagHolder.Size = UDim2.new(0, 0, 0, 20)
+            TagHolder.Position = UDim2.new(0, 212, 0.5, 0)
+            TagHolder.Size = UDim2.new(0, 0, 0, 22)
             TagHolder.AutomaticSize = Enum.AutomaticSize.X
+            TagHolder.ZIndex = 6
 
             local TagList = Instance.new("UIListLayout")
             TagList.Parent = TagHolder
