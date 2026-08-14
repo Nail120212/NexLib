@@ -623,6 +623,7 @@ function Library:NewWindow(ConfigWindow)
     LogoHolder.Position = UDim2.new(0, 10, 0, 9)
     LogoHolder.Size = UDim2.new(0, 36, 0, 36)
     LogoHolder.ZIndex = 6
+    LogoHolder.ClipsDescendants = true
     Library:Themed(LogoHolder, "BackgroundColor3", "Accent")
     Library:Corner(LogoHolder, 9)
     local LogoStroke = Library:Stroke(LogoHolder, Library.Theme.Accent, 0.62, 1)
@@ -635,9 +636,9 @@ function Library:NewWindow(ConfigWindow)
     LogoHub.BackgroundTransparency = 1
     LogoHub.BorderSizePixel = 0
     LogoHub.Position = UDim2.new(0.5, 0, 0.5, 0)
-    LogoHub.Size = UDim2.new(0, 24, 0, 24)
+    LogoHub.Size = UDim2.new(1, 0, 1, 0)
     LogoHub.Image = ConfigWindow.Logo
-    LogoHub.ScaleType = Enum.ScaleType.Fit
+    LogoHub.ScaleType = Enum.ScaleType.Crop
 
     local NameHub = Instance.new("TextLabel")
     NameHub.Name = "NameHub"
@@ -1557,7 +1558,7 @@ function Library:NewWindow(ConfigWindow)
     AIMessages.BackgroundTransparency = 1
     AIMessages.BorderSizePixel = 0
     AIMessages.Position = UDim2.new(0, 0, 0, 63)
-    AIMessages.Size = UDim2.new(1, 0, 1, -130)
+    AIMessages.Size = UDim2.new(1, 0, 1, -145)
     AIMessages.Selectable = false
     Library:StyleScroll(AIMessages)
 
@@ -1579,8 +1580,8 @@ function Library:NewWindow(ConfigWindow)
     AISuggestions.Parent = AIWindow
     AISuggestions.BackgroundTransparency = 1
     AISuggestions.BorderSizePixel = 0
-    AISuggestions.Position = UDim2.new(0, 12, 1, -100)
-    AISuggestions.Size = UDim2.new(1, -24, 0, 28)
+    AISuggestions.Position = UDim2.new(0, 8, 1, -108)
+    AISuggestions.Size = UDim2.new(1, -16, 0, 30)
     AISuggestions.ScrollBarThickness = 0
     AISuggestions.ScrollingDirection = Enum.ScrollingDirection.X
     AISuggestions.CanvasSize = UDim2.new(0, 0, 0, 0)
@@ -1602,8 +1603,8 @@ function Library:NewWindow(ConfigWindow)
     AIInputFrame.AnchorPoint = Vector2.new(0, 1)
     AIInputFrame.BackgroundTransparency = 0.93
     AIInputFrame.BorderSizePixel = 0
-    AIInputFrame.Position = UDim2.new(0, 12, 1, -62)
-    AIInputFrame.Size = UDim2.new(1, -24, 0, 48)
+    AIInputFrame.Position = UDim2.new(0, 8, 1, -70)
+    AIInputFrame.Size = UDim2.new(1, -16, 0, 54)
     Library:Themed(AIInputFrame, "BackgroundColor3", "Surface")
     Library:Corner(AIInputFrame, 12)
     local AIInputStroke = Library:Stroke(AIInputFrame, Library.Theme.Stroke, 0.8, 1)
@@ -3326,7 +3327,8 @@ function Library:NewWindow(ConfigWindow)
             Section:SetAttribute("SectionTitle", SectionTitle)
             Section.BackgroundTransparency = Headerless and 1 or 0.97
             Section.BorderSizePixel = 0
-            Section.Size = UDim2.new(1, 0, 0, Headerless and 20 or 52)
+            Section.Size = UDim2.new(1, 0, 0, Headerless and 20 or 34)
+            Section.AutomaticSize = Enum.AutomaticSize.Y
             Library:Themed(Section, "BackgroundColor3", "Surface")
             Library:Corner(Section, 9)
 
@@ -3370,7 +3372,9 @@ function Library:NewWindow(ConfigWindow)
             SectionList.BackgroundTransparency = 1
             SectionList.BorderSizePixel = 0
             SectionList.Position = UDim2.new(0, 0, 0, Headerless and 0 or 34)
-            SectionList.Size = UDim2.new(1, 0, 1, Headerless and 0 or -34)
+            SectionList.ClipsDescendants = false
+            SectionList.Size = UDim2.new(1, 0, 0, 0)
+            SectionList.AutomaticSize = Enum.AutomaticSize.Y
 
             local UIPadding_4 = Instance.new("UIPadding")
             UIPadding_4.Parent = SectionList
