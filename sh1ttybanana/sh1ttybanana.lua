@@ -336,15 +336,29 @@ function Library:MakeDraggable(DragBar, Object, OnMoved)
     local DragInput = nil
     local DragStart = nil
     local StartPosition = nil
+    local LastTouchPos = nil
 
     DragBar.InputBegan:Connect(function(Input)
         if Input.UserInputType == Enum.UserInputType.MouseButton1 or Input.UserInputType == Enum.UserInputType.Touch then
             Dragging = true
             DragStart = Input.Position
+            LastTouchPos = Input.Position
             StartPosition = Object.Position
             Input.Changed:Connect(function()
                 if Input.UserInputState == Enum.UserInputState.End then
                     Dragging = false
+                    -- Snap to screen edges
+                    local VP = workspace.CurrentCamera.ViewportSize
+                    local AbsPos = Object.AbsolutePosition
+                    local AbsSize = Object.AbsoluteSize
+                    local snapX = AbsPos.X < VP.X * 0.08 and 0.04
+                        or AbsPos.X + AbsSize.X > VP.X * 0.92 and (VP.X - AbsSize.X) / VP.X - 0.04
+                        or nil
+                    if snapX then
+                        Library:Tween(Object, TweenInfo.new(0.22, Quart, Out), {
+                            Position = UDim2.new(snapX + AbsSize.X / (2*VP.X), 0, Object.Position.Y.Scale, Object.Position.Y.Offset)
+                        })
+                    end
                 end
             end)
         end
@@ -616,11 +630,11 @@ function Library:NewWindow(ConfigWindow)
 
     local NameHub = Instance.new("TextLabel")
     NameHub.Name = "NameHub"
-    NameHub.Parent = Left
+    NameHub.Parent = Top
     NameHub.BackgroundTransparency = 1
     NameHub.BorderSizePixel = 0
-    NameHub.Position = UDim2.new(0, 56, 0, 10)
-    NameHub.Size = UDim2.new(0, 260, 0, 18)
+    NameHub.Position = UDim2.new(0, 56, 0, 8)
+    NameHub.Size = UDim2.new(0, 150, 0, 18)
     NameHub.Font = Enum.Font.GothamBold
     NameHub.Text = ConfigWindow.Title
     NameHub.TextSize = 14
@@ -630,11 +644,11 @@ function Library:NewWindow(ConfigWindow)
 
     local Desc = Instance.new("TextLabel")
     Desc.Name = "Desc"
-    Desc.Parent = Left
+    Desc.Parent = Top
     Desc.BackgroundTransparency = 1
     Desc.BorderSizePixel = 0
     Desc.Position = UDim2.new(0, 56, 0, 28)
-    Desc.Size = UDim2.new(0, 260, 0, 16)
+    Desc.Size = UDim2.new(0, 150, 0, 16)
     Desc.Font = Enum.Font.Gotham
     Desc.Text = ConfigWindow.Description
     Desc.TextSize = 11
@@ -648,12 +662,13 @@ function Library:NewWindow(ConfigWindow)
 
     local ControlBar = Instance.new("Frame")
     ControlBar.Name = "ControlBar"
-    ControlBar.Parent = Right
+    ControlBar.Parent = Top
     ControlBar.AnchorPoint = Vector2.new(1, 0.5)
     ControlBar.BackgroundTransparency = 1
     ControlBar.BorderSizePixel = 0
     ControlBar.Position = UDim2.new(1, -10, 0.5, 0)
-    ControlBar.Size = UDim2.new(0, 138, 0, 32)
+    ControlBar.Size = UDim2.new(0, 0, 0, 32)
+    ControlBar.AutomaticSize = Enum.AutomaticSize.X
 
     local ControlList = Instance.new("UIListLayout")
     ControlList.Parent = ControlBar
@@ -1396,18 +1411,15 @@ function Library:NewWindow(ConfigWindow)
 
     local AIWindow = Instance.new("Frame")
     AIWindow.Name = "AIWindow"
-    AIWindow.Parent = DropShadowHolder
+    AIWindow.Parent = Main
     AIWindow.AnchorPoint = Vector2.new(0, 0)
-    AIWindow.BackgroundTransparency = 0.02
+    AIWindow.BackgroundTransparency = 0
     AIWindow.BorderSizePixel = 0
-    AIWindow.Position = UDim2.new(1, 10, 0, 0)
-    AIWindow.Size = UDim2.new(0, 380, 1, 0)
+    AIWindow.Position = UDim2.new(0, 152, 0, 54)
+    AIWindow.Size = UDim2.new(1, -152, 1, -54)
     AIWindow.Visible = false
-    AIWindow.ZIndex = 100
+    AIWindow.ZIndex = 50
     Library:Themed(AIWindow, "BackgroundColor3", "Main")
-    Library:Corner(AIWindow, 14)
-    local AIStroke = Library:Stroke(AIWindow, Library.Theme.Accent, 0.55, 1.4)
-    Library:Themed(AIStroke, "Color", "Accent")
 
     local AIHeader = Instance.new("Frame")
     AIHeader.Name = "Header"
@@ -1526,7 +1538,7 @@ function Library:NewWindow(ConfigWindow)
     AIMessages.BackgroundTransparency = 1
     AIMessages.BorderSizePixel = 0
     AIMessages.Position = UDim2.new(0, 0, 0, 63)
-    AIMessages.Size = UDim2.new(1, 0, 1, -175)
+    AIMessages.Size = UDim2.new(1, 0, 1, -130)
     AIMessages.Selectable = false
     Library:StyleScroll(AIMessages)
 
@@ -1548,7 +1560,7 @@ function Library:NewWindow(ConfigWindow)
     AISuggestions.Parent = AIWindow
     AISuggestions.BackgroundTransparency = 1
     AISuggestions.BorderSizePixel = 0
-    AISuggestions.Position = UDim2.new(0, 12, 1, -104)
+    AISuggestions.Position = UDim2.new(0, 12, 1, -100)
     AISuggestions.Size = UDim2.new(1, -24, 0, 28)
     AISuggestions.ScrollBarThickness = 0
     AISuggestions.ScrollingDirection = Enum.ScrollingDirection.X
@@ -1571,8 +1583,8 @@ function Library:NewWindow(ConfigWindow)
     AIInputFrame.AnchorPoint = Vector2.new(0, 1)
     AIInputFrame.BackgroundTransparency = 0.93
     AIInputFrame.BorderSizePixel = 0
-    AIInputFrame.Position = UDim2.new(0, 12, 1, -58)
-    AIInputFrame.Size = UDim2.new(1, -24, 0, 44)
+    AIInputFrame.Position = UDim2.new(0, 12, 1, -62)
+    AIInputFrame.Size = UDim2.new(1, -24, 0, 48)
     Library:Themed(AIInputFrame, "BackgroundColor3", "Surface")
     Library:Corner(AIInputFrame, 12)
     local AIInputStroke = Library:Stroke(AIInputFrame, Library.Theme.Stroke, 0.8, 1)
@@ -2155,15 +2167,19 @@ function Library:NewWindow(ConfigWindow)
         BottomButtons.AI:SetActive(Target)
 
         if Target then
+            -- Hide PlayerCard if open
+            if CardOpen and TogglePlayerCard then TogglePlayerCard(false) end
+            -- Hide tab content
+            LayoutFrame.Visible = false
             AIWindow.Visible = true
             AISubtitle.Text = "Groq - " .. Library.GroqModel
             AIWindow.BackgroundTransparency = 1
-            Library:Pop(AIWindow, 0.42, 0.9)
-            Library:TweenInstance(AIWindow, 0.28, "BackgroundTransparency", 0.02)
-            Library:TweenInstance(AIStroke, 0.28, "Transparency", 0.55)
+            Library:Pop(AIWindow, 0.32, 0.9)
+            Library:TweenInstance(AIWindow, 0.22, "BackgroundTransparency", 0)
             ScrollToBottom()
             return
         end
+        LayoutFrame.Visible = true
 
         local Scale = AIWindow:FindFirstChildOfClass("UIScale")
         if Scale then
@@ -2209,18 +2225,16 @@ function Library:NewWindow(ConfigWindow)
 
     local PlayerCard = Instance.new("Frame")
     PlayerCard.Name = "PlayerCard"
-    PlayerCard.Parent = DropShadowHolder
-    PlayerCard.AnchorPoint = Vector2.new(1, 0)
-    PlayerCard.BackgroundTransparency = 0.02
+    PlayerCard.Parent = Main
+    PlayerCard.AnchorPoint = Vector2.new(0, 0)
+    PlayerCard.BackgroundTransparency = 0
     PlayerCard.BorderSizePixel = 0
-    PlayerCard.Position = UDim2.new(0, -10, 0, 0)
-    PlayerCard.Size = UDim2.new(0, 300, 1, 0)
+    PlayerCard.Position = UDim2.new(0, 152, 0, 54)
+    PlayerCard.Size = UDim2.new(1, -152, 1, -54)
     PlayerCard.Visible = false
     PlayerCard.ZIndex = 110
     Library:Themed(PlayerCard, "BackgroundColor3", "Main")
     Library:Corner(PlayerCard, 16)
-    local CardStroke = Library:Stroke(PlayerCard, Library.Theme.Accent, 0.55, 1.4)
-    Library:Themed(CardStroke, "Color", "Accent")
 
     local CardBanner = Instance.new("Frame")
     CardBanner.Name = "Banner"
@@ -2712,12 +2726,15 @@ function Library:NewWindow(ConfigWindow)
         BottomButtons.PlayerCard:SetActive(Target)
 
         if Target then
+            -- Hide AI if open
+            if AIOpen and ToggleAI then ToggleAI(false) end
+            -- Hide tab content
+            LayoutFrame.Visible = false
             UpdateLive()
             PlayerCard.Visible = true
             PlayerCard.BackgroundTransparency = 1
-            Library:Pop(PlayerCard, 0.44, 0.88)
-            Library:TweenInstance(PlayerCard, 0.28, "BackgroundTransparency", 0.02)
-            Library:TweenInstance(CardStroke, 0.28, "Transparency", 0.55)
+            Library:Pop(PlayerCard, 0.32, 0.88)
+            Library:TweenInstance(PlayerCard, 0.22, "BackgroundTransparency", 0)
 
             for Index, Data in ipairs(StatTiles) do
                 Data.Tile.BackgroundTransparency = 1
@@ -5521,8 +5538,9 @@ function Library:NewWindow(ConfigWindow)
             TagHolder.AnchorPoint = Vector2.new(0, 0.5)
             TagHolder.BackgroundTransparency = 1
             TagHolder.BorderSizePixel = 0
-            TagHolder.Position = UDim2.new(0, 192, 0, 10)
-            TagHolder.Size = UDim2.new(0, 200, 0, 18)
+            TagHolder.Position = UDim2.new(0, 212, 0, 9)
+            TagHolder.Size = UDim2.new(0, 0, 0, 20)
+            TagHolder.AutomaticSize = Enum.AutomaticSize.X
 
             local TagList = Instance.new("UIListLayout")
             TagList.Parent = TagHolder
