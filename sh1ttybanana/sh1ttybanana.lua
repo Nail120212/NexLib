@@ -729,7 +729,7 @@ function Library:NewWindow(ConfigWindow)
     TabFrame.BackgroundTransparency = 0.97
     TabFrame.BorderSizePixel = 0
     TabFrame.Position = UDim2.new(0, 0, 0, 54)
-    TabFrame.Size = UDim2.new(0, 152, 1, -54)
+    TabFrame.Size = UDim2.new(0, 156, 1, -54)
     Library:Themed(TabFrame, "BackgroundColor3", "Surface")
 
     local Line_2 = Instance.new("Frame")
@@ -837,7 +837,8 @@ function Library:NewWindow(ConfigWindow)
     BottomHolder.BackgroundTransparency = 1
     BottomHolder.BorderSizePixel = 0
     BottomHolder.Position = UDim2.new(0.5, 0, 0.5, 2)
-    BottomHolder.Size = UDim2.new(1, -18, 0, 34)
+    BottomHolder.Size = UDim2.new(1, -10, 0, 34)
+    BottomHolder.ZIndex = 8
 
     local BottomList = Instance.new("UIListLayout")
     BottomList.Parent = BottomHolder
@@ -845,7 +846,7 @@ function Library:NewWindow(ConfigWindow)
     BottomList.HorizontalAlignment = Enum.HorizontalAlignment.Center
     BottomList.VerticalAlignment = Enum.VerticalAlignment.Center
     BottomList.SortOrder = Enum.SortOrder.LayoutOrder
-    BottomList.Padding = UDim.new(0, 8)
+    BottomList.Padding = UDim.new(0, 5)
 
     local Tooltip = Instance.new("Frame")
     Tooltip.Name = "Tooltip"
@@ -898,7 +899,8 @@ function Library:NewWindow(ConfigWindow)
         Button.Parent = BottomHolder
         Button.BackgroundTransparency = 0.92
         Button.BorderSizePixel = 0
-        Button.Size = UDim2.new(0, 38, 0, 32)
+        Button.Size = UDim2.new(0, 36, 0, 32)
+        Button.ZIndex = 9
         Button.Text = ""
         Button.AutoButtonColor = false
         Button.LayoutOrder = Order
@@ -997,8 +999,8 @@ function Library:NewWindow(ConfigWindow)
     LayoutFrame.Parent = Main
     LayoutFrame.BackgroundTransparency = 1
     LayoutFrame.BorderSizePixel = 0
-    LayoutFrame.Position = UDim2.new(0, 152, 0, 54)
-    LayoutFrame.Size = UDim2.new(1, -152, 1, -54)
+    LayoutFrame.Position = UDim2.new(0, 156, 0, 54)
+    LayoutFrame.Size = UDim2.new(1, -156, 1, -54)
     LayoutFrame.ClipsDescendants = true
 
     local RealLayout = Instance.new("Frame")
@@ -1435,11 +1437,18 @@ function Library:NewWindow(ConfigWindow)
     AIWindow.AnchorPoint = Vector2.new(0, 0)
     AIWindow.BackgroundTransparency = 0
     AIWindow.BorderSizePixel = 0
-    AIWindow.Position = UDim2.new(0, 152, 0, 54)
-    AIWindow.Size = UDim2.new(1, -152, 1, -54)
+    AIWindow.Position = UDim2.new(0, 156, 0, 54)
+    AIWindow.Size = UDim2.new(1, -156, 1, -54)
     AIWindow.Visible = false
-    AIWindow.ZIndex = 50
+    AIWindow.ZIndex = 200
     Library:Themed(AIWindow, "BackgroundColor3", "Main")
+    local AIWindowLine = Instance.new("Frame")
+    AIWindowLine.Parent = AIWindow
+    AIWindowLine.BorderSizePixel = 0
+    AIWindowLine.Position = UDim2.new(0, 0, 0, 0)
+    AIWindowLine.Size = UDim2.new(0, 1, 1, 0)
+    AIWindowLine.ZIndex = 201
+    Library:Themed(AIWindowLine, "BackgroundColor3", "Stroke")
 
     local AIHeader = Instance.new("Frame")
     AIHeader.Name = "Header"
@@ -2189,13 +2198,12 @@ function Library:NewWindow(ConfigWindow)
         if Target then
             -- Hide PlayerCard if open
             if CardOpen and TogglePlayerCard then TogglePlayerCard(false) end
-            -- Hide tab content
+            -- Hide tab content immediately (no race)
             LayoutFrame.Visible = false
+            AIWindow.BackgroundTransparency = 0
             AIWindow.Visible = true
             AISubtitle.Text = "Groq - " .. Library.GroqModel
-            AIWindow.BackgroundTransparency = 1
-            Library:Pop(AIWindow, 0.32, 0.9)
-            Library:TweenInstance(AIWindow, 0.22, "BackgroundTransparency", 0)
+            Library:Pop(AIWindow, 0.28, 0.92)
             ScrollToBottom()
             return
         end
@@ -2249,11 +2257,18 @@ function Library:NewWindow(ConfigWindow)
     PlayerCard.AnchorPoint = Vector2.new(0, 0)
     PlayerCard.BackgroundTransparency = 0
     PlayerCard.BorderSizePixel = 0
-    PlayerCard.Position = UDim2.new(0, 152, 0, 54)
-    PlayerCard.Size = UDim2.new(1, -152, 1, -54)
+    PlayerCard.Position = UDim2.new(0, 156, 0, 54)
+    PlayerCard.Size = UDim2.new(1, -156, 1, -54)
     PlayerCard.Visible = false
-    PlayerCard.ZIndex = 110
+    PlayerCard.ZIndex = 200
     Library:Themed(PlayerCard, "BackgroundColor3", "Main")
+    local PCWindowLine = Instance.new("Frame")
+    PCWindowLine.Parent = PlayerCard
+    PCWindowLine.BorderSizePixel = 0
+    PCWindowLine.Position = UDim2.new(0, 0, 0, 0)
+    PCWindowLine.Size = UDim2.new(0, 1, 1, 0)
+    PCWindowLine.ZIndex = 201
+    Library:Themed(PCWindowLine, "BackgroundColor3", "Stroke")
     Library:Corner(PlayerCard, 16)
 
     local CardBanner = Instance.new("Frame")
@@ -2748,13 +2763,12 @@ function Library:NewWindow(ConfigWindow)
         if Target then
             -- Hide AI if open
             if AIOpen and ToggleAI then ToggleAI(false) end
-            -- Hide tab content
+            -- Hide tab content immediately (no race)
             LayoutFrame.Visible = false
             UpdateLive()
+            PlayerCard.BackgroundTransparency = 0
             PlayerCard.Visible = true
-            PlayerCard.BackgroundTransparency = 1
-            Library:Pop(PlayerCard, 0.32, 0.88)
-            Library:TweenInstance(PlayerCard, 0.22, "BackgroundTransparency", 0)
+            Library:Pop(PlayerCard, 0.28, 0.92)
 
             for Index, Data in ipairs(StatTiles) do
                 Data.Tile.BackgroundTransparency = 1
