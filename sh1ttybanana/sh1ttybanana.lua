@@ -215,16 +215,15 @@ function Library:RefreshTheme(Animated)
     end
 end
 
-Library.Rounded = false
+Library.Rounded = true
 
 function Library:Corner(Object, Radius)
     local Corner = Instance.new("UICorner")
     if typeof(Radius) == "UDim" then
         Corner.CornerRadius = Radius
-    elseif Library.Rounded then
-        Corner.CornerRadius = UDim.new(0, Radius or 6)
     else
-        Corner.CornerRadius = UDim.new(0, 0)
+        local r = Radius or 8
+        Corner.CornerRadius = UDim.new(0, r)
     end
     Corner.Parent = Object
     return Corner
@@ -322,10 +321,12 @@ function Library:UpdateScrolling(Scroll, List)
 end
 
 function Library:StyleScroll(Scroll)
-    Scroll.ScrollBarThickness = 3
-    Scroll.ScrollBarImageTransparency = 0.55
+    Scroll.ScrollBarThickness = 4
+    Scroll.ScrollBarImageTransparency = 0.35
     Scroll.ScrollingDirection = Enum.ScrollingDirection.Y
     Scroll.BorderSizePixel = 0
+    Scroll.ElasticBehavior = Enum.ElasticBehavior.Always
+    Scroll.ScrollingEnabled = true
     Library:Themed(Scroll, "ScrollBarImageColor3", "Accent")
 end
 
@@ -544,22 +545,18 @@ function Library:NewWindow(ConfigWindow)
     local ToggleAI
     local TogglePlayerCard
 
-    -- Manual PC/Mobile sizing (two fixed profiles, not a continuous formula)
     local IsMobile = UserInputService.TouchEnabled and not UserInputService.MouseEnabled
     local ScreenSize = workspace.CurrentCamera.ViewportSize
 
     if ConfigWindow.AutoScale ~= false then
         if IsMobile then
-            -- Mobile: fixed compact size, never exceeds ~92% of screen
-            ConfigWindow.Size = UDim2.new(
-                0, math.min(360, math.floor(ScreenSize.X * 0.92)),
-                0, math.min(480, math.floor(ScreenSize.Y * 0.78))
-            )
+            local maxW = math.floor(ScreenSize.X * 0.94)
+            local maxH = math.floor(ScreenSize.Y * 0.82)
+            ConfigWindow.Size = UDim2.new(0, math.clamp(340, 280, maxW), 0, math.clamp(460, 360, maxH))
         else
-            -- Desktop: fixed comfortable size, capped to screen so it never overflows
             ConfigWindow.Size = UDim2.new(
-                0, math.min(ConfigWindow.Size.X.Offset, math.floor(ScreenSize.X * 0.9)),
-                0, math.min(ConfigWindow.Size.Y.Offset, math.floor(ScreenSize.Y * 0.85))
+                0, math.min(ConfigWindow.Size.X.Offset, math.floor(ScreenSize.X * 0.88)),
+                0, math.min(ConfigWindow.Size.Y.Offset, math.floor(ScreenSize.Y * 0.82))
             )
         end
     end
@@ -592,14 +589,12 @@ function Library:NewWindow(ConfigWindow)
     Main.Position = UDim2.new(0.5, 0, 0.5, 0)
     Main.Size = UDim2.new(1, 0, 1, 0)
     Library:Themed(Main, "BackgroundColor3", "Main")
-    Library:Corner(Main, 12)
+    Library:Corner(Main, 14)
     Main.ClipsDescendants = true
 
-    -- Manual content scale so fixed-pixel children (sidebar, buttons, logo)
-    -- fit inside the smaller mobile window without being individually rewritten
     local ContentScale = Instance.new("UIScale")
     ContentScale.Parent = Main
-    ContentScale.Scale = IsMobile and 0.8 or 1
+    ContentScale.Scale = IsMobile and 0.85 or 1
 
     local MainStroke = Library:Stroke(Main, Library.Theme.Accent, 0.55, 1.4)
     Library:Themed(MainStroke, "Color", "Accent")
