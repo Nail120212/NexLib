@@ -544,10 +544,24 @@ function Library:NewWindow(ConfigWindow)
     local ToggleAI
     local TogglePlayerCard
 
+    -- Manual PC/Mobile sizing (two fixed profiles, not a continuous formula)
+    local IsMobile = UserInputService.TouchEnabled and not UserInputService.MouseEnabled
+    local ScreenSize = workspace.CurrentCamera.ViewportSize
+
     if ConfigWindow.AutoScale ~= false then
-        local Camera = workspace.CurrentCamera
-        local Scale = math.clamp(math.min(Camera.ViewportSize.X / 1920, Camera.ViewportSize.Y / 1080), 0.7, 1.2)
-        ConfigWindow.Size = UDim2.new(0, math.floor(ConfigWindow.Size.X.Offset * Scale), 0, math.floor(ConfigWindow.Size.Y.Offset * Scale))
+        if IsMobile then
+            -- Mobile: fixed compact size, never exceeds ~92% of screen
+            ConfigWindow.Size = UDim2.new(
+                0, math.min(360, math.floor(ScreenSize.X * 0.92)),
+                0, math.min(480, math.floor(ScreenSize.Y * 0.78))
+            )
+        else
+            -- Desktop: fixed comfortable size, capped to screen so it never overflows
+            ConfigWindow.Size = UDim2.new(
+                0, math.min(ConfigWindow.Size.X.Offset, math.floor(ScreenSize.X * 0.9)),
+                0, math.min(ConfigWindow.Size.Y.Offset, math.floor(ScreenSize.Y * 0.85))
+            )
+        end
     end
 
     local ScreenGui = Instance.new("ScreenGui")
@@ -580,6 +594,12 @@ function Library:NewWindow(ConfigWindow)
     Library:Themed(Main, "BackgroundColor3", "Main")
     Library:Corner(Main, 12)
     Main.ClipsDescendants = true
+
+    -- Manual content scale so fixed-pixel children (sidebar, buttons, logo)
+    -- fit inside the smaller mobile window without being individually rewritten
+    local ContentScale = Instance.new("UIScale")
+    ContentScale.Parent = Main
+    ContentScale.Scale = IsMobile and 0.8 or 1
 
     local MainStroke = Library:Stroke(Main, Library.Theme.Accent, 0.55, 1.4)
     Library:Themed(MainStroke, "Color", "Accent")
@@ -2213,10 +2233,10 @@ function Library:NewWindow(ConfigWindow)
         if Scale then
             Library:Tween(Scale, TweenInfo.new(0.22, Quart, In), { Scale = 0.92 })
         end
-        Library:TweenInstance(AIWindow, 0.2, "BackgroundTransparency", 1)
-        Library:TweenInstance(AIStroke, 0.2, "Transparency", 1, function()
+        Library:TweenInstance(AIWindow, 0.2, "BackgroundTransparency", 1, function()
             if not AIOpen then
                 AIWindow.Visible = false
+                LayoutFrame.Visible = true
             end
         end)
     end
@@ -2787,10 +2807,10 @@ function Library:NewWindow(ConfigWindow)
         if Scale then
             Library:Tween(Scale, TweenInfo.new(0.22, Quart, In), { Scale = 0.9 })
         end
-        Library:TweenInstance(PlayerCard, 0.2, "BackgroundTransparency", 1)
-        Library:TweenInstance(CardStroke, 0.2, "Transparency", 1, function()
+        Library:TweenInstance(PlayerCard, 0.2, "BackgroundTransparency", 1, function()
             if not CardOpen then
                 PlayerCard.Visible = false
+                LayoutFrame.Visible = true
             end
         end)
     end
