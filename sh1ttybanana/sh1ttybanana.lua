@@ -11,7 +11,7 @@ groqapi = ""
 groqprompt = ""
 
 Library.GroqEndpoint = "https://api.groq.com/openai/v1/chat/completions"
-Library.GroqModel = "llama-3.3-70b-versatile"
+Library.GroqModel = "openai/gpt-oss-120b"
 
 local function Get(url)
     if game.HttpGet then
@@ -673,18 +673,36 @@ function Library:NewWindow(ConfigWindow)
     NameHub.TextTruncate = Enum.TextTruncate.AtEnd
     Library:Themed(NameHub, "TextColor3", "Text")
 
+    -- Description + Tags share one auto-flowing row so tags always sit
+    -- immediately after the description text (whatever its length) and
+    -- never drift into a fixed pixel gap or crowd the control icons.
+    local DescRow = Instance.new("Frame")
+    DescRow.Name = "DescRow"
+    DescRow.Parent = Top
+    DescRow.BackgroundTransparency = 1
+    DescRow.Position = UDim2.new(0, 56, 0, 28)
+    DescRow.Size = UDim2.new(1, -196, 0, 20)
+    DescRow.ClipsDescendants = true
+
+    local DescRowList = Instance.new("UIListLayout")
+    DescRowList.Parent = DescRow
+    DescRowList.FillDirection = Enum.FillDirection.Horizontal
+    DescRowList.VerticalAlignment = Enum.VerticalAlignment.Center
+    DescRowList.SortOrder = Enum.SortOrder.LayoutOrder
+    DescRowList.Padding = UDim.new(0, 8)
+
     local Desc = Instance.new("TextLabel")
     Desc.Name = "Desc"
-    Desc.Parent = Top
+    Desc.Parent = DescRow
+    Desc.LayoutOrder = 1
     Desc.BackgroundTransparency = 1
     Desc.BorderSizePixel = 0
-    Desc.Position = UDim2.new(0, 56, 0, 28)
-    Desc.Size = UDim2.new(0, 150, 0, 16)
+    Desc.AutomaticSize = Enum.AutomaticSize.X
+    Desc.Size = UDim2.new(0, 0, 1, 0)
     Desc.Font = Enum.Font.Gotham
     Desc.Text = ConfigWindow.Description
     Desc.TextSize = 11
     Desc.TextXAlignment = Enum.TextXAlignment.Left
-    Desc.TextTruncate = Enum.TextTruncate.AtEnd
     Library:Themed(Desc, "TextColor3", "TextDisabled")
 
     local Right = Instance.new("Folder")
@@ -1586,7 +1604,7 @@ function Library:NewWindow(ConfigWindow)
     AIMessages.BackgroundTransparency = 1
     AIMessages.BorderSizePixel = 0
     AIMessages.Position = UDim2.new(0, 0, 0, 63)
-    AIMessages.Size = UDim2.new(1, 0, 1, -145)
+    AIMessages.Size = UDim2.new(1, 0, 1, -172)
     AIMessages.Selectable = false
     Library:StyleScroll(AIMessages)
 
@@ -1608,7 +1626,7 @@ function Library:NewWindow(ConfigWindow)
     AISuggestions.Parent = AIWindow
     AISuggestions.BackgroundTransparency = 1
     AISuggestions.BorderSizePixel = 0
-    AISuggestions.Position = UDim2.new(0, 8, 1, -108)
+    AISuggestions.Position = UDim2.new(0, 8, 1, -162)
     AISuggestions.Size = UDim2.new(1, -16, 0, 30)
     AISuggestions.ScrollBarThickness = 0
     AISuggestions.ScrollingDirection = Enum.ScrollingDirection.X
@@ -2278,6 +2296,7 @@ function Library:NewWindow(ConfigWindow)
     PlayerCard.BorderSizePixel = 0
     PlayerCard.Position = UDim2.new(0, 156, 0, 54)
     PlayerCard.Size = UDim2.new(1, -156, 1, -54)
+    PlayerCard.ClipsDescendants = true
     PlayerCard.Visible = false
     PlayerCard.ZIndex = 200
     Library:Themed(PlayerCard, "BackgroundColor3", "Main")
@@ -2605,20 +2624,31 @@ function Library:NewWindow(ConfigWindow)
         end)
     end)
 
-    local StatGrid = Instance.new("Frame")
+    -- Scrolling + clipped so any number of stat tiles can never visually
+    -- bleed into the HWID tile above or the footer below, regardless of
+    -- how tall the card ends up being.
+    local StatGrid = Instance.new("ScrollingFrame")
     StatGrid.Name = "StatGrid"
     StatGrid.Parent = PlayerCard
     StatGrid.BackgroundTransparency = 1
     StatGrid.BorderSizePixel = 0
     StatGrid.Position = UDim2.new(0, 14, 0, 264)
-    StatGrid.Size = UDim2.new(1, -28, 1, -302)
+    StatGrid.Size = UDim2.new(1, -28, 1, -304)
+    StatGrid.ClipsDescendants = true
+    StatGrid.ScrollBarThickness = 3
+    StatGrid.ScrollingDirection = Enum.ScrollingDirection.Y
+    StatGrid.CanvasSize = UDim2.new(0, 0, 0, 0)
     StatGrid.ZIndex = 112
+    Library:Themed(StatGrid, "ScrollBarImageColor3", "Accent")
 
     local StatLayout = Instance.new("UIGridLayout")
     StatLayout.Parent = StatGrid
     StatLayout.CellPadding = UDim2.new(0, 10, 0, 10)
     StatLayout.CellSize = UDim2.new(0.5, -5, 0, 51)
     StatLayout.SortOrder = Enum.SortOrder.LayoutOrder
+    StatLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+        StatGrid.CanvasSize = UDim2.new(0, 0, 0, StatLayout.AbsoluteContentSize.Y + 12)
+    end)
 
     local StatTiles = {}
 
@@ -3108,7 +3138,7 @@ function Library:NewWindow(ConfigWindow)
             CrumbIcon.ImageTransparency = 1
             Library:TweenInstance(TextLabel, 0.3, "TextTransparency", 0)
             Library:TweenInstance(CrumbIcon, 0.3, "ImageTransparency", 0)
-            UIPageLayout:JumpToIndex(Layout.LayoutOrder)
+            UIPageLayout:JumpTo(Layout)
         end
 
         table.insert(TabElements, { Frame = TabDisable, DragHandle = DragHandle, DragIcon = DragIcon, Name = name })
@@ -3128,7 +3158,7 @@ function Library:NewWindow(ConfigWindow)
             SetSelectedVisual(true)
             TextLabel.Text = name
             Library:SetIcon(CrumbIcon, iconName, Library.Theme.Accent)
-            UIPageLayout:JumpToIndex(0)
+            UIPageLayout:JumpTo(Layout)
         end
 
         local function ShowLockPopup()
@@ -3435,6 +3465,7 @@ function Library:NewWindow(ConfigWindow)
                 Row.Name = Kind
                 Row.Parent = SectionList
                 Row.BorderSizePixel = 0
+                Row.ClipsDescendants = true
                 Row.Size = UDim2.new(1, 0, 0, 36)
                 Library:Themed(Row, "BackgroundColor3", "Surface")
                 Library:Themed(Row, "BackgroundTransparency", "SurfaceAlpha")
@@ -3720,8 +3751,11 @@ function Library:NewWindow(ConfigWindow)
                     Callback = function() end
                 }, cfslider or {})
 
-                local Slider, Title_4, Content_3, Stroke = MakeRow("Slider", cfslider.Title, cfslider.Description, 196)
+                local Slider, Title_4, Content_3, Stroke = MakeRow("Slider", cfslider.Title, cfslider.Description, 150)
                 RowHover(Slider, Stroke)
+                -- Title reserves a scale-based left portion so it can never
+                -- compute a negative/near-zero width on a narrow row.
+                Title_4.Size = UDim2.new(0.42, -8, 1, 0)
 
                 local SliderValue = Instance.new("TextBox")
                 SliderValue.Name = "SliderValue"
@@ -5586,15 +5620,15 @@ function Library:NewWindow(ConfigWindow)
             Icon = nil
         }, cfg or {})
 
-        local TagHolder = Top:FindFirstChild("TagHolder")
+        local DescRow = Top:FindFirstChild("DescRow")
+        local TagHolder = DescRow and DescRow:FindFirstChild("TagHolder")
         if not TagHolder then
             TagHolder = Instance.new("Frame")
             TagHolder.Name = "TagHolder"
-            TagHolder.Parent = Top
-            TagHolder.AnchorPoint = Vector2.new(0, 0.5)
+            TagHolder.Parent = DescRow or Top
+            TagHolder.LayoutOrder = 2
             TagHolder.BackgroundTransparency = 1
             TagHolder.BorderSizePixel = 0
-            TagHolder.Position = UDim2.new(0, 212, 0.5, 0)
             TagHolder.Size = UDim2.new(0, 0, 0, 22)
             TagHolder.AutomaticSize = Enum.AutomaticSize.X
             TagHolder.ZIndex = 6
