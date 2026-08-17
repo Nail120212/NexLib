@@ -355,8 +355,12 @@ function Library:MakeDraggable(DragBar, Object, OnMoved)
                         local AbsSize = Object.AbsoluteSize
                         local midX = AbsPos.X + AbsSize.X * 0.5
                         local midY = AbsPos.Y + AbsSize.Y * 0.5
-                        local clampedX = math.clamp(midX, AbsSize.X * 0.5 + 4, VP.X - AbsSize.X * 0.5 - 4)
-                        local clampedY = math.clamp(midY, AbsSize.Y * 0.5 + 4, VP.Y - AbsSize.Y * 0.5 - 4)
+                        local minX = math.min(AbsSize.X * 0.5 + 4, VP.X * 0.5)
+                        local maxX = math.max(VP.X - AbsSize.X * 0.5 - 4, minX)
+                        local minY = math.min(AbsSize.Y * 0.5 + 4, VP.Y * 0.5)
+                        local maxY = math.max(VP.Y - AbsSize.Y * 0.5 - 4, minY)
+                        local clampedX = math.clamp(midX, minX, maxX)
+                        local clampedY = math.clamp(midY, minY, maxY)
                         if math.abs(clampedX - midX) > 2 or math.abs(clampedY - midY) > 2 then
                             Library:Tween(Object, TweenInfo.new(0.22, Quart, Out), {
                                 Position = UDim2.new(
@@ -550,9 +554,9 @@ function Library:NewWindow(ConfigWindow)
 
     if ConfigWindow.AutoScale ~= false then
         if IsMobile then
-            local maxW = math.floor(ScreenSize.X * 0.94)
-            local maxH = math.floor(ScreenSize.Y * 0.82)
-            ConfigWindow.Size = UDim2.new(0, math.clamp(340, 280, maxW), 0, math.clamp(460, 360, maxH))
+            local maxW = math.max(260, math.floor(ScreenSize.X * 0.94))
+            local maxH = math.max(320, math.floor(ScreenSize.Y * 0.82))
+            ConfigWindow.Size = UDim2.new(0, math.min(340, maxW), 0, math.min(460, maxH))
         else
             ConfigWindow.Size = UDim2.new(
                 0, math.min(ConfigWindow.Size.X.Offset, math.floor(ScreenSize.X * 0.88)),
