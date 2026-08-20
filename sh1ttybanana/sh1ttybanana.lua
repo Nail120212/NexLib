@@ -544,6 +544,7 @@ function Library:NewWindow(ConfigWindow)
 
     Library.Themes.Dark.Accent = ConfigWindow.Color
     Library.Themes.Light.Accent = ConfigWindow.Color
+    Library.Themes.Black.Accent = ConfigWindow.Color
     Library.Theme.Accent = ConfigWindow.Color
 
     if type(ConfigWindow.GroqApiKey) == "string" and ConfigWindow.GroqApiKey ~= "" then
@@ -1083,14 +1084,14 @@ function Library:NewWindow(ConfigWindow)
             ToggleAI()
         end
     end)
-    AIBtn.Icon.Image = "rbxassetid://73141560080227"
+    AIBtn.Icon.Image = "rbxassetid://86390392481729"
     AIBtn.Icon.ImageColor3 = Color3.fromRGB(255, 255, 255)
     AIBtn.Icon.Size = UDim2.new(0, 19, 0, 19)
     Library:Corner(AIBtn.Icon, UDim.new(1, 0))
     local AIBtnOriginalSetActive = AIBtn.SetActive
     AIBtn.SetActive = function(self, State)
         AIBtnOriginalSetActive(self, State)
-        AIBtn.Icon.Image = "rbxassetid://73141560080227"
+        AIBtn.Icon.Image = "rbxassetid://86390392481729"
         AIBtn.Icon.ImageColor3 = Color3.fromRGB(255, 255, 255)
     end
 
@@ -1292,12 +1293,71 @@ function Library:NewWindow(ConfigWindow)
         return true
     end
 
+    local YellowHex = "#FFD400"
+    local HighlightedLabels = {}
+    local HighlightedFrames = {}
+    local LastJumpedTarget = nil
+
+    local function ClearComponentHighlights()
+        for _, Rec in ipairs(HighlightedLabels) do
+            if Rec.Label and Rec.Label.Parent then
+                Rec.Label.RichText = false
+                Rec.Label.Text = Rec.Original
+            end
+        end
+        HighlightedLabels = {}
+        for _, Frm in ipairs(HighlightedFrames) do
+            if Frm and Frm.Parent then
+                local Glow = Frm:FindFirstChild("SearchGlow")
+                if Glow then
+                    Glow:Destroy()
+                end
+            end
+        end
+        HighlightedFrames = {}
+    end
+
+    local function HighlightSubstring(Label, Raw, Start, Len)
+        Label.RichText = true
+        Label.Text = string.sub(Raw, 1, Start - 1)
+            .. '<font color="' .. YellowHex .. '">'
+            .. string.sub(Raw, Start, Start + Len - 1)
+            .. "</font>"
+            .. string.sub(Raw, Start + Len)
+        table.insert(HighlightedLabels, { Label = Label, Original = Raw })
+    end
+
+    local function GlowFrame(Frame)
+        if not Frame then
+            return
+        end
+        local Glow = Instance.new("UIStroke")
+        Glow.Name = "SearchGlow"
+        Glow.Parent = Frame
+        Glow.Thickness = 1.5
+        Glow.Transparency = 0.2
+        Library:Themed(Glow, "Color", "Accent")
+        table.insert(HighlightedFrames, Frame)
+    end
+
+    local function ScrollToFrame(Entry)
+        task.defer(function()
+            task.wait()
+            if not (Entry.Frame and Entry.Frame.Parent and Entry.Page) then
+                return
+            end
+            local PageAbsY = Entry.Page.AbsolutePosition.Y
+            local FrameAbsY = Entry.Frame.AbsolutePosition.Y
+            local Target = Entry.Page.CanvasPosition.Y + (FrameAbsY - PageAbsY) - 60
+            Entry.Page.CanvasPosition = Vector2.new(0, math.max(0, Target))
+        end)
+    end
+
     local function ApplySearch(Query)
         Query = string.lower(Trim(Query or ""))
-        local AccentHex = string.format("#%02X%02X%02X",
-            math.floor(Library.Theme.Accent.R * 255 + 0.5),
-            math.floor(Library.Theme.Accent.G * 255 + 0.5),
-            math.floor(Library.Theme.Accent.B * 255 + 0.5))
+
+        ClearComponentHighlights()
+
         for _, Entry in ipairs(TabRegistry) do
             local Raw = Entry.Name
             local Lower = string.lower(Raw)
@@ -1305,12 +1365,7 @@ function Library:NewWindow(ConfigWindow)
             local Match = Query == "" or Start ~= nil
             Entry.Frame.Visible = Match
             if Match and Start then
-                Entry.Label.RichText = true
-                Entry.Label.Text = string.sub(Raw, 1, Start - 1)
-                    .. '<font color="' .. AccentHex .. '">'
-                    .. string.sub(Raw, Start, Start + #Query - 1)
-                    .. "</font>"
-                    .. string.sub(Raw, Start + #Query)
+                HighlightSubstring(Entry.Label, Raw, Start, #Query)
             else
                 Entry.Label.RichText = false
                 Entry.Label.Text = Raw
@@ -1318,6 +1373,41 @@ function Library:NewWindow(ConfigWindow)
         end
         for _, Entry in ipairs(SectionRegistry) do
             Entry.Refresh()
+        end
+
+        if Query == "" then
+            LastJumpedTarget = nil
+            return
+        end
+
+        -- Component-level search: highlight matching element titles in
+        -- their own tab and jump straight to the first match, wherever
+        -- it lives. Tab names already matched above take priority only
+        -- for sidebar filtering -- this handles the content itself.
+        local FirstMatch = nil
+        for _, Item in ipairs(UIIndex) do
+            if Item.Frame and Item.Frame.Parent then
+                local Lower = string.lower(Item.Title)
+                local Start = string.find(Lower, Query, 1, true)
+                if Start then
+                    if Item.Label then
+                        HighlightSubstring(Item.Label, Item.Title, Start, #Query)
+                    end
+                    GlowFrame(Item.Frame)
+                    if not FirstMatch then
+                        FirstMatch = Item
+                    end
+                end
+            end
+        end
+
+        if FirstMatch then
+            local Key = FirstMatch.Tab .. ":" .. FirstMatch.Title
+            if Key ~= LastJumpedTarget then
+                LastJumpedTarget = Key
+                SelectTabByName(FirstMatch.Tab)
+                ScrollToFrame(FirstMatch)
+            end
         end
     end
 
@@ -1485,8 +1575,6 @@ function Library:NewWindow(ConfigWindow)
 
                 Row.MouseButton1Click:Connect(function()
                     Library:ApplyTheme(ThemeName)
-                    Library.Theme.Accent = ConfigWindow.Color
-                    Library:RefreshTheme(true)
                     Library:Flash(Main, Library.Theme.Accent)
                     CloseThemeDropdown()
                 end)
@@ -1623,7 +1711,7 @@ function Library:NewWindow(ConfigWindow)
     AIBadgeIcon.BackgroundTransparency = 1
     AIBadgeIcon.Position = UDim2.new(0.5, 0, 0.5, 0)
     AIBadgeIcon.Size = UDim2.new(1, 0, 1, 0)
-    AIBadgeIcon.Image = "rbxassetid://73141560080227"
+    AIBadgeIcon.Image = "rbxassetid://86390392481729"
     Library:Corner(AIBadgeIcon, 11)
 
     local AITitle = Instance.new("TextLabel")
@@ -1905,7 +1993,7 @@ function Library:NewWindow(ConfigWindow)
         Avatar.Size = IsUser and UDim2.new(1, -2, 1, -2) or UDim2.new(1, -8, 1, -8)
         Avatar.Image = IsUser
             and ("rbxthumb://type=AvatarHeadShot&id=" .. tostring(Player.UserId) .. "&w=100&h=100")
-            or "rbxassetid://73141560080227"
+            or "rbxassetid://86390392481729"
         if not IsUser then
             Avatar.ImageColor3 = Color3.fromRGB(255, 255, 255)
         end
@@ -3569,8 +3657,8 @@ function Library:NewWindow(ConfigWindow)
                 Section.Size = UDim2.new(1, 0, 0, UIListLayout_4.AbsoluteContentSize.Y + BaseHeight)
             end)
 
-            local function Register(Kind, ElementTitle)
-                table.insert(UIIndex, { Tab = name, Section = SectionTitle, Kind = Kind, Title = tostring(ElementTitle) })
+            local function Register(Kind, ElementTitle, Frame, Label)
+                table.insert(UIIndex, { Tab = name, Section = SectionTitle, Kind = Kind, Title = tostring(ElementTitle), Frame = Frame, Label = Label, Page = Layout })
             end
 
             local function MakeRow(Kind, RowTitle, Description, Reserve)
@@ -3624,7 +3712,7 @@ function Library:NewWindow(ConfigWindow)
                     task.defer(Resize)
                 end
 
-                Register(Kind, RowTitle)
+                Register(Kind, RowTitle, Row, RowTitleLabel)
                 return Row, RowTitleLabel, RowContent, Stroke
             end
 
@@ -4441,31 +4529,26 @@ function Library:NewWindow(ConfigWindow)
                         TitleBar.ZIndex = 26
                         Library:Themed(TitleBar, "TextColor3", "Text")
 
-                        local SVSquare = Instance.new("Frame")
+                        local SVSquare = Instance.new("ImageLabel")
                         SVSquare.Parent = Popup
                         SVSquare.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
                         SVSquare.BorderSizePixel = 0
                         SVSquare.Position = UDim2.new(0, 16, 0, 44)
                         SVSquare.Size = UDim2.new(1, -32, 0, 148)
                         SVSquare.ZIndex = 26
+                        SVSquare.Image = "rbxassetid://4155801252"
+                        SVSquare.ImageColor3 = Color3.fromRGB(255, 255, 255)
+                        SVSquare.ScaleType = Enum.ScaleType.Stretch
                         Library:Corner(SVSquare, 8)
 
-                        Library:Gradient(SVSquare, ColorSequence.new(Color3.fromRGB(255, 255, 255), Color3.fromRGB(255, 255, 255)), 0, NumberSequence.new({
-                            NumberSequenceKeypoint.new(0, 0),
-                            NumberSequenceKeypoint.new(1, 1)
-                        }))
-
-                        local SVDark = Instance.new("Frame")
-                        SVDark.Parent = SVSquare
-                        SVDark.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-                        SVDark.BorderSizePixel = 0
-                        SVDark.Size = UDim2.new(1, 0, 1, 0)
-                        SVDark.ZIndex = 27
-                        Library:Corner(SVDark, 8)
-                        Library:Gradient(SVDark, ColorSequence.new(Color3.fromRGB(0, 0, 0), Color3.fromRGB(0, 0, 0)), 90, NumberSequence.new({
-                            NumberSequenceKeypoint.new(0, 1),
-                            NumberSequenceKeypoint.new(1, 0)
-                        }))
+                        local SVHit = Instance.new("TextButton")
+                        SVHit.Parent = SVSquare
+                        SVHit.BackgroundTransparency = 1
+                        SVHit.BorderSizePixel = 0
+                        SVHit.Size = UDim2.new(1, 0, 1, 0)
+                        SVHit.Text = ""
+                        SVHit.AutoButtonColor = false
+                        SVHit.ZIndex = 27
 
                         local SVCursor = Instance.new("Frame")
                         SVCursor.Parent = SVSquare
@@ -4642,7 +4725,7 @@ function Library:NewWindow(ConfigWindow)
                             end
                         end)
 
-                        SVDark.InputBegan:Connect(function(Input)
+                        SVHit.InputBegan:Connect(function(Input)
                             if Input.UserInputType == Enum.UserInputType.MouseButton1 or Input.UserInputType == Enum.UserInputType.Touch then
                                 SVDragging = true
                                 UpdateSV(Input.Position)
@@ -4877,7 +4960,7 @@ function Library:NewWindow(ConfigWindow)
                 Content_4:GetPropertyChangedSignal("TextBounds"):Connect(Resize)
                 task.defer(Resize)
 
-                Register("Paragraph", cfpara.Title)
+                Register("Paragraph", cfpara.Title, Paragraph, Title_6)
 
                 local ParaFunc = {}
 
@@ -4971,9 +5054,11 @@ function Library:NewWindow(ConfigWindow)
 
             function SectionFunc:AddMultiButton(cfmb)
                 local cfmb = Library:MakeConfig({
-                    Full = { Title = "Full", Callback = function() end },
-                    Left = { Title = "Left", Callback = function() end },
-                    Right = { Title = "Right", Callback = function() end }
+                    Title = nil,
+                    Buttons = {
+                        { Title = "Button 1", Callback = function() end },
+                        { Title = "Button 2", Callback = function() end }
+                    }
                 }, cfmb or {})
 
                 local Holder = Instance.new("Frame")
@@ -4981,17 +5066,48 @@ function Library:NewWindow(ConfigWindow)
                 Holder.Parent = SectionList
                 Holder.BackgroundTransparency = 1
                 Holder.BorderSizePixel = 0
-                Holder.Size = UDim2.new(1, 0, 0, 76)
+                Holder.Size = UDim2.new(1, 0, 0, 0)
+                Holder.AutomaticSize = Enum.AutomaticSize.Y
 
-                local function Build(Config, Position, Size, Primary)
+                local Rows = 0
+                if cfmb.Title and cfmb.Title ~= "" then
+                    local Label = Instance.new("TextLabel")
+                    Label.Parent = Holder
+                    Label.BackgroundTransparency = 1
+                    Label.Size = UDim2.new(1, 0, 0, 20)
+                    Label.Font = Enum.Font.GothamBold
+                    Label.Text = cfmb.Title
+                    Label.TextSize = 13
+                    Label.TextXAlignment = Enum.TextXAlignment.Left
+                    Library:Themed(Label, "TextColor3", "Text")
+                    Rows = 1
+                end
+
+                local Row = Instance.new("Frame")
+                Row.Parent = Holder
+                Row.BackgroundTransparency = 1
+                Row.BorderSizePixel = 0
+                Row.Position = UDim2.new(0, 0, 0, Rows == 1 and 26 or 0)
+                Row.Size = UDim2.new(1, 0, 0, 34)
+                Row.ClipsDescendants = true
+
+                local RowList = Instance.new("UIListLayout")
+                RowList.Parent = Row
+                RowList.FillDirection = Enum.FillDirection.Horizontal
+                RowList.SortOrder = Enum.SortOrder.LayoutOrder
+                RowList.Padding = UDim.new(0, 8)
+
+                local Count = math.max(1, #cfmb.Buttons)
+                for i, BtnCfg in ipairs(cfmb.Buttons) do
+                    local Primary = (i == 1)
                     local Button = Instance.new("TextButton")
-                    Button.Parent = Holder
+                    Button.Parent = Row
+                    Button.LayoutOrder = i
                     Button.BackgroundTransparency = Primary and 0.05 or 0.9
                     Button.BorderSizePixel = 0
-                    Button.Position = Position
-                    Button.Size = Size
+                    Button.Size = UDim2.new(1 / Count, -6, 1, 0)
                     Button.Font = Enum.Font.GothamBold
-                    Button.Text = Config.Title
+                    Button.Text = BtnCfg.Title or ("Button " .. i)
                     Button.TextSize = 12
                     Button.AutoButtonColor = false
                     Library:Corner(Button, 8)
@@ -5009,18 +5125,13 @@ function Library:NewWindow(ConfigWindow)
 
                     Button.MouseButton1Click:Connect(function()
                         Library:Flash(Button)
-                        if Config.Callback then
-                            Config.Callback()
+                        if BtnCfg.Callback then
+                            BtnCfg.Callback()
                         end
                     end)
 
-                    Register("Button", Config.Title)
-                    return Button
+                    Register("Button", BtnCfg.Title or ("Button " .. i), Row, Button)
                 end
-
-                Build(cfmb.Full, UDim2.new(0, 0, 0, 0), UDim2.new(1, 0, 0, 32), true)
-                Build(cfmb.Left, UDim2.new(0, 0, 0, 40), UDim2.new(0.5, -5, 0, 32), false)
-                Build(cfmb.Right, UDim2.new(0.5, 5, 0, 40), UDim2.new(0.5, -5, 0, 32), false)
 
                 return Holder
             end
@@ -5120,7 +5231,7 @@ function Library:NewWindow(ConfigWindow)
                     end
                 end)
 
-                Register("Codeblock", cfcode.Title)
+                Register("Codeblock", cfcode.Title, Code, Title_CD)
                 return { Frame = Code, Box = CodeBox }
             end
 
@@ -5153,7 +5264,6 @@ function Library:NewWindow(ConfigWindow)
                 PctP.TextXAlignment = Enum.TextXAlignment.Right
                 Library:Themed(PctP, "TextColor3", "TextDisabled")
                 Library:UpdateContent(ContentP, TitleP, RowP)
-                Register("Progress", cfg.Title)
                 local PF = { Value = cfg.Value }
                 function PF:Set(v)
                     v = math.clamp(tonumber(v) or 0, 0, cfg.Max)
@@ -5276,7 +5386,7 @@ function Library:NewWindow(ConfigWindow)
                         sd.v = n VbR.Text = tostring(n) FilR.Size = UDim2.new(n/255,0,1,0) UpdateRGB()
                     end)
                 end
-                Register("ColorpickerRGB", cfg.Title)
+                Register("ColorpickerRGB", cfg.Title, SecRGB, TRgb)
                 function CRGBFunc:Set(col, silent)
                     CRGBFunc.Value = col
                     PrevRGB.BackgroundColor3 = col
@@ -5349,7 +5459,7 @@ function Library:NewWindow(ConfigWindow)
                         cfg.Callback(res)
                     end)
                 end
-                Register("Grid", cfg.Title)
+                Register("Grid", cfg.Title, GHolder, GTitle)
                 return GF
             end
 
@@ -5404,7 +5514,7 @@ function Library:NewWindow(ConfigWindow)
                 end
                 if #cfg.Headers > 0 then MkRow(cfg.Headers, true, 0) end
                 for ri, row in ipairs(cfg.Rows) do MkRow(row, false, (#cfg.Headers > 0 and ri or ri-1)) end
-                Register("Table", cfg.Title)
+                Register("Table", cfg.Title, TH, nil)
                 return { Frame = TH }
             end
 
@@ -5439,7 +5549,7 @@ function Library:NewWindow(ConfigWindow)
                 IL.Image = cfg.Asset
                 IL.ScaleType = Enum.ScaleType.Crop
                 if cfg.Rounded then Library:Corner(IL, 7) end
-                Register("Image", cfg.Title)
+                Register("Image", cfg.Title, IH, nil)
                 return { Frame = IH, Image = IL }
             end
 
