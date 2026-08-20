@@ -95,8 +95,51 @@ Library.Themes = {
         Surface = Color3.fromRGB(0, 0, 0),
         SurfaceAlpha = 0.93,
         SurfaceHover = 0.87
+    },
+    Black = {
+        Main = Color3.fromRGB(0, 0, 0),
+        Accent = Color3.fromRGB(179, 0, 255),
+        Text = Color3.fromRGB(255, 255, 255),
+        TextDisabled = Color3.fromRGB(150, 150, 150),
+        Background = Color3.fromRGB(8, 8, 8),
+        Stroke = Color3.fromRGB(90, 90, 90),
+        Secondary = Color3.fromRGB(14, 14, 14),
+        Elevated = Color3.fromRGB(4, 4, 4),
+        Surface = Color3.fromRGB(255, 255, 255),
+        SurfaceAlpha = 0.965,
+        SurfaceHover = 0.92
     }
 }
+
+Library.ThemeOrder = { "Dark", "Black", "Light" }
+
+function Library:AddTheme(Name, Colors)
+    if type(Name) ~= "string" or type(Colors) ~= "table" then
+        return
+    end
+    local Merged = {}
+    for Key, Value in pairs(Library.Themes.Dark) do
+        Merged[Key] = Value
+    end
+    for Key, Value in pairs(Colors) do
+        Merged[Key] = Value
+    end
+    Library.Themes[Name] = Merged
+    if not table.find(Library.ThemeOrder, Name) then
+        table.insert(Library.ThemeOrder, Name)
+    end
+    return Merged
+end
+
+function Library:ApplyTheme(Name)
+    if not Library.Themes[Name] then
+        return false
+    end
+    Library.CurrentTheme = Name
+    Library.Theme = Library.Themes[Name]
+    Library:RefreshTheme(true)
+    return true
+end
 
 Library.Theme = Library.Themes.Dark
 Library.CurrentTheme = "Dark"
@@ -348,30 +391,6 @@ function Library:MakeDraggable(DragBar, Object, OnMoved)
             Input.Changed:Connect(function()
                 if Input.UserInputState == Enum.UserInputState.End then
                     Dragging = false
-                    -- Clamp window to screen bounds
-                    task.defer(function()
-                        local VP = workspace.CurrentCamera.ViewportSize
-                        local AbsPos = Object.AbsolutePosition
-                        local AbsSize = Object.AbsoluteSize
-                        local midX = AbsPos.X + AbsSize.X * 0.5
-                        local midY = AbsPos.Y + AbsSize.Y * 0.5
-                        local minX = math.min(AbsSize.X * 0.5 + 4, VP.X * 0.5)
-                        local maxX = math.max(VP.X - AbsSize.X * 0.5 - 4, minX)
-                        local minY = math.min(AbsSize.Y * 0.5 + 4, VP.Y * 0.5)
-                        local maxY = math.max(VP.Y - AbsSize.Y * 0.5 - 4, minY)
-                        local clampedX = math.clamp(midX, minX, maxX)
-                        local clampedY = math.clamp(midY, minY, maxY)
-                        if math.abs(clampedX - midX) > 2 or math.abs(clampedY - midY) > 2 then
-                            Library:Tween(Object, TweenInfo.new(0.22, Quart, Out), {
-                                Position = UDim2.new(
-                                    StartPosition.X.Scale,
-                                    Object.Position.X.Offset + (clampedX - midX),
-                                    StartPosition.Y.Scale,
-                                    Object.Position.Y.Offset + (clampedY - midY)
-                                )
-                            })
-                        end
-                    end)
                 end
             end)
         end
@@ -550,6 +569,7 @@ function Library:NewWindow(ConfigWindow)
     local TogglePlayerCard
 
     local IsMobile = UserInputService.TouchEnabled and not UserInputService.MouseEnabled
+    local WindowAPI
     -- Manual sizing only: ConfigWindow.Size is used exactly as given, with
     -- no automatic clamping to screen size and no runtime UIScale change.
 
@@ -647,18 +667,64 @@ function Library:NewWindow(ConfigWindow)
     LogoHub.Image = ConfigWindow.Logo
     LogoHub.ScaleType = Enum.ScaleType.Crop
 
+    -- Title + description + tags scroll horizontally as one centered
+    -- unit if they ever overflow the space between the logo and the
+    -- control icons; the control icons themselves are a sibling of this
+    -- scroll frame, so they never move or get clipped by it.
+    local HeaderScroll = Instance.new("ScrollingFrame")
+    HeaderScroll.Name = "HeaderScroll"
+    HeaderScroll.Parent = Top
+    HeaderScroll.BackgroundTransparency = 1
+    HeaderScroll.BorderSizePixel = 0
+    HeaderScroll.Position = UDim2.new(0, 54, 0, 2)
+    HeaderScroll.Size = UDim2.new(1, -212, 0, 48)
+    HeaderScroll.ScrollingDirection = Enum.ScrollingDirection.X
+    HeaderScroll.ScrollBarThickness = 2
+    HeaderScroll.CanvasSize = UDim2.new(0, 0, 0, 0)
+    HeaderScroll.ZIndex = 6
+    Library:Themed(HeaderScroll, "ScrollBarImageColor3", "Accent")
+
+    local HeaderContent = Instance.new("Frame")
+    HeaderContent.Name = "HeaderContent"
+    HeaderContent.Parent = HeaderScroll
+    HeaderContent.BackgroundTransparency = 1
+    HeaderContent.Position = UDim2.new(0, 0, 0, 0)
+    HeaderContent.Size = UDim2.new(0, 0, 1, 0)
+    HeaderContent.AutomaticSize = Enum.AutomaticSize.X
+
+    local HeaderContentList = Instance.new("UIListLayout")
+    HeaderContentList.Parent = HeaderContent
+    HeaderContentList.SortOrder = Enum.SortOrder.LayoutOrder
+    HeaderContentList.HorizontalAlignment = Enum.HorizontalAlignment.Center
+    HeaderContentList.Padding = UDim.new(0, 4)
+
+    local function RecalcHeaderScroll()
+        local ContentW = HeaderContentList.AbsoluteContentSize.X
+        local ViewportW = HeaderScroll.AbsoluteSize.X
+        if ContentW <= ViewportW then
+            HeaderContent.Position = UDim2.new(0, math.floor((ViewportW - ContentW) / 2), 0, 0)
+            HeaderScroll.CanvasSize = UDim2.new(0, 0, 0, 0)
+        else
+            HeaderContent.Position = UDim2.new(0, 0, 0, 0)
+            HeaderScroll.CanvasSize = UDim2.new(0, ContentW, 0, 0)
+        end
+    end
+    HeaderContentList:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(RecalcHeaderScroll)
+    HeaderScroll:GetPropertyChangedSignal("AbsoluteSize"):Connect(RecalcHeaderScroll)
+    task.defer(RecalcHeaderScroll)
+
     local NameHub = Instance.new("TextLabel")
     NameHub.Name = "NameHub"
-    NameHub.Parent = Top
+    NameHub.Parent = HeaderContent
+    NameHub.LayoutOrder = 1
     NameHub.BackgroundTransparency = 1
     NameHub.BorderSizePixel = 0
-    NameHub.Position = UDim2.new(0, 56, 0, 8)
-    NameHub.Size = UDim2.new(0, 150, 0, 18)
+    NameHub.AutomaticSize = Enum.AutomaticSize.X
+    NameHub.Size = UDim2.new(0, 0, 0, 18)
     NameHub.Font = Enum.Font.GothamBold
     NameHub.Text = ConfigWindow.Title
     NameHub.TextSize = 14
-    NameHub.TextXAlignment = Enum.TextXAlignment.Left
-    NameHub.TextTruncate = Enum.TextTruncate.AtEnd
+    NameHub.TextXAlignment = Enum.TextXAlignment.Center
     Library:Themed(NameHub, "TextColor3", "Text")
 
     -- Description + Tags share one auto-flowing row so tags always sit
@@ -666,11 +732,12 @@ function Library:NewWindow(ConfigWindow)
     -- never drift into a fixed pixel gap or crowd the control icons.
     local DescRow = Instance.new("Frame")
     DescRow.Name = "DescRow"
-    DescRow.Parent = Top
+    DescRow.Parent = HeaderContent
+    DescRow.LayoutOrder = 2
     DescRow.BackgroundTransparency = 1
-    DescRow.Position = UDim2.new(0, 56, 0, 28)
-    DescRow.Size = UDim2.new(1, -196, 0, 20)
-    DescRow.ClipsDescendants = true
+    DescRow.Position = UDim2.new(0, 0, 0, 0)
+    DescRow.Size = UDim2.new(0, 0, 0, 20)
+    DescRow.AutomaticSize = Enum.AutomaticSize.X
 
     local DescRowList = Instance.new("UIListLayout")
     DescRowList.Parent = DescRow
@@ -743,10 +810,14 @@ function Library:NewWindow(ConfigWindow)
         return Button, Icon
     end
 
-    local ThemeBtn = MakeControl("Theme", Library.DefaultIcons.Palette, 1)
-    local Minize = MakeControl("Minize", Library.DefaultIcons.Minimize, 2)
-    local Large = MakeControl("Large", Library.DefaultIcons.Maximize, 3)
-    local Close = MakeControl("Close", Library.DefaultIcons.Close, 4)
+    local ChangelogBtn = MakeControl("Changelog", "history", 1)
+    ChangelogBtn.MouseButton1Click:Connect(function()
+        WindowAPI:Changelog()
+    end)
+    local ThemeBtn = MakeControl("Theme", Library.DefaultIcons.Palette, 2)
+    local Minize = MakeControl("Minize", Library.DefaultIcons.Minimize, 3)
+    local Large = MakeControl("Large", Library.DefaultIcons.Maximize, 4)
+    local Close = MakeControl("Close", Library.DefaultIcons.Close, 5)
 
     local TabFrame = Instance.new("Frame")
     TabFrame.Name = "TabFrame"
@@ -1012,6 +1083,16 @@ function Library:NewWindow(ConfigWindow)
             ToggleAI()
         end
     end)
+    AIBtn.Icon.Image = "rbxassetid://73141560080227"
+    AIBtn.Icon.ImageColor3 = Color3.fromRGB(255, 255, 255)
+    AIBtn.Icon.Size = UDim2.new(0, 19, 0, 19)
+    Library:Corner(AIBtn.Icon, UDim.new(1, 0))
+    local AIBtnOriginalSetActive = AIBtn.SetActive
+    AIBtn.SetActive = function(self, State)
+        AIBtnOriginalSetActive(self, State)
+        AIBtn.Icon.Image = "rbxassetid://73141560080227"
+        AIBtn.Icon.ImageColor3 = Color3.fromRGB(255, 255, 255)
+    end
 
     local CardBtn = MakeBottomBtn("PlayerCard", "contact", 3, "Player card", function()
         if TogglePlayerCard then
@@ -1201,6 +1282,12 @@ function Library:NewWindow(ConfigWindow)
         if not DropShadowHolder.Visible then
             ToggleWindow(true)
         end
+        if Entry.Locked and Entry.IsUnlocked and not Entry.IsUnlocked() then
+            if Entry.RequestUnlock then
+                Entry.RequestUnlock()
+            end
+            return false
+        end
         Entry.Select()
         return true
     end
@@ -1251,15 +1338,6 @@ function Library:NewWindow(ConfigWindow)
         Library:Tween(DropShadowHolder, TweenInfo.new(0.38, Quart, Out), { Size = Target })
     end)
 
-    ThemeBtn.MouseButton1Click:Connect(function()
-        local NextTheme = Library.CurrentTheme == "Dark" and "Light" or "Dark"
-        Library.CurrentTheme = NextTheme
-        Library.Theme = Library.Themes[NextTheme]
-        Library.Theme.Accent = ConfigWindow.Color
-        Library:RefreshTheme(true)
-        Library:Flash(Main, Library.Theme.Accent)
-    end)
-
     local function ShowModal(BuildFn)
         DropdownZone.Visible = true
         DropdownZone.BackgroundTransparency = 1
@@ -1295,6 +1373,126 @@ function Library:NewWindow(ConfigWindow)
         BuildFn(Popup, ClosePopup)
         return Popup, ClosePopup
     end
+
+    local ThemeDropdownOpen = false
+    ThemeBtn.MouseButton1Click:Connect(function()
+        if ThemeDropdownOpen then
+            return
+        end
+        ThemeDropdownOpen = true
+
+        local Catcher = Instance.new("TextButton")
+        Catcher.Name = "ThemeCatcher"
+        Catcher.Parent = Main
+        Catcher.BackgroundTransparency = 1
+        Catcher.Size = UDim2.new(1, 0, 1, 0)
+        Catcher.Text = ""
+        Catcher.AutoButtonColor = false
+        Catcher.ZIndex = 24
+
+        local ThemeList = Instance.new("Frame")
+        ThemeList.Name = "ThemeList"
+        ThemeList.Parent = Main
+        ThemeList.AnchorPoint = Vector2.new(1, 0)
+        ThemeList.BorderSizePixel = 0
+        ThemeList.Position = UDim2.new(1, -12, 0, 44)
+        ThemeList.Size = UDim2.new(0, 150, 0, 0)
+        ThemeList.AutomaticSize = Enum.AutomaticSize.Y
+        ThemeList.ZIndex = 25
+        Library:Themed(ThemeList, "BackgroundColor3", "Elevated")
+        Library:Corner(ThemeList, 10)
+        Library:Stroke(ThemeList, Library.Theme.Stroke, 0.75, 1)
+        Library:Pop(ThemeList, 0.22, 0.9)
+
+        local ThemeListPad = Instance.new("UIPadding")
+        ThemeListPad.Parent = ThemeList
+        ThemeListPad.PaddingTop = UDim.new(0, 6)
+        ThemeListPad.PaddingBottom = UDim.new(0, 6)
+        ThemeListPad.PaddingLeft = UDim.new(0, 6)
+        ThemeListPad.PaddingRight = UDim.new(0, 6)
+
+        local ThemeListLayout = Instance.new("UIListLayout")
+        ThemeListLayout.Parent = ThemeList
+        ThemeListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+        ThemeListLayout.Padding = UDim.new(0, 3)
+
+        local function CloseThemeDropdown()
+            ThemeDropdownOpen = false
+            Catcher:Destroy()
+            ThemeList:Destroy()
+        end
+
+        Catcher.MouseButton1Click:Connect(CloseThemeDropdown)
+
+        for i, ThemeName in ipairs(Library.ThemeOrder) do
+            if Library.Themes[ThemeName] then
+                local Row = Instance.new("TextButton")
+                Row.Parent = ThemeList
+                Row.LayoutOrder = i
+                Row.BackgroundTransparency = Library.CurrentTheme == ThemeName and 0.85 or 1
+                Row.BorderSizePixel = 0
+                Row.Size = UDim2.new(1, 0, 0, 34)
+                Row.Text = ""
+                Row.AutoButtonColor = false
+                Row.ZIndex = 26
+                Library:Themed(Row, "BackgroundColor3", "Accent")
+                Library:Corner(Row, 7)
+
+                local Swatch = Instance.new("Frame")
+                Swatch.Parent = Row
+                Swatch.AnchorPoint = Vector2.new(0, 0.5)
+                Swatch.BackgroundColor3 = Library.Themes[ThemeName].Main
+                Swatch.BorderSizePixel = 0
+                Swatch.Position = UDim2.new(0, 10, 0.5, 0)
+                Swatch.Size = UDim2.new(0, 18, 0, 18)
+                Swatch.ZIndex = 27
+                Library:Corner(Swatch, 6)
+                Library:Stroke(Swatch, Library.Theme.Stroke, 0.5, 1)
+
+                local RowLabel = Instance.new("TextLabel")
+                RowLabel.Parent = Row
+                RowLabel.BackgroundTransparency = 1
+                RowLabel.Position = UDim2.new(0, 38, 0, 0)
+                RowLabel.Size = UDim2.new(1, -70, 1, 0)
+                RowLabel.Font = Library.CurrentTheme == ThemeName and Enum.Font.GothamBold or Enum.Font.Gotham
+                RowLabel.Text = ThemeName
+                RowLabel.TextSize = 13
+                RowLabel.TextXAlignment = Enum.TextXAlignment.Left
+                RowLabel.ZIndex = 27
+                Library:Themed(RowLabel, "TextColor3", "Text")
+
+                if Library.CurrentTheme == ThemeName then
+                    local Check = Instance.new("ImageLabel")
+                    Check.Parent = Row
+                    Check.AnchorPoint = Vector2.new(1, 0.5)
+                    Check.BackgroundTransparency = 1
+                    Check.Position = UDim2.new(1, -10, 0.5, 0)
+                    Check.Size = UDim2.new(0, 14, 0, 14)
+                    Check.ZIndex = 27
+                    Library:SetIcon(Check, "check", Library.Theme.Accent)
+                end
+
+                Row.MouseEnter:Connect(function()
+                    if Library.CurrentTheme ~= ThemeName then
+                        Library:TweenInstance(Row, 0.12, "BackgroundTransparency", 0.92)
+                    end
+                end)
+                Row.MouseLeave:Connect(function()
+                    if Library.CurrentTheme ~= ThemeName then
+                        Library:TweenInstance(Row, 0.12, "BackgroundTransparency", 1)
+                    end
+                end)
+
+                Row.MouseButton1Click:Connect(function()
+                    Library:ApplyTheme(ThemeName)
+                    Library.Theme.Accent = ConfigWindow.Color
+                    Library:RefreshTheme(true)
+                    Library:Flash(Main, Library.Theme.Accent)
+                    CloseThemeDropdown()
+                end)
+            end
+        end
+    end)
 
     Close.MouseButton1Click:Connect(function()
         ShowModal(function(Popup, ClosePopup)
@@ -1424,8 +1622,9 @@ function Library:NewWindow(ConfigWindow)
     AIBadgeIcon.AnchorPoint = Vector2.new(0.5, 0.5)
     AIBadgeIcon.BackgroundTransparency = 1
     AIBadgeIcon.Position = UDim2.new(0.5, 0, 0.5, 0)
-    AIBadgeIcon.Size = UDim2.new(0, 20, 0, 20)
-    Library:SetIcon(AIBadgeIcon, Library.DefaultIcons.Bot, Color3.fromRGB(255, 255, 255))
+    AIBadgeIcon.Size = UDim2.new(1, 0, 1, 0)
+    AIBadgeIcon.Image = "rbxassetid://73141560080227"
+    Library:Corner(AIBadgeIcon, 11)
 
     local AITitle = Instance.new("TextLabel")
     AITitle.Parent = AIHeader
@@ -1676,6 +1875,8 @@ function Library:NewWindow(ConfigWindow)
     local function AddBubble(Role, Text, Refs)
         MessageOrder = MessageOrder + 1
 
+        local IsUser = Role == "user"
+
         local Holder = Instance.new("Frame")
         Holder.Name = "Message"
         Holder.Parent = AIMessages
@@ -1685,143 +1886,82 @@ function Library:NewWindow(ConfigWindow)
         Holder.Size = UDim2.new(1, 0, 0, 0)
         Holder.LayoutOrder = MessageOrder
 
-        local HolderList = Instance.new("UIListLayout")
-        HolderList.Parent = Holder
-        HolderList.SortOrder = Enum.SortOrder.LayoutOrder
-        HolderList.Padding = UDim.new(0, 6)
-        HolderList.HorizontalAlignment = Role == "user" and Enum.HorizontalAlignment.Right or Enum.HorizontalAlignment.Left
+        -- Discord-style: avatar pinned top-left, name + message stacked
+        -- in a column to its right. Same layout for both roles.
+        local AvatarHolder = Instance.new("Frame")
+        AvatarHolder.Parent = Holder
+        AvatarHolder.BackgroundTransparency = 0
+        AvatarHolder.BorderSizePixel = 0
+        AvatarHolder.Position = UDim2.new(0, 0, 0, 2)
+        AvatarHolder.Size = UDim2.new(0, 32, 0, 32)
+        Library:Themed(AvatarHolder, "BackgroundColor3", "Accent")
+        Library:Corner(AvatarHolder, UDim.new(1, 0))
 
-        -- Avatar row
-        local AvatarRow = Instance.new("Frame")
-        AvatarRow.Parent = Holder
-        AvatarRow.BackgroundTransparency = 1
-        AvatarRow.BorderSizePixel = 0
-        AvatarRow.Size = UDim2.new(1, 0, 0, 26)
-        AvatarRow.LayoutOrder = 0
-
-        local AvatarRowList = Instance.new("UIListLayout")
-        AvatarRowList.Parent = AvatarRow
-        AvatarRowList.FillDirection = Enum.FillDirection.Horizontal
-        AvatarRowList.VerticalAlignment = Enum.VerticalAlignment.Center
-        AvatarRowList.HorizontalAlignment = Role == "user" and Enum.HorizontalAlignment.Right or Enum.HorizontalAlignment.Left
-        AvatarRowList.SortOrder = Enum.SortOrder.LayoutOrder
-        AvatarRowList.Padding = UDim.new(0, 6)
-
-        if Role == "user" then
-            -- Player name label
-            local NameLbl = Instance.new("TextLabel")
-            NameLbl.Parent = AvatarRow
-            NameLbl.BackgroundTransparency = 1
-            NameLbl.Size = UDim2.new(0, 0, 1, 0)
-            NameLbl.AutomaticSize = Enum.AutomaticSize.X
-            NameLbl.Font = Enum.Font.GothamBold
-            NameLbl.Text = Player.DisplayName
-            NameLbl.TextSize = 11
-            NameLbl.LayoutOrder = 1
-            Library:Themed(NameLbl, "TextColor3", "TextDisabled")
-
-            -- Player avatar
-            local AvHolder = Instance.new("Frame")
-            AvHolder.Parent = AvatarRow
-            AvHolder.BackgroundTransparency = 0
-            AvHolder.BorderSizePixel = 0
-            AvHolder.Size = UDim2.new(0, 22, 0, 22)
-            AvHolder.LayoutOrder = 2
-            Library:Themed(AvHolder, "BackgroundColor3", "Accent")
-            Library:Corner(AvHolder, UDim.new(1,0))
-
-            local Av = Instance.new("ImageLabel")
-            Av.Parent = AvHolder
-            Av.AnchorPoint = Vector2.new(0.5, 0.5)
-            Av.BackgroundTransparency = 1
-            Av.Position = UDim2.new(0.5, 0, 0.5, 0)
-            Av.Size = UDim2.new(1, -2, 1, -2)
-            Av.Image = "rbxthumb://type=AvatarHeadShot&id=" .. tostring(Player.UserId) .. "&w=48&h=48"
-            Library:Corner(Av, UDim.new(1, 0))
-        else
-            -- Bot icon badge
-            local BotHolder = Instance.new("Frame")
-            BotHolder.Parent = AvatarRow
-            BotHolder.BackgroundTransparency = 0.1
-            BotHolder.BorderSizePixel = 0
-            BotHolder.Size = UDim2.new(0, 22, 0, 22)
-            BotHolder.LayoutOrder = 1
-            Library:Themed(BotHolder, "BackgroundColor3", "Accent")
-            Library:Corner(BotHolder, UDim.new(1, 0))
-
-            local BotIcon = Instance.new("ImageLabel")
-            BotIcon.Parent = BotHolder
-            BotIcon.AnchorPoint = Vector2.new(0.5, 0.5)
-            BotIcon.BackgroundTransparency = 1
-            BotIcon.Position = UDim2.new(0.5, 0, 0.5, 0)
-            BotIcon.Size = UDim2.new(0, 13, 0, 13)
-            Library:SetIcon(BotIcon, Library.DefaultIcons.Bot, Color3.fromRGB(255, 255, 255))
-
-            -- Bot name label
-            local BotName = Instance.new("TextLabel")
-            BotName.Parent = AvatarRow
-            BotName.BackgroundTransparency = 1
-            BotName.Size = UDim2.new(0, 0, 1, 0)
-            BotName.AutomaticSize = Enum.AutomaticSize.X
-            BotName.Font = Enum.Font.GothamBold
-            BotName.Text = "Groq AI"
-            BotName.TextSize = 11
-            BotName.LayoutOrder = 2
-            Library:Themed(BotName, "TextColor3", "TextDisabled")
+        local Avatar = Instance.new("ImageLabel")
+        Avatar.Parent = AvatarHolder
+        Avatar.AnchorPoint = Vector2.new(0.5, 0.5)
+        Avatar.BackgroundTransparency = 1
+        Avatar.Position = UDim2.new(0.5, 0, 0.5, 0)
+        Avatar.Size = IsUser and UDim2.new(1, -2, 1, -2) or UDim2.new(1, -8, 1, -8)
+        Avatar.Image = IsUser
+            and ("rbxthumb://type=AvatarHeadShot&id=" .. tostring(Player.UserId) .. "&w=100&h=100")
+            or "rbxassetid://73141560080227"
+        if not IsUser then
+            Avatar.ImageColor3 = Color3.fromRGB(255, 255, 255)
         end
+        Library:Corner(Avatar, UDim.new(1, 0))
 
-        local Bubble = Instance.new("Frame")
-        Bubble.Name = "Bubble"
-        Bubble.Parent = Holder
-        Bubble.AutomaticSize = Enum.AutomaticSize.Y
-        Bubble.BorderSizePixel = 0
-        Bubble.Size = UDim2.new(Role == "user" and 0.80 or 0.90, 0, 0, 0)
-        Bubble.LayoutOrder = 1
-        Library:Corner(Bubble, 12)
+        local ContentCol = Instance.new("Frame")
+        ContentCol.Parent = Holder
+        ContentCol.BackgroundTransparency = 1
+        ContentCol.Position = UDim2.new(0, 42, 0, 0)
+        ContentCol.Size = UDim2.new(1, -42, 0, 0)
+        ContentCol.AutomaticSize = Enum.AutomaticSize.Y
 
-        if Role == "user" then
-            Bubble.BackgroundTransparency = 0.12
-            Library:Themed(Bubble, "BackgroundColor3", "Accent")
+        local ContentList = Instance.new("UIListLayout")
+        ContentList.Parent = ContentCol
+        ContentList.SortOrder = Enum.SortOrder.LayoutOrder
+        ContentList.Padding = UDim.new(0, 3)
+
+        local NameLbl = Instance.new("TextLabel")
+        NameLbl.Parent = ContentCol
+        NameLbl.LayoutOrder = 0
+        NameLbl.BackgroundTransparency = 1
+        NameLbl.Size = UDim2.new(1, 0, 0, 16)
+        NameLbl.Font = Enum.Font.GothamBold
+        NameLbl.Text = IsUser and Player.DisplayName or "Groq AI"
+        NameLbl.TextSize = 12
+        NameLbl.TextXAlignment = Enum.TextXAlignment.Left
+        if IsUser then
+            Library:Themed(NameLbl, "TextColor3", "Text")
         else
-            Bubble.BackgroundTransparency = 0.92
-            Library:Themed(Bubble, "BackgroundColor3", "Surface")
-            Library:Stroke(Bubble, Library.Theme.Stroke, 0.88, 1)
+            Library:Themed(NameLbl, "TextColor3", "Accent")
         end
-
-        local BubblePad = Instance.new("UIPadding")
-        BubblePad.Parent = Bubble
-        BubblePad.PaddingTop = UDim.new(0, 9)
-        BubblePad.PaddingBottom = UDim.new(0, 9)
-        BubblePad.PaddingLeft = UDim.new(0, 12)
-        BubblePad.PaddingRight = UDim.new(0, 12)
 
         local Label = Instance.new("TextLabel")
         Label.Name = "Text"
-        Label.Parent = Bubble
+        Label.Parent = ContentCol
+        Label.LayoutOrder = 1
         Label.AutomaticSize = Enum.AutomaticSize.Y
         Label.BackgroundTransparency = 1
         Label.Size = UDim2.new(1, 0, 0, 0)
         Label.Font = Enum.Font.GothamMedium
         Label.Text = Text
-        Label.TextSize = 12
+        Label.TextSize = 13
         Label.TextWrapped = true
         Label.TextXAlignment = Enum.TextXAlignment.Left
         Label.TextYAlignment = Enum.TextYAlignment.Top
-        Label.LineHeight = 1.16
-        if Role == "user" then
-            Label.TextColor3 = Color3.fromRGB(255, 255, 255)
-        else
-            Library:Themed(Label, "TextColor3", "Text")
-        end
+        Label.LineHeight = 1.22
+        Library:Themed(Label, "TextColor3", "Text")
 
         if Refs and #Refs > 0 then
             local ChipRow = Instance.new("Frame")
             ChipRow.Name = "Refs"
-            ChipRow.Parent = Holder
+            ChipRow.Parent = ContentCol
+            ChipRow.LayoutOrder = 2
             ChipRow.BackgroundTransparency = 1
             ChipRow.BorderSizePixel = 0
             ChipRow.Size = UDim2.new(1, 0, 0, 26)
-            ChipRow.LayoutOrder = 2
 
             local ChipList = Instance.new("UIListLayout")
             ChipList.Parent = ChipRow
@@ -1937,6 +2077,8 @@ function Library:NewWindow(ConfigWindow)
         table.insert(Parts, "Reply in the language the user writes in. Stay under 90 words. No markdown headings, no tables, no code fences unless code was asked for.")
         table.insert(Parts, "When you point the user to a place in the interface, write the reference exactly as [[tab:Name]] where Name is copied from the tab list. Keep it inline in the sentence, use at most three references, and only names that exist.")
         table.insert(Parts, "If a feature is not in the map below, say it does not exist here instead of inventing it.")
+        table.insert(Parts, "Never write or complete Lua code, function bodies, component/UI snippets, or scripts of any kind, even if asked directly or told it is for this same hub. Politely decline and redirect to the relevant tab instead.")
+        table.insert(Parts, "Locked tabs still require their password even if you mention them by name -- clicking your reference only opens the password prompt, it never skips it.")
         table.insert(Parts, "Interface map:")
         table.insert(Parts, BuildInterfaceMap())
 
@@ -2083,6 +2225,10 @@ function Library:NewWindow(ConfigWindow)
             end
 
             table.insert(ChatHistory, { role = "assistant", content = Content })
+            if string.find(Content, "```") or string.find(Content, "function%s*%(") or string.find(Content, "function%s+[%w_:%.]+%(") then
+                Content = "I can't share code or component snippets here -- ask me which tab has what you need and I'll point you there."
+                ChatHistory[#ChatHistory].content = Content
+            end
             local Clean, Refs = ExtractRefs(Content)
             AddBubble("assistant", Clean, Refs)
         end)
@@ -2679,6 +2825,14 @@ function Library:NewWindow(ConfigWindow)
     local ExecutorStat = MakeStat(5, Library.DefaultIcons.Cpu, "EXECUTOR", ExecutorName)
     local PlaceStat = MakeStat(6, Library.DefaultIcons.Pad, "PLACE ID", tostring(game.PlaceId))
 
+    local FooterDivider = Instance.new("Frame")
+    FooterDivider.Parent = StatsStack
+    FooterDivider.LayoutOrder = 3
+    FooterDivider.BorderSizePixel = 0
+    FooterDivider.Size = UDim2.new(1, 0, 0, 1)
+    FooterDivider.ZIndex = 112
+    Library:FadeLine(FooterDivider, Library.Theme.Accent, true)
+
     local FooterRow = Instance.new("Frame")
     FooterRow.Name = "FooterRow"
     FooterRow.Parent = StatsStack
@@ -3107,6 +3261,7 @@ function Library:NewWindow(ConfigWindow)
             end,
             SetSelected = SetSelectedVisual
         })
+        local RegEntry = TabRegistry[#TabRegistry]
 
         if AllLayouts == 0 and Unlocked then
             SetSelectedVisual(true)
@@ -3320,6 +3475,10 @@ function Library:NewWindow(ConfigWindow)
                 end)
             end)
         end
+
+        RegEntry.Locked = Locked
+        RegEntry.IsUnlocked = function() return Unlocked end
+        RegEntry.RequestUnlock = ShowLockPopup
 
         Click_Tab_2.Activated:Connect(function()
             if Dragging or ReorderMode then
@@ -4303,7 +4462,7 @@ function Library:NewWindow(ConfigWindow)
                         SVDark.Size = UDim2.new(1, 0, 1, 0)
                         SVDark.ZIndex = 27
                         Library:Corner(SVDark, 8)
-                        Library:Gradient(SVDark, ColorSequence.new(Color3.fromRGB(0, 0, 0), Color3.fromRGB(0, 0, 0)), 270, NumberSequence.new({
+                        Library:Gradient(SVDark, ColorSequence.new(Color3.fromRGB(0, 0, 0), Color3.fromRGB(0, 0, 0)), 90, NumberSequence.new({
                             NumberSequenceKeypoint.new(0, 1),
                             NumberSequenceKeypoint.new(1, 0)
                         }))
@@ -5392,7 +5551,7 @@ function Library:NewWindow(ConfigWindow)
         return TabFunc
     end
 
-    local WindowAPI = {}
+    WindowAPI = {}
 
     function WindowAPI:Section(cfg)
         if type(cfg) == "string" then
@@ -5574,7 +5733,7 @@ function Library:NewWindow(ConfigWindow)
             Icon = nil
         }, cfg or {})
 
-        local DescRow = Top:FindFirstChild("DescRow")
+        local DescRow = Top:FindFirstChild("HeaderScroll") and Top.HeaderScroll:FindFirstChild("HeaderContent") and Top.HeaderScroll.HeaderContent:FindFirstChild("DescRow")
         local TagHolder = DescRow and DescRow:FindFirstChild("TagHolder")
         if not TagHolder then
             TagHolder = Instance.new("Frame")
@@ -5777,6 +5936,136 @@ function Library:NewWindow(ConfigWindow)
 
     function WindowAPI:Popup(cfg)
         return WindowAPI:Dialog(cfg)
+    end
+
+    function WindowAPI:Changelog(cfg)
+        cfg = Library:MakeConfig({
+            Title = "Changelog",
+            Entries = ConfigWindow.Changelog or {
+                { Version = ConfigWindow.Version or "v1.0", Notes = { "Initial release." } },
+            },
+        }, cfg or {})
+
+        ShowModal(function(Popup, ClosePopup)
+            Popup.Size = UDim2.new(0, 360, 0, 320)
+
+            local Icon = Instance.new("ImageLabel")
+            Icon.Parent = Popup
+            Icon.BackgroundTransparency = 1
+            Icon.Position = UDim2.new(0, 18, 0, 16)
+            Icon.Size = UDim2.new(0, 20, 0, 20)
+            Icon.ZIndex = 26
+            Library:SetIcon(Icon, "history", Library.Theme.Accent)
+
+            local Title = Instance.new("TextLabel")
+            Title.Parent = Popup
+            Title.BackgroundTransparency = 1
+            Title.Position = UDim2.new(0, 48, 0, 15)
+            Title.Size = UDim2.new(1, -100, 0, 22)
+            Title.Font = Enum.Font.GothamBold
+            Title.Text = cfg.Title
+            Title.TextSize = 15
+            Title.TextXAlignment = Enum.TextXAlignment.Left
+            Title.ZIndex = 26
+            Library:Themed(Title, "TextColor3", "Text")
+
+            local CloseBtn = Instance.new("TextButton")
+            CloseBtn.Parent = Popup
+            CloseBtn.AnchorPoint = Vector2.new(1, 0)
+            CloseBtn.BackgroundTransparency = 0.9
+            CloseBtn.BorderSizePixel = 0
+            CloseBtn.Position = UDim2.new(1, -14, 0, 14)
+            CloseBtn.Size = UDim2.new(0, 26, 0, 26)
+            CloseBtn.Text = ""
+            CloseBtn.AutoButtonColor = false
+            CloseBtn.ZIndex = 26
+            Library:Themed(CloseBtn, "BackgroundColor3", "Surface")
+            Library:Corner(CloseBtn, 8)
+            local CloseIcon = Instance.new("ImageLabel")
+            CloseIcon.Parent = CloseBtn
+            CloseIcon.AnchorPoint = Vector2.new(0.5, 0.5)
+            CloseIcon.BackgroundTransparency = 1
+            CloseIcon.Position = UDim2.new(0.5, 0, 0.5, 0)
+            CloseIcon.Size = UDim2.new(0, 12, 0, 12)
+            CloseIcon.ZIndex = 27
+            Library:SetIcon(CloseIcon, Library.DefaultIcons.Close, Library.Theme.Text)
+            CloseBtn.MouseButton1Click:Connect(ClosePopup)
+
+            local Divider = Instance.new("Frame")
+            Divider.Parent = Popup
+            Divider.BorderSizePixel = 0
+            Divider.Position = UDim2.new(0, 18, 0, 48)
+            Divider.Size = UDim2.new(1, -36, 0, 1)
+            Divider.ZIndex = 26
+            Library:FadeLine(Divider, Library.Theme.Accent, true)
+
+            local Scroll = Instance.new("ScrollingFrame")
+            Scroll.Parent = Popup
+            Scroll.BackgroundTransparency = 1
+            Scroll.BorderSizePixel = 0
+            Scroll.Position = UDim2.new(0, 18, 0, 58)
+            Scroll.Size = UDim2.new(1, -36, 1, -66)
+            Scroll.ScrollBarThickness = 3
+            Scroll.CanvasSize = UDim2.new(0, 0, 0, 0)
+            Scroll.ZIndex = 26
+            Library:Themed(Scroll, "ScrollBarImageColor3", "Accent")
+
+            local ScrollList = Instance.new("UIListLayout")
+            ScrollList.Parent = Scroll
+            ScrollList.SortOrder = Enum.SortOrder.LayoutOrder
+            ScrollList.Padding = UDim.new(0, 14)
+            Library:UpdateScrolling(Scroll, ScrollList)
+
+            for i, Entry in ipairs(cfg.Entries) do
+                local Block = Instance.new("Frame")
+                Block.Parent = Scroll
+                Block.LayoutOrder = i
+                Block.BackgroundTransparency = 1
+                Block.Size = UDim2.new(1, 0, 0, 0)
+                Block.AutomaticSize = Enum.AutomaticSize.Y
+                Block.ZIndex = 26
+
+                local VerLabel = Instance.new("TextLabel")
+                VerLabel.Parent = Block
+                VerLabel.BackgroundTransparency = 1
+                VerLabel.Size = UDim2.new(1, 0, 0, 18)
+                VerLabel.Font = Enum.Font.GothamBold
+                VerLabel.Text = Entry.Version or "Update"
+                VerLabel.TextSize = 13
+                VerLabel.TextXAlignment = Enum.TextXAlignment.Left
+                VerLabel.ZIndex = 27
+                Library:Themed(VerLabel, "TextColor3", "Accent")
+
+                local NotesHolder = Instance.new("Frame")
+                NotesHolder.Parent = Block
+                NotesHolder.BackgroundTransparency = 1
+                NotesHolder.Position = UDim2.new(0, 0, 0, 20)
+                NotesHolder.Size = UDim2.new(1, 0, 0, 0)
+                NotesHolder.AutomaticSize = Enum.AutomaticSize.Y
+                NotesHolder.ZIndex = 27
+
+                local NotesList = Instance.new("UIListLayout")
+                NotesList.Parent = NotesHolder
+                NotesList.SortOrder = Enum.SortOrder.LayoutOrder
+                NotesList.Padding = UDim.new(0, 4)
+
+                for j, Note in ipairs(Entry.Notes or {}) do
+                    local NoteLbl = Instance.new("TextLabel")
+                    NoteLbl.Parent = NotesHolder
+                    NoteLbl.LayoutOrder = j
+                    NoteLbl.BackgroundTransparency = 1
+                    NoteLbl.Size = UDim2.new(1, 0, 0, 0)
+                    NoteLbl.AutomaticSize = Enum.AutomaticSize.Y
+                    NoteLbl.Font = Enum.Font.Gotham
+                    NoteLbl.Text = "•  " .. Note
+                    NoteLbl.TextSize = 12
+                    NoteLbl.TextWrapped = true
+                    NoteLbl.TextXAlignment = Enum.TextXAlignment.Left
+                    NoteLbl.ZIndex = 28
+                    Library:Themed(NoteLbl, "TextColor3", "TextDisabled")
+                end
+            end
+        end)
     end
 
     Library.ActiveNotifications = Library.ActiveNotifications or {}
