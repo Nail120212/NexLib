@@ -252,138 +252,138 @@ Library.Signal = Signal
 
 Library.Themes = {
     Dark = {
-        Main = Color3.fromRGB(13, 13, 17),
-        Sidebar = Color3.fromRGB(17, 17, 22),
-        Card = Color3.fromRGB(22, 22, 28),
-        Row = Color3.fromRGB(28, 28, 35),
-        Inset = Color3.fromRGB(11, 11, 15),
-        Elevated = Color3.fromRGB(19, 19, 25),
+        Main = Color3.fromRGB(11, 11, 14),
+        Sidebar = Color3.fromRGB(255, 255, 255),
+        Card = Color3.fromRGB(255, 255, 255),
+        Row = Color3.fromRGB(255, 255, 255),
+        Inset = Color3.fromRGB(22, 22, 27),
+        Elevated = Color3.fromRGB(16, 16, 20),
         Accent = Color3.fromRGB(179, 0, 255),
         AccentText = Color3.fromRGB(255, 255, 255),
-        Text = Color3.fromRGB(243, 243, 248),
-        TextDim = Color3.fromRGB(168, 168, 184),
-        TextDisabled = Color3.fromRGB(104, 104, 120),
-        Stroke = Color3.fromRGB(255, 255, 255),
-        StrokeSoft = Color3.fromRGB(255, 255, 255),
+        Text = Color3.fromRGB(255, 255, 255),
+        TextDim = Color3.fromRGB(138, 138, 150),
+        TextDisabled = Color3.fromRGB(138, 138, 150),
+        Stroke = Color3.fromRGB(120, 120, 138),
+        StrokeSoft = Color3.fromRGB(120, 120, 138),
         Sheen = Color3.fromRGB(255, 255, 255),
         Shadow = Color3.fromRGB(0, 0, 0),
-        Success = Color3.fromRGB(74, 222, 128),
-        Warn = Color3.fromRGB(250, 204, 21),
-        Error = Color3.fromRGB(248, 113, 113),
-        Info = Color3.fromRGB(96, 165, 250),
-        WindowAlpha = 0.03,
-        SidebarAlpha = 0,
-        CardAlpha = 0,
-        RowAlpha = 0,
-        RowHoverAlpha = 0,
+        Success = Color3.fromRGB(80, 225, 140),
+        Warn = Color3.fromRGB(255, 200, 90),
+        Error = Color3.fromRGB(255, 88, 88),
+        Info = Color3.fromRGB(120, 180, 255),
+        WindowAlpha = 0.07,
+        SidebarAlpha = 0.97,
+        CardAlpha = 0.97,
+        RowAlpha = 0.95,
+        RowHoverAlpha = 0.9,
         InsetAlpha = 0,
         ElevatedAlpha = 0,
-        StrokeAlpha = 0.88,
-        StrokeSoftAlpha = 0.94,
-        SheenAlpha = 0.985,
-        Radius = 12,
+        StrokeAlpha = 0.92,
+        StrokeSoftAlpha = 0.93,
+        SheenAlpha = 1,
+        Radius = 14,
         Blur = 0,
         Glass = false
     },
     Black = {
         Main = Color3.fromRGB(0, 0, 0),
-        Sidebar = Color3.fromRGB(5, 5, 5),
-        Card = Color3.fromRGB(10, 10, 10),
-        Row = Color3.fromRGB(16, 16, 16),
-        Inset = Color3.fromRGB(0, 0, 0),
-        Elevated = Color3.fromRGB(7, 7, 7),
+        Sidebar = Color3.fromRGB(255, 255, 255),
+        Card = Color3.fromRGB(255, 255, 255),
+        Row = Color3.fromRGB(255, 255, 255),
+        Inset = Color3.fromRGB(8, 8, 8),
+        Elevated = Color3.fromRGB(4, 4, 4),
         Accent = Color3.fromRGB(179, 0, 255),
         AccentText = Color3.fromRGB(255, 255, 255),
         Text = Color3.fromRGB(255, 255, 255),
-        TextDim = Color3.fromRGB(158, 158, 158),
-        TextDisabled = Color3.fromRGB(96, 96, 96),
-        Stroke = Color3.fromRGB(255, 255, 255),
-        StrokeSoft = Color3.fromRGB(255, 255, 255),
+        TextDim = Color3.fromRGB(150, 150, 150),
+        TextDisabled = Color3.fromRGB(150, 150, 150),
+        Stroke = Color3.fromRGB(90, 90, 90),
+        StrokeSoft = Color3.fromRGB(90, 90, 90),
         Sheen = Color3.fromRGB(255, 255, 255),
         Shadow = Color3.fromRGB(0, 0, 0),
-        Success = Color3.fromRGB(64, 214, 118),
-        Warn = Color3.fromRGB(250, 204, 21),
-        Error = Color3.fromRGB(255, 96, 96),
-        Info = Color3.fromRGB(96, 165, 250),
-        WindowAlpha = 0.02,
-        SidebarAlpha = 0,
-        CardAlpha = 0,
-        RowAlpha = 0,
-        RowHoverAlpha = 0,
+        Success = Color3.fromRGB(80, 225, 140),
+        Warn = Color3.fromRGB(255, 200, 90),
+        Error = Color3.fromRGB(255, 88, 88),
+        Info = Color3.fromRGB(120, 180, 255),
+        WindowAlpha = 0.07,
+        SidebarAlpha = 0.975,
+        CardAlpha = 0.975,
+        RowAlpha = 0.965,
+        RowHoverAlpha = 0.92,
         InsetAlpha = 0,
         ElevatedAlpha = 0,
-        StrokeAlpha = 0.9,
-        StrokeSoftAlpha = 0.95,
-        SheenAlpha = 0.99,
-        Radius = 12,
+        StrokeAlpha = 0.92,
+        StrokeSoftAlpha = 0.93,
+        SheenAlpha = 1,
+        Radius = 14,
         Blur = 0,
         Glass = false
     },
     Light = {
-        Main = Color3.fromRGB(240, 241, 246),
-        Sidebar = Color3.fromRGB(247, 248, 252),
-        Card = Color3.fromRGB(255, 255, 255),
-        Row = Color3.fromRGB(249, 250, 253),
-        Inset = Color3.fromRGB(235, 237, 244),
+        Main = Color3.fromRGB(243, 243, 248),
+        Sidebar = Color3.fromRGB(0, 0, 0),
+        Card = Color3.fromRGB(0, 0, 0),
+        Row = Color3.fromRGB(0, 0, 0),
+        Inset = Color3.fromRGB(226, 226, 236),
         Elevated = Color3.fromRGB(255, 255, 255),
-        Accent = Color3.fromRGB(150, 0, 224),
+        Accent = Color3.fromRGB(179, 0, 255),
         AccentText = Color3.fromRGB(255, 255, 255),
-        Text = Color3.fromRGB(22, 22, 30),
-        TextDim = Color3.fromRGB(92, 92, 108),
-        TextDisabled = Color3.fromRGB(148, 148, 164),
-        Stroke = Color3.fromRGB(24, 24, 40),
-        StrokeSoft = Color3.fromRGB(24, 24, 40),
+        Text = Color3.fromRGB(18, 18, 24),
+        TextDim = Color3.fromRGB(108, 108, 122),
+        TextDisabled = Color3.fromRGB(108, 108, 122),
+        Stroke = Color3.fromRGB(158, 158, 176),
+        StrokeSoft = Color3.fromRGB(158, 158, 176),
         Sheen = Color3.fromRGB(255, 255, 255),
         Shadow = Color3.fromRGB(38, 38, 60),
         Success = Color3.fromRGB(22, 163, 74),
         Warn = Color3.fromRGB(202, 138, 4),
         Error = Color3.fromRGB(220, 38, 38),
         Info = Color3.fromRGB(37, 99, 235),
-        WindowAlpha = 0.02,
-        SidebarAlpha = 0,
-        CardAlpha = 0,
-        RowAlpha = 0,
-        RowHoverAlpha = 0,
+        WindowAlpha = 0.07,
+        SidebarAlpha = 0.95,
+        CardAlpha = 0.95,
+        RowAlpha = 0.93,
+        RowHoverAlpha = 0.87,
         InsetAlpha = 0,
         ElevatedAlpha = 0,
-        StrokeAlpha = 0.9,
-        StrokeSoftAlpha = 0.95,
-        SheenAlpha = 0.97,
-        Radius = 12,
+        StrokeAlpha = 0.88,
+        StrokeSoftAlpha = 0.9,
+        SheenAlpha = 1,
+        Radius = 14,
         Blur = 0,
         Glass = false
     },
     ["Liquid Glass"] = {
-        Main = Color3.fromRGB(16, 16, 26),
+        Main = Color3.fromRGB(14, 14, 22),
         Sidebar = Color3.fromRGB(255, 255, 255),
         Card = Color3.fromRGB(255, 255, 255),
         Row = Color3.fromRGB(255, 255, 255),
-        Inset = Color3.fromRGB(0, 0, 8),
-        Elevated = Color3.fromRGB(18, 18, 30),
+        Inset = Color3.fromRGB(10, 10, 18),
+        Elevated = Color3.fromRGB(16, 16, 26),
         Accent = Color3.fromRGB(198, 108, 255),
         AccentText = Color3.fromRGB(255, 255, 255),
         Text = Color3.fromRGB(255, 255, 255),
-        TextDim = Color3.fromRGB(214, 216, 234),
-        TextDisabled = Color3.fromRGB(146, 148, 172),
-        Stroke = Color3.fromRGB(255, 255, 255),
-        StrokeSoft = Color3.fromRGB(255, 255, 255),
+        TextDim = Color3.fromRGB(190, 192, 210),
+        TextDisabled = Color3.fromRGB(160, 162, 184),
+        Stroke = Color3.fromRGB(190, 190, 220),
+        StrokeSoft = Color3.fromRGB(190, 190, 220),
         Sheen = Color3.fromRGB(255, 255, 255),
         Shadow = Color3.fromRGB(0, 0, 10),
         Success = Color3.fromRGB(126, 245, 172),
         Warn = Color3.fromRGB(255, 224, 130),
         Error = Color3.fromRGB(255, 138, 138),
         Info = Color3.fromRGB(150, 200, 255),
-        WindowAlpha = 0.26,
+        WindowAlpha = 0.3,
         SidebarAlpha = 0.94,
-        CardAlpha = 0.93,
-        RowAlpha = 0.94,
+        CardAlpha = 0.94,
+        RowAlpha = 0.92,
         RowHoverAlpha = 0.86,
-        InsetAlpha = 0.62,
-        ElevatedAlpha = 0.18,
-        StrokeAlpha = 0.6,
-        StrokeSoftAlpha = 0.85,
-        SheenAlpha = 0.84,
-        Radius = 16,
+        InsetAlpha = 0.35,
+        ElevatedAlpha = 0.15,
+        StrokeAlpha = 0.8,
+        StrokeSoftAlpha = 0.86,
+        SheenAlpha = 0.88,
+        Radius = 14,
         Blur = 14,
         Glass = true
     }
@@ -609,8 +609,10 @@ end
 
 -- ============================================================ feedback
 
-Library.Sound = true
-Library.Haptics = true
+-- No click sounds. A UI library has no business making noise in someone
+-- else's game, so Play and Vibrate stay inert unless explicitly switched on.
+Library.Sound = false
+Library.Haptics = false
 Library.Particles = true
 
 local ClickSound = "rbxasset://sounds/electronicpingshort.wav"
@@ -649,8 +651,12 @@ function Library:Vibrate(Strength)
 end
 
 function Library:Feedback(Pitch)
-    Library:Play(Pitch)
-    Library:Vibrate(0.2)
+    if Library.Sound then
+        Library:Play(Pitch)
+    end
+    if Library.Haptics then
+        Library:Vibrate(0.2)
+    end
 end
 
 -- ============================================================ primitives
@@ -766,6 +772,21 @@ function Library:Shadow(Object, Spread, Alpha)
     })
     Library:Themed(Shadow, "ImageColor3", "Shadow")
     return Shadow
+end
+
+-- v1 divider: a line that fades out towards both ends
+function Library:FadeLine(Object, Horizontal)
+    local Gradient = New("UIGradient", {
+        Parent = Object,
+        Rotation = Horizontal and 0 or 90,
+        Transparency = NumberSequence.new({
+            NumberSequenceKeypoint.new(0, 1),
+            NumberSequenceKeypoint.new(0.5, 0.15),
+            NumberSequenceKeypoint.new(1, 1)
+        })
+    })
+    Library:Themed(Object, "BackgroundColor3", "Accent")
+    return Gradient
 end
 
 function Library:Hover(Trigger, Target, Property, Idle, Active, Duration)
@@ -1080,8 +1101,6 @@ local function GlyphButton(Parent, IconName, Tip)
     })
     Library:Corner(Button, 9)
     Library:Themed(Button, "BackgroundColor3", "Row")
-    local Line = Library:Stroke(Button, "StrokeSoft", 1)
-    Line.Transparency = 1
 
     local Icon = IconLabel(Button, IconName, 16, "TextDim")
     Icon.AnchorPoint = Vector2.new(0.5, 0.5)
@@ -1089,12 +1108,10 @@ local function GlyphButton(Parent, IconName, Tip)
 
     Button.MouseEnter:Connect(function()
         Library:Tween(Button, FAST, { BackgroundTransparency = 0.25 })
-        Library:Tween(Line, FAST, { Transparency = 0.5 })
         Library:Tween(Icon, FAST, { ImageColor3 = Library.Theme.Text })
     end)
     Button.MouseLeave:Connect(function()
         Library:Tween(Button, FAST, { BackgroundTransparency = 1 })
-        Library:Tween(Line, FAST, { Transparency = 1 })
         Library:Tween(Icon, FAST, { ImageColor3 = Library.Theme.TextDim })
     end)
 
@@ -1108,7 +1125,7 @@ end
 -- control so the title block can never overlap it on a narrow window.
 local function MakeRow(Section, Kind, Title, Description, MinHeight, RightWidth)
     local Mobile = Section.Window.Mobile
-    local Height = (MinHeight or 44) + (Mobile and 6 or 0)
+    local Height = (MinHeight or 36) + (Mobile and 6 or 0)
     local Reserve = (RightWidth or 60) > 0 and ((RightWidth or 60) + 26) or 14
 
     local Row = New("Frame", {
@@ -1119,15 +1136,15 @@ local function MakeRow(Section, Kind, Title, Description, MinHeight, RightWidth)
         LayoutOrder = Section.Count + 1
     })
     Section.Count = Section.Count + 1
-    Library:Corner(Row, 10)
+    Library:Corner(Row, 7)
     Library:Themed(Row, "BackgroundColor3", "Row")
     Library:Themed(Row, "BackgroundTransparency", "RowAlpha")
     local Line = Library:Stroke(Row, "StrokeSoft", 1)
 
     New("UIPadding", {
         Parent = Row,
-        PaddingTop = UDim.new(0, 12),
-        PaddingBottom = UDim.new(0, 12)
+        PaddingTop = UDim.new(0, 10),
+        PaddingBottom = UDim.new(0, 10)
     })
 
     local Stack = New("Frame", {
@@ -1144,7 +1161,7 @@ local function MakeRow(Section, Kind, Title, Description, MinHeight, RightWidth)
     -- a visible full size child (the click layer on a toggle) makes Roblox
     -- add the padding on top of the minimum size and the row grows to 70px.
     local function Measure()
-        local Wanted = math.max(Height, Stack.AbsoluteSize.Y + 24)
+        local Wanted = math.max(Height, Stack.AbsoluteSize.Y + 20)
         if Row.Size.Y.Offset ~= Wanted then
             Row.Size = UDim2.new(1, 0, 0, Wanted)
         end
@@ -1154,13 +1171,13 @@ local function MakeRow(Section, Kind, Title, Description, MinHeight, RightWidth)
     New("UIListLayout", {
         Parent = Stack,
         SortOrder = Enum.SortOrder.LayoutOrder,
-        Padding = UDim.new(0, 5)
+        Padding = UDim.new(0, 3)
     })
 
     local TitleLabel = New("TextLabel", {
         Parent = Stack,
         BackgroundTransparency = 1,
-        Font = Library.Font.Medium,
+        Font = Library.Font.Bold,
         Text = Title or Kind,
         TextSize = Mobile and 14 or 13,
         TextXAlignment = Enum.TextXAlignment.Left,
@@ -1186,7 +1203,7 @@ local function MakeRow(Section, Kind, Title, Description, MinHeight, RightWidth)
         Visible = (Description or "") ~= "",
         RichText = true
     })
-    Library:Themed(DescLabel, "TextColor3", "TextDim")
+    Library:Themed(DescLabel, "TextColor3", "TextDisabled")
 
     Row.MouseEnter:Connect(function()
         Library:Tween(Row, FAST, { BackgroundTransparency = Library.Theme.RowHoverAlpha })
@@ -1480,7 +1497,7 @@ function Library:NewWindow(UserConfig)
         CloseKey = nil,
         ShowPlayerCard = true,
         ShowAI = true,
-        Sound = true,
+        Sound = false,
         Particles = true,
         GroqApiKey = nil,
         GroqPrompt = nil,
@@ -1501,7 +1518,7 @@ function Library:NewWindow(UserConfig)
     W.Open = true
     W.Maximized = false
 
-    Library.Sound = W.Config.Sound ~= false
+    Library.Sound = W.Config.Sound == true
     Library.Particles = W.Config.Particles ~= false
 
     if typeof(W.Config.Color) == "Color3" then
@@ -1599,10 +1616,22 @@ function Library:NewWindow(UserConfig)
         ClipsDescendants = true,
         ZIndex = 2
     })
-    Library:Corner(W.Main, Library.Theme.Radius + 2)
+    Library:Corner(W.Main, 14)
     Library:Themed(W.Main, "BackgroundColor3", "Main")
     Library:Themed(W.Main, "BackgroundTransparency", "WindowAlpha")
-    Library:Stroke(W.Main, "Stroke", 1.2)
+
+    -- v1 edge: the window is outlined in the accent, not a neutral grey
+    local MainStroke = New("UIStroke", {
+        Parent = W.Main,
+        Thickness = 1.4,
+        Transparency = 0.55,
+        ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+    })
+    Library:Themed(MainStroke, "Color", "Accent")
+    Library:Gradient(W.Main, {
+        Color3.fromRGB(255, 255, 255),
+        Color3.fromRGB(214, 214, 224)
+    }, 90)
     Library:Shadow(W.Root, 80, 0.62)
 
     W.Sheen = Library:Sheen(W.Main, 90)
@@ -1686,14 +1715,13 @@ function Library:NewWindow(UserConfig)
         BorderSizePixel = 0,
         Position = UDim2.fromScale(0, 1),
         Size = UDim2.new(1, 0, 0, 1),
-        BackgroundTransparency = 0.9,
         ZIndex = 4
     })
-    Library:Themed(W.HeaderLine, "BackgroundColor3", "Stroke")
+    Library:FadeLine(W.HeaderLine, true)
 
     local Brand = Blank(W.Header, {
         Position = UDim2.new(0, 14, 0, 0),
-        Size = UDim2.new(0.55, 0, 1, 0),
+        Size = UDim2.new(1, -28, 1, 0),
         ZIndex = 5
     })
 
@@ -1702,24 +1730,24 @@ function Library:NewWindow(UserConfig)
         AnchorPoint = Vector2.new(0, 0.5),
         BorderSizePixel = 0,
         Position = UDim2.new(0, 0, 0.5, 0),
-        Size = UDim2.fromOffset(34, 34),
+        Size = UDim2.fromOffset(36, 36),
+        BackgroundTransparency = 0.86,
+        ClipsDescendants = true,
         ZIndex = 5
     })
-    Library:Corner(W.LogoTile, 10)
+    Library:Corner(W.LogoTile, 9)
     Library:Themed(W.LogoTile, "BackgroundColor3", "Accent")
-    Library:Stroke(W.LogoTile, "StrokeSoft", 1)
-    W.LogoGradient = Library:Gradient(W.LogoTile, {
-        Color3.fromRGB(255, 255, 255),
-        Color3.fromRGB(180, 180, 180)
-    }, 65, { 0.55, 0.85 })
+    local LogoStroke = New("UIStroke", { Parent = W.LogoTile, Thickness = 1, Transparency = 0.62 })
+    Library:Themed(LogoStroke, "Color", "Accent")
 
     W.LogoImage = New("ImageLabel", {
         Parent = W.LogoTile,
         AnchorPoint = Vector2.new(0.5, 0.5),
         BackgroundTransparency = 1,
         Position = UDim2.fromScale(0.5, 0.5),
-        Size = UDim2.fromOffset(22, 22),
+        Size = UDim2.fromScale(1, 1),
         Image = W.Config.Logo or "",
+        ScaleType = Enum.ScaleType.Crop,
         ZIndex = 6
     })
     if W.Config.Icon then
@@ -1728,8 +1756,8 @@ function Library:NewWindow(UserConfig)
 
     local TitleStack = Blank(Brand, {
         AnchorPoint = Vector2.new(0, 0.5),
-        Position = UDim2.new(0, 44, 0.5, 0),
-        Size = UDim2.new(1, -44, 0, 36),
+        Position = UDim2.new(0, 46, 0.5, 0),
+        Size = UDim2.new(1, -376, 0, 36),
         ZIndex = 5
     })
 
@@ -1755,6 +1783,7 @@ function Library:NewWindow(UserConfig)
     New("UIListLayout", {
         Parent = SubRow,
         FillDirection = Enum.FillDirection.Horizontal,
+        HorizontalAlignment = Enum.HorizontalAlignment.Left,
         VerticalAlignment = Enum.VerticalAlignment.Center,
         Padding = UDim.new(0, 6),
         SortOrder = Enum.SortOrder.LayoutOrder
@@ -1788,7 +1817,6 @@ function Library:NewWindow(UserConfig)
         })
         Library:Corner(Holder, 6)
         Library:Themed(Holder, "BackgroundColor3", ColorKey)
-        Library:Stroke(Holder, "StrokeSoft", 1)
         New("UIPadding", {
             Parent = Holder,
             PaddingLeft = UDim.new(0, 6),
@@ -1831,7 +1859,8 @@ function Library:NewWindow(UserConfig)
         local Button = GlyphButton(W.Controls, IconName, Tip)
         Button.LayoutOrder = Order
         Button.ZIndex = 6
-        Button.Visible = (not W.Mobile) or MobileVisible ~= false
+        -- touch clients get the same controls as desktop, nothing is dropped
+        Button.Visible = true
         Button.MouseButton1Click:Connect(function()
             Library:Feedback(1.1)
             Handler()
@@ -1842,7 +1871,7 @@ function Library:NewWindow(UserConfig)
     W.MenuButton = Control(Library.Icons.Menu, "Tabs", 0, function()
         W.ToggleDrawer()
     end, true)
-    W.MenuButton.Visible = W.Mobile
+    W.MenuButton.Visible = false
 
     Control(Library.Icons.Command, "Command palette (Ctrl+K)", 1, function()
         WM.Palette(W)
@@ -1888,39 +1917,46 @@ function Library:NewWindow(UserConfig)
         ZIndex = 3
     })
 
-    W.SidebarWidth = W.Mobile and 240 or 190
-    W.Inset = 8
+    -- narrow screens get a tighter sidebar instead of losing it to a drawer
+    W.SidebarWidth = Device.Viewport().X < 560 and 140 or 156
+    W.Inset = 0
 
-    -- The sidebar floats as its own rounded card. A flush panel would sit
-    -- under Main.ClipsDescendants, and that clip is rectangular, so its square
-    -- corner would paint straight over the window rounding.
+    -- v1 layout: a surface film panel closed by a fading accent line, always
+    -- in the layout on every device.
     W.Sidebar = New("Frame", {
         Parent = W.Body,
         Name = "Sidebar",
         BorderSizePixel = 0,
-        Position = UDim2.fromOffset(W.Inset, W.Inset),
-        Size = UDim2.new(0, W.SidebarWidth - W.Inset, 1, -W.Inset * 2),
-        ZIndex = W.Mobile and 30 or 3
+        Size = UDim2.new(0, W.SidebarWidth, 1, 0),
+        ZIndex = 3
     })
-    Library:Corner(W.Sidebar, 14)
     Library:Themed(W.Sidebar, "BackgroundColor3", "Sidebar")
     Library:Themed(W.Sidebar, "BackgroundTransparency", "SidebarAlpha")
-    Library:Stroke(W.Sidebar, "StrokeSoft", 1)
+
+    W.SidebarLine = New("Frame", {
+        Parent = W.Sidebar,
+        AnchorPoint = Vector2.new(1, 0),
+        BorderSizePixel = 0,
+        Position = UDim2.fromScale(1, 0),
+        Size = UDim2.new(0, 1, 1, 0),
+        ZIndex = 4
+    })
+    Library:FadeLine(W.SidebarLine, false)
 
     -- search box
     W.SearchBox = New("Frame", {
         Parent = W.Sidebar,
         BorderSizePixel = 0,
-        Position = UDim2.new(0, 12, 0, 12),
-        Size = UDim2.new(1, -24, 0, W.Mobile and 38 or 34),
-        ZIndex = W.Mobile and 31 or 4
+        Position = UDim2.new(0, 10, 0, 12),
+        Size = UDim2.new(1, -21, 0, W.Mobile and 36 or 32),
+        ZIndex = 4
     })
-    Library:Corner(W.SearchBox, 9)
-    Library:Themed(W.SearchBox, "BackgroundColor3", "Inset")
-    Library:Themed(W.SearchBox, "BackgroundTransparency", "InsetAlpha")
+    Library:Corner(W.SearchBox, 8)
+    Library:Themed(W.SearchBox, "BackgroundColor3", "Card")
+    W.SearchBox.BackgroundTransparency = 0.93
     Library:Stroke(W.SearchBox, "StrokeSoft", 1)
 
-    local SearchIcon = IconLabel(W.SearchBox, Library.Icons.Search, 15, "TextDisabled")
+    local SearchIcon = IconLabel(W.SearchBox, Library.Icons.Search, 14, "Accent")
     SearchIcon.AnchorPoint = Vector2.new(0, 0.5)
     SearchIcon.Position = UDim2.new(0, 10, 0.5, 0)
     SearchIcon.ZIndex = W.Sidebar.ZIndex + 2
@@ -1980,7 +2016,6 @@ function Library:NewWindow(UserConfig)
     Library:Corner(W.ProfileButton, 8)
     Library:Themed(W.ProfileButton, "BackgroundColor3", "Row")
     Library:Themed(W.ProfileButton, "BackgroundTransparency", "RowAlpha")
-    Library:Stroke(W.ProfileButton, "StrokeSoft", 1)
 
     local ProfileIcon = IconLabel(W.ProfileButton, Library.Icons.Folder, 14, "Accent")
     ProfileIcon.AnchorPoint = Vector2.new(0, 0.5)
@@ -2011,8 +2046,8 @@ function Library:NewWindow(UserConfig)
 
     W.Content = Blank(W.Body, {
         Name = "Content",
-        Position = UDim2.new(0, W.Mobile and 0 or (W.SidebarWidth + W.Inset), 0, 0),
-        Size = UDim2.new(1, W.Mobile and 0 or -(W.SidebarWidth + W.Inset), 1, 0),
+        Position = UDim2.new(0, W.SidebarWidth, 0, 0),
+        Size = UDim2.new(1, -W.SidebarWidth, 1, 0),
         ZIndex = 3
     })
 
@@ -2104,46 +2139,18 @@ function Library:NewWindow(UserConfig)
         ZIndex = 20
     })
 
-    W.DrawerOpen = false
+    W.DrawerOpen = true
 
-    function W.ToggleDrawer(State)
-        if not W.Mobile then
-            return
-        end
-        if State == nil then
-            State = not W.DrawerOpen
-        end
-        W.DrawerOpen = State
-        W.Backdrop.Visible = true
-        Library:Tween(W.Sidebar, NORMAL, {
-            Position = UDim2.new(0, State and W.Inset or -(W.SidebarWidth + 12), 0, W.Inset)
-        })
-        Library:Tween(W.Backdrop, NORMAL, { BackgroundTransparency = State and 0.45 or 1 }, function()
-            if not W.DrawerOpen then
-                W.Backdrop.Visible = false
-            end
-        end)
-    end
-
-    W.Backdrop.MouseButton1Click:Connect(function()
-        W.ToggleDrawer(false)
-    end)
-
-    if W.Mobile then
-        W.Sidebar.Position = UDim2.new(0, -(W.SidebarWidth + 12), 0, W.Inset)
+    -- kept for API compatibility, the sidebar is always in the layout now
+    function W.ToggleDrawer()
     end
 
     function W.Relayout()
         local HeaderHeight = W.Header.Size.Y.Offset
         W.Body.Position = UDim2.new(0, 0, 0, HeaderHeight)
         W.Body.Size = UDim2.new(1, 0, 1, -HeaderHeight)
-        if W.Mobile then
-            W.Content.Position = UDim2.new()
-            W.Content.Size = UDim2.fromScale(1, 1)
-        else
-            W.Content.Position = UDim2.new(0, W.SidebarWidth + W.Inset, 0, 0)
-            W.Content.Size = UDim2.new(1, -(W.SidebarWidth + W.Inset), 1, 0)
-        end
+        W.Content.Position = UDim2.new(0, W.SidebarWidth, 0, 0)
+        W.Content.Size = UDim2.new(1, -W.SidebarWidth, 1, 0)
     end
 
     -- ---------------------------------------------------------- dragging
@@ -2181,24 +2188,6 @@ function Library:NewWindow(UserConfig)
                 W.Clamp()
                 W.SaveState()
             end
-        end))
-    end
-
-    -- swipe from the left edge opens the drawer, swipe back closes it
-    if W.Mobile then
-        local SwipeStart
-        table.insert(W.Connections, UserInputService.TouchStarted:Connect(function(Input)
-            SwipeStart = Input.Position
-        end))
-        table.insert(W.Connections, UserInputService.TouchEnded:Connect(function(Input)
-            if not SwipeStart then
-                return
-            end
-            local Delta = Input.Position - SwipeStart
-            if math.abs(Delta.X) > 70 and math.abs(Delta.Y) < 60 then
-                W.ToggleDrawer(Delta.X > 0)
-            end
-            SwipeStart = nil
         end))
     end
 
@@ -2395,10 +2384,10 @@ local function BuildSection(Tab, Config)
     Section.Frame = Card
 
     if not Config.Headerless then
-        Library:Corner(Card, 12)
+        Library:Corner(Card, 9)
         Library:Themed(Card, "BackgroundColor3", "Card")
         Library:Themed(Card, "BackgroundTransparency", "CardAlpha")
-        Library:Stroke(Card, "StrokeSoft", 1)
+        Library:Stroke(Card, "Stroke", 1)
     end
 
     New("UIPadding", {
@@ -2581,7 +2570,7 @@ local function BuildTab(W, Config, Group)
     })
 
     -- sidebar button
-    local Height = W.Mobile and 42 or 34
+    local Height = W.Mobile and 42 or 36
     Tab.Button = New("TextButton", {
         Parent = Group and Group.Holder or W.TabScroll,
         Name = "TabButton",
@@ -2593,10 +2582,9 @@ local function BuildTab(W, Config, Group)
         LayoutOrder = #W.Tabs + 1,
         ZIndex = W.Sidebar.ZIndex + 1
     })
-    Library:Corner(Tab.Button, 9)
+    Library:Corner(Tab.Button, 8)
     Library:Themed(Tab.Button, "BackgroundColor3", "Accent")
     Tab.Button.BackgroundTransparency = 1
-    Library:Stroke(Tab.Button, "StrokeSoft", 1)
 
     Tab.Indicator = New("Frame", {
         Parent = Tab.Button,
@@ -2609,18 +2597,21 @@ local function BuildTab(W, Config, Group)
     Library:Corner(Tab.Indicator, UDim.new(1, 0))
     Library:Themed(Tab.Indicator, "BackgroundColor3", "Accent")
 
-    Tab.IconLabel = IconLabel(Tab.Button, Config.Icon, W.Mobile and 18 or 16, "TextDim")
+    Tab.IconLabel = IconLabel(Tab.Button, Config.Icon, W.Mobile and 18 or 16, "Accent")
     Tab.IconLabel.AnchorPoint = Vector2.new(0, 0.5)
-    Tab.IconLabel.Position = UDim2.new(0, 12, 0.5, 0)
+    Tab.IconLabel.Position = UDim2.new(0, 11, 0.5, 0)
+    Tab.IconLabel.ImageTransparency = 0.35
+    Library:Themed(Tab.IconLabel, "ImageColor3", "Accent")
     Tab.IconLabel.ZIndex = W.Sidebar.ZIndex + 2
 
     Tab.Label = New("TextLabel", {
         Parent = Tab.Button,
         BackgroundTransparency = 1,
-        Position = UDim2.new(0, W.Mobile and 40 or 36, 0, 0),
-        Size = UDim2.new(1, -50, 1, 0),
-        Font = Library.Font.Medium,
+        Position = UDim2.new(0, W.Mobile and 38 or 34, 0, 0),
+        Size = UDim2.new(1, -56, 1, 0),
+        Font = Library.Font.Bold,
         Text = Config.Title,
+        TextTransparency = 0.4,
         TextSize = W.Mobile and 13 or 12,
         TextXAlignment = Enum.TextXAlignment.Left,
         TextTruncate = Enum.TextTruncate.AtEnd,
@@ -2648,14 +2639,16 @@ local function BuildTab(W, Config, Group)
 
     Tab.Button.MouseEnter:Connect(function()
         if W.Active ~= Tab then
-            Library:Tween(Tab.Button, FAST, { BackgroundTransparency = 0.9 })
-            Library:Tween(Tab.Label, FAST, { TextColor3 = Library.Theme.Text })
+            Library:Tween(Tab.Button, FAST, { BackgroundTransparency = 0.94 })
+            Library:Tween(Tab.Label, FAST, { TextTransparency = 0.15 })
+            Library:Tween(Tab.IconLabel, FAST, { ImageTransparency = 0.15 })
         end
     end)
     Tab.Button.MouseLeave:Connect(function()
         if W.Active ~= Tab then
             Library:Tween(Tab.Button, FAST, { BackgroundTransparency = 1 })
-            Library:Tween(Tab.Label, FAST, { TextColor3 = Library.Theme.TextDim })
+            Library:Tween(Tab.Label, FAST, { TextTransparency = 0.4 })
+            Library:Tween(Tab.IconLabel, FAST, { ImageTransparency = 0.35 })
         end
     end)
     Tab.Button.MouseButton1Click:Connect(function()
@@ -2984,10 +2977,10 @@ function Components.Toggle(Section, Config)
         AnchorPoint = Vector2.new(1, 0.5),
         BorderSizePixel = 0,
         Position = UDim2.new(1, -14, 0.5, 0),
-        Size = UDim2.fromOffset(Section.Window.Mobile and 48 or 42, Section.Window.Mobile and 26 or 23)
+        Size = UDim2.fromOffset(Section.Window.Mobile and 46 or 40, Section.Window.Mobile and 25 or 22)
     })
     Library:Corner(Track, UDim.new(1, 0))
-    Library:Themed(Track, "BackgroundColor3", "Inset")
+    Track.BackgroundColor3 = Color3.fromRGB(72, 72, 82)
     local TrackLine = Library:Stroke(Track, "StrokeSoft", 1)
 
     local Knob = New("Frame", {
@@ -2998,8 +2991,7 @@ function Components.Toggle(Section, Config)
         Size = UDim2.fromOffset(Section.Window.Mobile and 20 or 17, Section.Window.Mobile and 20 or 17)
     })
     Library:Corner(Knob, UDim.new(1, 0))
-    Library:Themed(Knob, "BackgroundColor3", "TextDisabled")
-    Library:Stroke(Knob, "StrokeSoft", 1)
+    Knob.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
 
     local Click = New("TextButton", {
         Parent = Row,
@@ -3019,12 +3011,10 @@ function Components.Toggle(Section, Config)
             Position = UDim2.new(0, State and (Track.Size.X.Offset - Knob.Size.X.Offset - 3) or 3, 0.5, 0)
         })
         Library:Tween(Track, FAST, {
-            BackgroundColor3 = State and Library.Theme.Accent or Library.Theme.Inset,
-            BackgroundTransparency = State and 0 or Library.Theme.InsetAlpha
+            BackgroundColor3 = State and Library.Theme.Accent or Color3.fromRGB(72, 72, 82),
+            BackgroundTransparency = 0
         })
-        Library:Tween(Knob, FAST, {
-            BackgroundColor3 = State and Library.Theme.AccentText or Library.Theme.TextDisabled
-        })
+        Library:Tween(Knob, FAST, { BackgroundColor3 = Color3.fromRGB(255, 255, 255) })
         Library:Tween(TrackLine, FAST, { Transparency = State and 0.6 or Library.Theme.StrokeSoftAlpha })
     end
 
@@ -3349,7 +3339,6 @@ function Components.Slider(Section, Config)
     Library:Corner(Bar, UDim.new(1, 0))
     Library:Themed(Bar, "BackgroundColor3", "Inset")
     Library:Themed(Bar, "BackgroundTransparency", "InsetAlpha")
-    Library:Stroke(Bar, "StrokeSoft", 1)
 
     local Fill = New("Frame", {
         Parent = Bar,
@@ -3662,7 +3651,6 @@ function Components.Dropdown(Section, Config)
                     })
                     Library:Corner(Item, 7)
                     Library:Themed(Item, "BackgroundColor3", "Accent")
-                    Library:Stroke(Item, "StrokeSoft", 1)
 
                     local ItemLabel = New("TextLabel", {
                         Parent = Item,
@@ -3945,7 +3933,6 @@ local function HueBar(Parent)
         Active = true
     })
     Library:Corner(Bar, 6)
-    Library:Stroke(Bar, "StrokeSoft", 1)
     local Colors = {}
     for Index = 0, 6 do
         table.insert(Colors, ColorSequenceKeypoint.new(Index / 6, Color3.fromHSV(Index / 6, 1, 1)))
@@ -3962,7 +3949,6 @@ local function SaturationBox(Parent)
         Active = true
     })
     Library:Corner(Box, 8)
-    Library:Stroke(Box, "StrokeSoft", 1)
     local White = New("Frame", {
         Parent = Box,
         BackgroundColor3 = Color3.fromRGB(255, 255, 255),
@@ -4311,7 +4297,6 @@ function Components.ColorpickerRGB(Section, Config)
         Library:Corner(Track, UDim.new(1, 0))
         Library:Themed(Track, "BackgroundColor3", "Inset")
         Library:Themed(Track, "BackgroundTransparency", "InsetAlpha")
-        Library:Stroke(Track, "StrokeSoft", 1)
 
         local Fill = New("Frame", {
             Parent = Track,
@@ -4457,7 +4442,6 @@ function Components.Tag(Section, Config)
         AutomaticSize = Enum.AutomaticSize.X
     })
     Library:Corner(Pill, 7)
-    Library:Stroke(Pill, "StrokeSoft", 1)
     if Config.Color then
         Pill.BackgroundColor3 = Config.Color
     else
@@ -4609,7 +4593,6 @@ function Components.Progress(Section, Config)
     Library:Corner(Track, UDim.new(1, 0))
     Library:Themed(Track, "BackgroundColor3", "Inset")
     Library:Themed(Track, "BackgroundTransparency", "InsetAlpha")
-    Library:Stroke(Track, "StrokeSoft", 1)
 
     local Fill = New("Frame", {
         Parent = Track,
@@ -4750,9 +4733,6 @@ function Components.Table(Section, Config)
         })
         Library:Corner(LineFrame, 6)
         Library:Themed(LineFrame, "BackgroundColor3", "Accent")
-        if Header then
-            Library:Stroke(LineFrame, "StrokeSoft", 1)
-        end
         local Count = math.max(#Values, 1)
         for Index, Value in ipairs(Values) do
             local Cell = New("TextLabel", {
@@ -4820,7 +4800,6 @@ function Components.Image(Section, Config)
         ScaleType = Enum.ScaleType.Crop
     })
     Library:Corner(Picture, Config.Corner)
-    Library:Stroke(Picture, "StrokeSoft", 1)
     if Config.Ratio then
         New("UIAspectRatioConstraint", { Parent = Picture, AspectRatio = Config.Ratio })
     end
@@ -5439,7 +5418,6 @@ function WM.Palette(W)
                 })
                 Library:Corner(Item, 8)
                 Library:Themed(Item, "BackgroundColor3", "Accent")
-                Library:Stroke(Item, "StrokeSoft", 1)
 
                 local Kind = IconLabel(Item, Entry.Kind == "Tab" and Library.Icons.Tab or Library.Icons.Right, 14, "Accent")
                 Kind.AnchorPoint = Vector2.new(0, 0.5)
@@ -5970,7 +5948,7 @@ function WM.ThemePanel(W)
         end
     end)
 
-    Caption("Feedback", 5)
+    Caption("Effects", 5)
 
     local Switches = New("Frame", {
         Parent = Scroll,
@@ -6048,18 +6026,6 @@ function WM.ThemePanel(W)
         end)
         Paint()
     end
-
-    Switch("Sound", function()
-        return Library.Sound
-    end, function(Value)
-        Library.Sound = Value
-    end, 1)
-
-    Switch("Haptics", function()
-        return Library.Haptics
-    end, function(Value)
-        Library.Haptics = Value
-    end, 2)
 
     Switch("Glow effects", function()
         return Library.Particles
@@ -6697,7 +6663,6 @@ function WM.PlayerCard(W)
         ZIndex = 261
     })
     Library:Corner(Avatar, 12)
-    Library:Stroke(Avatar, "StrokeSoft", 1)
     Library:Themed(Avatar, "BackgroundColor3", "Row")
 
     task.spawn(function()
@@ -6751,7 +6716,6 @@ function WM.PlayerCard(W)
         ZIndex = 261
     })
     Library:Corner(Badge, 5)
-    Library:Stroke(Badge, "StrokeSoft", 1)
     Library:Themed(Badge, "BackgroundColor3", "Accent")
     Library:Themed(Badge, "TextColor3", "Accent")
 
@@ -6786,7 +6750,6 @@ function WM.PlayerCard(W)
             ZIndex = 261
         })
         Library:Corner(Row, 7)
-        Library:Stroke(Row, "StrokeSoft", 1)
         Library:Themed(Row, "BackgroundColor3", "Row")
         Library:Themed(Row, "BackgroundTransparency", "RowAlpha")
 
@@ -6993,22 +6956,28 @@ function WM.AI(W)
     local HistoryPath = W.Paths.Folder .. "/ai_history.json"
     local History = FS.ReadJSON(HistoryPath) or {}
 
-    local Inset = W.Inset or 8
     local Panel = New("Frame", {
         Parent = W.Main,
         Name = "AI",
         AnchorPoint = Vector2.new(1, 0),
         BorderSizePixel = 0,
-        Position = UDim2.new(1, -Inset, 0, W.Header.Size.Y.Offset + Inset),
-        Size = UDim2.new(0, W.Mobile and 260 or 300, 1, -(W.Header.Size.Y.Offset + Inset * 2)),
+        Position = UDim2.new(1, 0, 0, W.Header.Size.Y.Offset),
+        Size = UDim2.new(0, W.Mobile and 260 or 300, 1, -W.Header.Size.Y.Offset),
         Visible = false,
         ZIndex = 80,
         ClipsDescendants = true
     })
-    Library:Corner(Panel, 14)
     Library:Themed(Panel, "BackgroundColor3", "Sidebar")
     Library:Themed(Panel, "BackgroundTransparency", "SidebarAlpha")
-    Library:Stroke(Panel, "StrokeSoft", 1)
+
+    local Edge = New("Frame", {
+        Parent = Panel,
+        BorderSizePixel = 0,
+        Size = UDim2.new(0, 1, 1, 0),
+        BackgroundTransparency = 0.9,
+        ZIndex = 81
+    })
+    Library:Themed(Edge, "BackgroundColor3", "Stroke")
 
     local Head = Blank(Panel, { Size = UDim2.new(1, 0, 0, 44), ZIndex = 82 })
 
@@ -7088,7 +7057,6 @@ function WM.AI(W)
             ZIndex = 83
         })
         Library:Corner(Frame, 10)
-        Library:Stroke(Frame, "StrokeSoft", 1)
         if Mine then
             Library:Themed(Frame, "BackgroundColor3", "Accent")
         else
@@ -7244,15 +7212,14 @@ function WM.ToggleAI(W, State)
         State = not Panel.Visible
     end
     local Width = Panel.Size.X.Offset
-    local Inset = W.Inset or 8
-    local Top = W.Header.Size.Y.Offset + Inset
+    local Top = W.Header.Size.Y.Offset
     if State then
         Panel.Visible = true
-        Panel.Position = UDim2.new(1, Width + Inset, 0, Top)
-        Library:Tween(Panel, NORMAL, { Position = UDim2.new(1, -Inset, 0, Top) })
+        Panel.Position = UDim2.new(1, Width, 0, Top)
+        Library:Tween(Panel, NORMAL, { Position = UDim2.new(1, 0, 0, Top) })
     else
         Library:Tween(Panel, NORMAL, {
-            Position = UDim2.new(1, Width + Inset, 0, Top)
+            Position = UDim2.new(1, Width, 0, Top)
         }, function()
             Panel.Visible = false
         end)
@@ -7302,15 +7269,11 @@ function WM.BuildAPI(W)
         for _, Entry in ipairs(W.Tabs) do
             local Active = Entry == Tab
             Entry.Page.Visible = Active
-            Library:Tween(Entry.Button, FAST, { BackgroundTransparency = Active and 0.86 or 1 })
-            Library:Tween(Entry.Label, FAST, {
-                TextColor3 = Active and Library.Theme.Text or Library.Theme.TextDim
-            })
-            Library:Tween(Entry.IconLabel, FAST, {
-                ImageColor3 = Active and Library.Theme.Accent or Library.Theme.TextDim
-            })
+            Library:Tween(Entry.Button, FAST, { BackgroundTransparency = Active and 0.9 or 1 })
+            Library:Tween(Entry.Label, FAST, { TextTransparency = Active and 0 or 0.4 })
+            Library:Tween(Entry.IconLabel, FAST, { ImageTransparency = Active and 0 or 0.35 })
             Library:Tween(Entry.Indicator, NORMAL, {
-                Size = UDim2.fromOffset(3, Active and 16 or 0)
+                Size = UDim2.fromOffset(3, Active and 18 or 0)
             })
         end
 
@@ -7328,9 +7291,6 @@ function WM.BuildAPI(W)
         Library:SetIcon(W.FavButton:FindFirstChildOfClass("ImageLabel"), Library.Icons.Star,
             Favorited and Library.Theme.Accent or Library.Theme.TextDim)
 
-        if W.Mobile then
-            W.ToggleDrawer(false)
-        end
     end
 
     function W.Focus(Frame)
