@@ -1481,7 +1481,6 @@ function Library:NewWindow(UserConfig)
         Color = Color3.fromRGB(179, 0, 255),
         Theme = "Dark",
         Size = UDim2.fromOffset(700, 500),
-        MinSize = Vector2.new(540, 380),
         AutoScale = true,
         AutoPosition = "Center",
         Transparency = nil,
@@ -1501,7 +1500,9 @@ function Library:NewWindow(UserConfig)
         Particles = true,
         GroqApiKey = nil,
         GroqPrompt = nil,
-        GroqModel = nil
+        GroqModel = nil,
+        -- optional, off unless a table is passed
+        KeySystem = nil
     }, UserConfig or {})
 
     W.Tabs = {}
@@ -1591,6 +1592,232 @@ function Library:NewWindow(UserConfig)
     })
     ParentGui(W.Gui)
 
+    -- ---------------------------------------------------------- key system
+    -- Optional: only runs if UserConfig.KeySystem is a table. Blocks the
+    -- rest of the window from building until a valid key is entered, or
+    -- instantly skips if a previously-accepted key was saved to disk.
+    if type(W.Config.KeySystem) == "table" and W.Config.KeySystem.Enabled ~= false then
+        local KeyCfg = Merge({
+            Title = "Key Required",
+            Note = "",
+            Keys = {},
+            GetKeyLink = nil,
+            SaveKey = true,
+            Callback = nil
+        }, W.Config.KeySystem)
+
+        local function IsValidKey(Value)
+            if type(KeyCfg.Callback) == "function" then
+                local Ok, Result = pcall(KeyCfg.Callback, Value)
+                return Ok and Result == true
+            end
+            for _, K in ipairs(KeyCfg.Keys) do
+                if tostring(K) == Value then
+                    return true
+                end
+            end
+            return false
+        end
+
+        W.Paths.KeyFile = W.Paths.Folder .. "/key.txt"
+
+        local Skip = false
+        if KeyCfg.SaveKey ~= false then
+            local Saved = FS.Read(W.Paths.KeyFile)
+            if Saved and IsValidKey(Trim(Saved)) then
+                Skip = true
+            end
+        end
+
+        if not Skip then
+            local Gate = New("Frame", {
+                Parent = W.Gui,
+                Name = "KeyGate",
+                BackgroundColor3 = Color3.fromRGB(0, 0, 0),
+                BackgroundTransparency = 0.35,
+                BorderSizePixel = 0,
+                Size = UDim2.fromScale(1, 1),
+                ZIndex = 1000
+            })
+
+            local Card = New("Frame", {
+                Parent = Gate,
+                AnchorPoint = Vector2.new(0.5, 0.5),
+                BorderSizePixel = 0,
+                Position = UDim2.fromScale(0.5, 0.5),
+                Size = UDim2.fromOffset(340, 0),
+                AutomaticSize = Enum.AutomaticSize.Y,
+                ZIndex = 1001
+            })
+            Library:Corner(Card, 14)
+            Library:Themed(Card, "BackgroundColor3", "Card")
+            Library:Themed(Card, "BackgroundTransparency", "CardAlpha")
+            Library:Stroke(Card, "Stroke", 1.2)
+            Library:Shadow(Card, 60, 0.55)
+
+            New("UIPadding", {
+                Parent = Card,
+                PaddingTop = UDim.new(0, 22),
+                PaddingBottom = UDim.new(0, 20),
+                PaddingLeft = UDim.new(0, 22),
+                PaddingRight = UDim.new(0, 22)
+            })
+            New("UIListLayout", {
+                Parent = Card,
+                SortOrder = Enum.SortOrder.LayoutOrder,
+                Padding = UDim.new(0, 12)
+            })
+
+            local LockIcon = IconLabel(Card, Library.Icons.Lock, 26, "Accent")
+            LockIcon.LayoutOrder = 0
+            Library:Themed(LockIcon, "ImageColor3", "Accent")
+
+            local GateTitle = New("TextLabel", {
+                Parent = Card,
+                BackgroundTransparency = 1,
+                Size = UDim2.new(1, 0, 0, 22),
+                Font = Library.Font.Bold,
+                Text = KeyCfg.Title,
+                TextSize = 17,
+                LayoutOrder = 1
+            })
+            Library:Themed(GateTitle, "TextColor3", "Text")
+
+            if KeyCfg.Note ~= "" then
+                local GateNote = New("TextLabel", {
+                    Parent = Card,
+                    BackgroundTransparency = 1,
+                    Size = UDim2.new(1, 0, 0, 0),
+                    AutomaticSize = Enum.AutomaticSize.Y,
+                    Font = Library.Font.Regular,
+                    Text = KeyCfg.Note,
+                    TextSize = 12,
+                    TextWrapped = true,
+                    LayoutOrder = 2
+                })
+                Library:Themed(GateNote, "TextColor3", "TextDim")
+            end
+
+            local Field = New("Frame", {
+                Parent = Card,
+                BorderSizePixel = 0,
+                Size = UDim2.new(1, 0, 0, 38),
+                LayoutOrder = 3
+            })
+            Library:Corner(Field, 9)
+            Library:Themed(Field, "BackgroundColor3", "Inset")
+            Library:Themed(Field, "BackgroundTransparency", "InsetAlpha")
+            local FieldLine = Library:Stroke(Field, "StrokeSoft", 1)
+
+            local Box = New("TextBox", {
+                Parent = Field,
+                BackgroundTransparency = 1,
+                Position = UDim2.new(0, 12, 0, 0),
+                Size = UDim2.new(1, -24, 1, 0),
+                Font = Library.Font.Regular,
+                PlaceholderText = "Enter key",
+                Text = "",
+                TextSize = 13,
+                TextXAlignment = Enum.TextXAlignment.Left,
+                ClearTextOnFocus = false
+            })
+            Library:Themed(Box, "TextColor3", "Text")
+            Library:Themed(Box, "PlaceholderColor3", "TextDisabled")
+
+            local GateError = New("TextLabel", {
+                Parent = Card,
+                BackgroundTransparency = 1,
+                Size = UDim2.new(1, 0, 0, 14),
+                Font = Library.Font.Regular,
+                Text = "",
+                TextSize = 11,
+                TextXAlignment = Enum.TextXAlignment.Left,
+                LayoutOrder = 4
+            })
+            Library:Themed(GateError, "TextColor3", "Error")
+
+            local GateRow = Blank(Card, {
+                Size = UDim2.new(1, 0, 0, 34),
+                LayoutOrder = 5
+            })
+            New("UIListLayout", {
+                Parent = GateRow,
+                FillDirection = Enum.FillDirection.Horizontal,
+                Padding = UDim.new(0, 8),
+                SortOrder = Enum.SortOrder.LayoutOrder
+            })
+
+            if KeyCfg.GetKeyLink then
+                local GetKeyBtn = PillButton(GateRow, "Get Key", nil, 0)
+                GetKeyBtn.Size = UDim2.new(0.42, -4, 1, 0)
+                GetKeyBtn.LayoutOrder = 1
+                GetKeyBtn.MouseButton1Click:Connect(function()
+                    pcall(function()
+                        if setclipboard then
+                            setclipboard(KeyCfg.GetKeyLink)
+                        end
+                    end)
+                    pcall(function()
+                        if GuiService and GuiService.OpenBrowserWindow then
+                            GuiService:OpenBrowserWindow(KeyCfg.GetKeyLink)
+                        end
+                    end)
+                    GateError.Text = "Link copied to clipboard"
+                    Library:Themed(GateError, "TextColor3", "TextDim")
+                end)
+            end
+
+            local SubmitBtn = PillButton(GateRow, "Verify", Library.Icons.Check, 0, true)
+            SubmitBtn.Size = UDim2.new(KeyCfg.GetKeyLink and 0.58 or 1, KeyCfg.GetKeyLink and -4 or 0, 1, 0)
+            SubmitBtn.LayoutOrder = 2
+
+            local Verified = false
+            local function TrySubmit()
+                local Value = Trim(Box.Text)
+                if Value == "" then
+                    return
+                end
+                if IsValidKey(Value) then
+                    if KeyCfg.SaveKey ~= false then
+                        FS.Folder(W.Paths.Folder)
+                        FS.Write(W.Paths.KeyFile, Value)
+                    end
+                    Verified = true
+                else
+                    GateError.Text = "Invalid key"
+                    Library:Themed(GateError, "TextColor3", "Error")
+                    Library:Tween(FieldLine, FAST, { Color = Library.Theme.Error })
+                    task.delay(0.3, function()
+                        pcall(function()
+                            Library:Tween(FieldLine, FAST, { Color = Library.Theme.StrokeSoft })
+                        end)
+                    end)
+                end
+            end
+
+            SubmitBtn.MouseButton1Click:Connect(TrySubmit)
+            Box.FocusLost:Connect(function(Enter)
+                if Enter then
+                    TrySubmit()
+                end
+            end)
+            task.defer(function()
+                Box:CaptureFocus()
+            end)
+
+            while not Verified and W.Gui.Parent do
+                task.wait()
+            end
+
+            if Gate.Parent then
+                Library:Tween(Gate, FAST, { BackgroundTransparency = 1 })
+                Library:Tween(Card, FAST, { BackgroundTransparency = 1 })
+                task.wait(0.15)
+                Gate:Destroy()
+            end
+        end
+    end
+
     if W.Config.Blur then
         pcall(function()
             W.Blur = New("BlurEffect", { Parent = Lighting, Size = 0, Name = RandomName() })
@@ -1645,19 +1872,22 @@ function Library:NewWindow(UserConfig)
         local Width, Height
         local Scale = 1
 
+        -- no enforced minimum: the configured size is used as-is on every
+        -- device. The only floor left is a 1px technical guard so layout
+        -- math never divides by zero -- it isn't a usability limit.
         if W.Mobile then
-            Width = math.max(Viewport.X - 16, 300)
-            Height = math.max(Viewport.Y - 70, 260)
+            Width = math.max(Viewport.X - 16, 1)
+            Height = math.max(Viewport.Y - 70, 1)
         elseif W.Maximized then
             Width = Viewport.X - 40
             Height = Viewport.Y - 60
         else
-            Width = math.max(Wanted.X.Offset, 300)
-            Height = math.max(Wanted.Y.Offset, 260)
+            Width = math.max(Wanted.X.Offset, 1)
+            Height = math.max(Wanted.Y.Offset, 1)
             -- the window keeps its designed size and only shrinks when the
             -- viewport cannot hold it, it never blows up on a big monitor
             if W.Config.AutoScale then
-                Scale = Clamp(math.min((Viewport.X - 40) / Width, (Viewport.Y - 60) / Height), 0.55, 1)
+                Scale = Clamp(math.min((Viewport.X - 40) / Width, (Viewport.Y - 60) / Height), 0.4, 1)
             else
                 Width = math.min(Width, Viewport.X - 40)
                 Height = math.min(Height, Viewport.Y - 60)
@@ -2334,7 +2564,7 @@ end
 local ComponentNames = {
     "Toggle", "Button", "Input", "Slider", "Dropdown", "Keybind",
     "Colorpicker", "ColorpickerRGB", "MultiButton", "Paragraph", "Label",
-    "Tag", "Codeblock", "Progress", "Grid", "Table", "Image",
+    "Tag", "Codeblock", "Progress", "Grid", "Table", "Image", "Viewport",
     "Separator", "Divider", "Space"
 }
 
@@ -4815,6 +5045,148 @@ function Components.Image(Section, Config)
     return Finish(Section, "Image", Config, Row, Handlers, TitleLabel, DescLabel)
 end
 
+function Components.Viewport(Section, Config)
+    Config = Merge({
+        Title = "",
+        Description = "",
+        Object = nil,
+        Height = 180,
+        Interactive = true,
+        Corner = 10,
+        Callback = function() end
+    }, Config)
+
+    local Row, TitleLabel, DescLabel, _, Stack = MakeRow(Section, "Viewport", Config.Title, Config.Description, 44, 0)
+
+    local Frame = New("Frame", {
+        Parent = Stack,
+        BorderSizePixel = 0,
+        Size = UDim2.new(1, 0, 0, Config.Height),
+        LayoutOrder = 3,
+        ClipsDescendants = true
+    })
+    Library:Corner(Frame, Config.Corner)
+    Library:Themed(Frame, "BackgroundColor3", "Inset")
+    Library:Themed(Frame, "BackgroundTransparency", "InsetAlpha")
+    Library:Stroke(Frame, "StrokeSoft", 1)
+
+    local Camera = New("Camera", {})
+    local View = New("ViewportFrame", {
+        Parent = Frame,
+        BackgroundTransparency = 1,
+        Size = UDim2.fromScale(1, 1),
+        CurrentCamera = Camera,
+        Ambient = Color3.fromRGB(150, 150, 150),
+        LightColor = Color3.fromRGB(255, 255, 255)
+    })
+    Camera.Parent = View
+
+    -- cloned preview objects live in here, never the camera, so clearing
+    -- the preview on SetObject can never destroy the camera it needs
+    local Models = New("Folder", { Parent = View, Name = "Models" })
+
+    local HintIcon = IconLabel(Frame, Library.Icons.Command, 20, "TextDisabled")
+    HintIcon.AnchorPoint = Vector2.new(0.5, 0.5)
+    HintIcon.Position = UDim2.fromScale(0.5, 0.5)
+    HintIcon.Visible = false
+
+    local Current, Distance, Yaw, Pitch = nil, 6, 0, 0.35
+
+    local function Frame3D()
+        if not Current then
+            return
+        end
+        local Center, Size
+        local Ok = pcall(function()
+            if Current:IsA("Model") then
+                local CF, S = Current:GetBoundingBox()
+                Center, Size = CF.Position, S
+            elseif Current:IsA("BasePart") then
+                Center, Size = Current.Position, Current.Size
+            end
+        end)
+        if not Ok or not Center then
+            return
+        end
+        Distance = math.max(Size.Magnitude, 2) * 1.15
+        local Offset = Vector3.new(
+            math.cos(Pitch) * math.sin(Yaw),
+            math.sin(Pitch),
+            math.cos(Pitch) * math.cos(Yaw)
+        ) * Distance
+        Camera.CFrame = CFrame.lookAt(Center + Offset, Center)
+    end
+
+    local Handlers = {}
+    local Element
+    function Handlers.Get()
+        return Current
+    end
+    function Handlers.Set(NewObject, Silent)
+        if Current then
+            pcall(function() Current:Destroy() end)
+            Current = nil
+        end
+        Models:ClearAllChildren()
+        HintIcon.Visible = false
+        if typeof(NewObject) == "Instance" then
+            local Ok, Clone = pcall(function() return NewObject:Clone() end)
+            if Ok and Clone then
+                Clone.Parent = Models
+                Current = Clone
+                Yaw, Pitch = 0, 0.35
+                Frame3D()
+                HintIcon.Visible = Config.Interactive
+            end
+        end
+        Element.Emit(Current, Silent)
+    end
+
+    Element = Finish(Section, "Viewport", Config, Row, Handlers, TitleLabel, DescLabel)
+    Element.SetObject = Element.Set
+
+    if Config.Interactive then
+        local Dragging, LastX, LastY = false, 0, 0
+        local Catcher = New("TextButton", {
+            Parent = Frame,
+            BackgroundTransparency = 1,
+            Size = UDim2.fromScale(1, 1),
+            Text = "",
+            AutoButtonColor = false,
+            ZIndex = 5
+        })
+        Catcher.InputBegan:Connect(function(Input)
+            if Input.UserInputType == Enum.UserInputType.MouseButton1 or Input.UserInputType == Enum.UserInputType.Touch then
+                Dragging = true
+                LastX, LastY = Input.Position.X, Input.Position.Y
+            end
+        end)
+        UserInputService.InputChanged:Connect(function(Input)
+            if not Dragging then
+                return
+            end
+            if Input.UserInputType == Enum.UserInputType.MouseMovement or Input.UserInputType == Enum.UserInputType.Touch then
+                local DX, DY = Input.Position.X - LastX, Input.Position.Y - LastY
+                LastX, LastY = Input.Position.X, Input.Position.Y
+                Yaw = Yaw - DX * 0.01
+                Pitch = Clamp(Pitch - DY * 0.01, -1.3, 1.3)
+                Frame3D()
+            end
+        end)
+        UserInputService.InputEnded:Connect(function(Input)
+            if Input.UserInputType == Enum.UserInputType.MouseButton1 or Input.UserInputType == Enum.UserInputType.Touch then
+                Dragging = false
+            end
+        end)
+    end
+
+    if Config.Object then
+        Element:Set(Config.Object, true)
+    end
+
+    return Element
+end
+
 function Components.Separator(Section, Config)
     Config = Merge({ Title = "", Text = nil }, Config)
     local Text = Config.Text or Config.Title or ""
@@ -4866,13 +5238,12 @@ function Components.Divider(Section, Config)
     Config = Merge({ Title = "" }, Config or {})
     local Frame = New("Frame", {
         Parent = Section.Body,
-        BackgroundTransparency = 0.88,
         BorderSizePixel = 0,
         Size = UDim2.new(1, 0, 0, 1),
         LayoutOrder = Section.Count + 1
     })
     Section.Count = Section.Count + 1
-    Library:Themed(Frame, "BackgroundColor3", "Stroke")
+    Library:FadeLine(Frame, true)
     local Handlers = { Get = function() end, Set = function() end }
     return Finish(Section, "Divider", Config, Frame, Handlers, nil, nil)
 end
@@ -6881,13 +7252,16 @@ Library.Groq = {
     Key = "",
     Prompt = "You are a concise assistant embedded in a Roblox script hub.",
     Model = "openai/gpt-oss-120b",
+    -- Groq deprecated its Llama chat models (llama-3.3-70b-versatile,
+    -- llama-3.1-8b-instant) and the old qwen/deepseek preview slugs have
+    -- since rotated too -- verified against console.groq.com/docs/models.
+    -- Kept to Production-tier models/systems only, since Preview models
+    -- can be pulled without notice.
     Models = {
         "openai/gpt-oss-120b",
         "openai/gpt-oss-20b",
-        "llama-3.3-70b-versatile",
-        "llama-3.1-8b-instant",
-        "qwen/qwen3-32b",
-        "deepseek-r1-distill-llama-70b"
+        "groq/compound",
+        "groq/compound-mini"
     }
 }
 
