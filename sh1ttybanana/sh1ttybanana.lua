@@ -804,6 +804,17 @@ end
 
 Library.Device = Device
 
+function Library.TextSize(Base, MobileBoost)
+    Base = Base or 13
+    MobileBoost = MobileBoost or 2
+    local Scale = Device.Scale()
+    local Size = Base * Clamp(Scale, 0.85, 1.15)
+    if Device.IsMobile() then
+        Size = Size + MobileBoost
+    end
+    return math.floor(Size + 0.5)
+end
+
 local DragLockCount = 0
 local DragLockPrevBehavior = nil
 local DragLockPrevIcon = nil
@@ -1130,13 +1141,17 @@ local function MakeRow(Section, Kind, Title, Description, MinHeight, RightWidth)
     local Compact = Section.Window.Config and Section.Window.Config.Compact
     local Height = (MinHeight or 36) + (Mobile and (Compact and 4 or 10) or 0) - (Compact and not Mobile and 4 or 0)
     local Reserve = (RightWidth or 60) > 0 and ((RightWidth or 60) + 26) or 14
+    local TitleSize = Library.TextSize(13, 2)
+    local DescSize = Library.TextSize(11, 2)
+    local TitleH = TitleSize + 4
 
     local Row = New("Frame", {
         Parent = Section.Body,
         Name = Kind,
         BorderSizePixel = 0,
         Size = UDim2.new(1, 0, 0, Height),
-        LayoutOrder = Section.Count + 1
+        LayoutOrder = Section.Count + 1,
+        ClipsDescendants = true
     })
     Section.Count = Section.Count + 1
     Library:Corner(Row, 7)
@@ -1146,8 +1161,8 @@ local function MakeRow(Section, Kind, Title, Description, MinHeight, RightWidth)
 
     New("UIPadding", {
         Parent = Row,
-        PaddingTop = UDim.new(0, 10),
-        PaddingBottom = UDim.new(0, 10)
+        PaddingTop = UDim.new(0, Compact and 8 or 10),
+        PaddingBottom = UDim.new(0, Compact and 8 or 10)
     })
 
     local Stack = New("Frame", {
@@ -1160,29 +1175,38 @@ local function MakeRow(Section, Kind, Title, Description, MinHeight, RightWidth)
         AutomaticSize = Enum.AutomaticSize.Y
     })
 
+    local StackLayout = New("UIListLayout", {
+        Parent = Stack,
+        SortOrder = Enum.SortOrder.LayoutOrder,
+        Padding = UDim.new(0, Compact and 2 or 3)
+    })
+
     local function Measure()
-        local Wanted = math.max(Height, Stack.AbsoluteSize.Y + 20)
+        local ContentY = StackLayout.AbsoluteContentSize.Y
+        if ContentY < 1 then
+            ContentY = Stack.AbsoluteSize.Y
+        end
+        local Pad = Compact and 16 or 20
+        local Wanted = math.max(Height, math.ceil(ContentY + Pad))
         if Row.Size.Y.Offset ~= Wanted then
             Row.Size = UDim2.new(1, 0, 0, Wanted)
         end
     end
     Stack:GetPropertyChangedSignal("AbsoluteSize"):Connect(Measure)
+    StackLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(Measure)
     task.defer(Measure)
-    New("UIListLayout", {
-        Parent = Stack,
-        SortOrder = Enum.SortOrder.LayoutOrder,
-        Padding = UDim.new(0, 3)
-    })
+    task.delay(0.05, Measure)
+    task.delay(0.2, Measure)
 
     local TitleLabel = New("TextLabel", {
         Parent = Stack,
         BackgroundTransparency = 1,
         Font = Library.Font.Bold,
         Text = Title or Kind,
-        TextSize = Mobile and 15 or 13,
+        TextSize = TitleSize,
         TextXAlignment = Enum.TextXAlignment.Left,
         TextTruncate = Enum.TextTruncate.AtEnd,
-        Size = UDim2.new(1, 0, 0, Mobile and 20 or 16),
+        Size = UDim2.new(1, 0, 0, TitleH),
         LayoutOrder = 1,
         RichText = true
     })
@@ -1193,7 +1217,7 @@ local function MakeRow(Section, Kind, Title, Description, MinHeight, RightWidth)
         BackgroundTransparency = 1,
         Font = Library.Font.Regular,
         Text = Description or "",
-        TextSize = Mobile and 13 or 11,
+        TextSize = DescSize,
         TextXAlignment = Enum.TextXAlignment.Left,
         TextYAlignment = Enum.TextYAlignment.Top,
         TextWrapped = true,
@@ -1214,7 +1238,8 @@ local function MakeRow(Section, Kind, Title, Description, MinHeight, RightWidth)
         Library:Tween(Line, FAST, { Transparency = Library.Theme.StrokeSoftAlpha })
     end)
 
-    return Row, TitleLabel, DescLabel, Line, Stack
+    Row:SetAttribute("Measure", true)
+    return Row, TitleLabel, DescLabel, Line, Stack, Measure
 end
 
 local function Register(Section, Element)
@@ -2297,7 +2322,7 @@ function Library:NewWindow(UserConfig)
         Size = UDim2.new(1, -120, 0, 20),
         Font = Library.Font.Bold,
         Text = "",
-        TextSize = W.Mobile and 16 or 15,
+        TextSize = Library.TextSize(15, 1),
         TextXAlignment = Enum.TextXAlignment.Left,
         TextTruncate = Enum.TextTruncate.AtEnd,
         ZIndex = 5
@@ -2792,7 +2817,7 @@ local function BuildSection(Tab, Config)
         AutomaticSize = Enum.AutomaticSize.Y,
         BackgroundTransparency = Config.Headerless and 1 or 0,
         LayoutOrder = Tab.SectionCount + 1,
-        ClipsDescendants = false
+        ClipsDescendants = true
     })
     Tab.SectionCount = Tab.SectionCount + 1
     Section.Frame = Card
@@ -3026,7 +3051,7 @@ local function BuildTab(W, Config, Group)
         Font = Library.Font.Bold,
         Text = Config.Title,
         TextTransparency = 0.4,
-        TextSize = W.Mobile and 14 or 12,
+        TextSize = Library.TextSize(12, 2),
         TextXAlignment = Enum.TextXAlignment.Left,
         TextTruncate = Enum.TextTruncate.AtEnd,
         ZIndex = W.Sidebar.ZIndex + 2
@@ -4779,8 +4804,14 @@ function Components.Paragraph(Section, Config)
     }, Config)
 
     local Body = Config.Text or Config.Content or Config.Description
-    local Row, TitleLabel, Content = MakeRow(Section, "Paragraph", Config.Title, Body, 44, 0)
-    Content.TextSize = 12
+    local Row, TitleLabel, Content, _, _, Measure = MakeRow(Section, "Paragraph", Config.Title, Body, 44, 0)
+    if Content then
+        Content.TextSize = Library.TextSize(12, 1)
+    end
+    if Measure then
+        task.defer(Measure)
+        task.delay(0.08, Measure)
+    end
 
     local Handlers = {}
     function Handlers.Get()
@@ -4907,7 +4938,7 @@ function Components.Codeblock(Section, Config)
         AutomaticSize = Enum.AutomaticSize.Y,
         Font = Library.Font.Mono,
         Text = Body,
-        TextSize = 12,
+        TextSize = Library.TextSize(12, 1),
         TextWrapped = true,
         TextXAlignment = Enum.TextXAlignment.Left,
         TextYAlignment = Enum.TextYAlignment.Top
@@ -5021,19 +5052,30 @@ function Components.Grid(Section, Config)
         Items = {}
     }, Config)
 
-    local Rows = math.ceil(math.max(#Config.Items, 1) / Config.Columns)
-    local Row, TitleLabel, DescLabel, _, Stack = MakeRow(Section, "Grid", Config.Title, Config.Description, 44, 0)
+    local Cols = math.max(Config.Columns or 3, 1)
+    local Count = math.max(#Config.Items, 1)
+    local Rows = math.ceil(Count / Cols)
+    local CellH = Config.Height or 62
+    local Gap = 6
+    local GridH = Rows * CellH + math.max(Rows - 1, 0) * Gap
+    local Row, TitleLabel, DescLabel, _, Stack, Measure = MakeRow(Section, "Grid", Config.Title, Config.Description, 44 + GridH, 0)
 
     local Holder = Blank(Stack, {
-        Size = UDim2.new(1, 0, 0, Rows * (Config.Height + 6)),
-        LayoutOrder = 3
+        Size = UDim2.new(1, 0, 0, GridH),
+        LayoutOrder = 3,
+        ClipsDescendants = true
     })
     local Layout = New("UIGridLayout", {
         Parent = Holder,
-        CellPadding = UDim2.fromOffset(6, 6),
-        CellSize = UDim2.new(1 / Config.Columns, -6, 0, Config.Height),
-        SortOrder = Enum.SortOrder.LayoutOrder
+        CellPadding = UDim2.fromOffset(Gap, Gap),
+        CellSize = UDim2.new(1 / Cols, -math.ceil(Gap * (Cols - 1) / Cols), 0, CellH),
+        SortOrder = Enum.SortOrder.LayoutOrder,
+        FillDirectionMaxCells = Cols
     })
+    if Measure then
+        task.defer(Measure)
+        task.delay(0.08, Measure)
+    end
 
     local API = {}
     local function AddItem(Info, Index)
@@ -5064,7 +5106,7 @@ function Components.Grid(Section, Config)
             Size = UDim2.new(1, -8, 0, 14),
             Font = Library.Font.Medium,
             Text = Info.Title or Info.Text or "",
-            TextSize = 11,
+            TextSize = Library.TextSize(11, 1),
             TextTruncate = Enum.TextTruncate.AtEnd
         })
         Library:Themed(Text, "TextColor3", "Text")
@@ -5083,6 +5125,9 @@ function Components.Grid(Section, Config)
         AddItem(Info, Index)
     end
 
+    if Measure then
+        task.defer(Measure)
+    end
     local Handlers = { Get = function() end, Set = function() end }
     local Element = Finish(Section, "Grid", Config, Row, Handlers, TitleLabel, DescLabel)
     function Element:AddItem(Info)
@@ -5100,7 +5145,9 @@ function Components.Table(Section, Config)
         Rows = {}
     }, Config)
 
-    local Row, TitleLabel, DescLabel, _, Stack = MakeRow(Section, "Table", Config.Title, Config.Description, 44, 0)
+    local LineCount = (#Config.Columns > 0 and 1 or 0) + #Config.Rows
+    local TableH = math.max(LineCount, 1) * 28
+    local Row, TitleLabel, DescLabel, _, Stack, Measure = MakeRow(Section, "Table", Config.Title, Config.Description, 44 + TableH, 0)
 
     local Holder = Blank(Stack, {
         Size = UDim2.new(1, 0, 0, 0),
@@ -5132,11 +5179,14 @@ function Components.Table(Section, Config)
                 Size = UDim2.new(1 / Count, -12, 1, 0),
                 Font = Header and Library.Font.Bold or Library.Font.Regular,
                 Text = tostring(Value),
-                TextSize = 11,
+                TextSize = Library.TextSize(11, 1),
                 TextXAlignment = Enum.TextXAlignment.Left,
                 TextTruncate = Enum.TextTruncate.AtEnd
             })
             Library:Themed(Cell, "TextColor3", Header and "Text" or "TextDim")
+        end
+        if Measure then
+            task.defer(Measure)
         end
         return LineFrame
     end
@@ -5146,6 +5196,10 @@ function Components.Table(Section, Config)
     end
     for Index, Data in ipairs(Config.Rows) do
         Line(Data, false, Index)
+    end
+    if Measure then
+        task.defer(Measure)
+        task.delay(0.08, Measure)
     end
 
     local Handlers = { Get = function() end, Set = function() end }
@@ -5178,20 +5232,26 @@ function Components.Image(Section, Config)
         Corner = 10
     }, Config)
 
-    local HasTitle = (Config.Title or "") ~= ""
-    local Row, TitleLabel, DescLabel, _, Stack = MakeRow(Section, "Image", Config.Title, Config.Description, 44, 0)
+    local ImgH = Config.Height or 120
+    local Row, TitleLabel, DescLabel, _, Stack, Measure = MakeRow(Section, "Image", Config.Title, Config.Description, 44 + ImgH, 0)
 
     local Picture = New("ImageLabel", {
         Parent = Stack,
-        BackgroundTransparency = 1,
+        BackgroundTransparency = 0.92,
+        BorderSizePixel = 0,
         LayoutOrder = 3,
-        Size = UDim2.new(1, 0, 0, Config.Height),
+        Size = UDim2.new(1, 0, 0, ImgH),
         Image = Config.Image,
         ScaleType = Enum.ScaleType.Crop
     })
-    Library:Corner(Picture, Config.Corner)
+    Library:Corner(Picture, Config.Corner or 10)
+    Library:Themed(Picture, "BackgroundColor3", "Inset")
     if Config.Ratio then
         New("UIAspectRatioConstraint", { Parent = Picture, AspectRatio = Config.Ratio })
+    end
+    if Measure then
+        task.defer(Measure)
+        task.delay(0.08, Measure)
     end
 
     local Handlers = {}
@@ -5216,15 +5276,20 @@ function Components.Viewport(Section, Config)
         Callback = function() end
     }, Config)
 
-    local Row, TitleLabel, DescLabel, _, Stack = MakeRow(Section, "Viewport", Config.Title, Config.Description, 44, 0)
+    local VpH = Config.Height or 180
+    local Row, TitleLabel, DescLabel, _, Stack, Measure = MakeRow(Section, "Viewport", Config.Title, Config.Description, 44 + VpH, 0)
 
     local Frame = New("Frame", {
         Parent = Stack,
         BorderSizePixel = 0,
-        Size = UDim2.new(1, 0, 0, Config.Height),
+        Size = UDim2.new(1, 0, 0, VpH),
         LayoutOrder = 3,
         ClipsDescendants = true
     })
+    if Measure then
+        task.defer(Measure)
+        task.delay(0.08, Measure)
+    end
     Library:Corner(Frame, Config.Corner)
     Library:Themed(Frame, "BackgroundColor3", "Inset")
     Library:Themed(Frame, "BackgroundTransparency", "InsetAlpha")
