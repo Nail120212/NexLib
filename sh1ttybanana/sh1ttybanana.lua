@@ -534,7 +534,10 @@ Library.Icons = {
     Info = "info",
     Menu = "menu",
     Grip = "grip-vertical",
-    Sparkles = "sparkles"
+    Sparkles = "sparkles",
+    Eye = "eye",
+    EyeOff = "eye-off",
+    Scan = "scan"
 }
 
 function Library:NormalizeIcon(Name)
@@ -1121,10 +1124,10 @@ local function MakeRow(Section, Kind, Title, Description, MinHeight, RightWidth)
         BackgroundTransparency = 1,
         Font = Library.Font.Bold,
         Text = Title or Kind,
-        TextSize = Mobile and 14 or 13,
+        TextSize = Mobile and 15 or 13,
         TextXAlignment = Enum.TextXAlignment.Left,
         TextTruncate = Enum.TextTruncate.AtEnd,
-        Size = UDim2.new(1, 0, 0, Mobile and 18 or 16),
+        Size = UDim2.new(1, 0, 0, Mobile and 20 or 16),
         LayoutOrder = 1,
         RichText = true
     })
@@ -1135,7 +1138,7 @@ local function MakeRow(Section, Kind, Title, Description, MinHeight, RightWidth)
         BackgroundTransparency = 1,
         Font = Library.Font.Regular,
         Text = Description or "",
-        TextSize = Mobile and 12 or 11,
+        TextSize = Mobile and 13 or 11,
         TextXAlignment = Enum.TextXAlignment.Left,
         TextYAlignment = Enum.TextYAlignment.Top,
         TextWrapped = true,
@@ -2019,7 +2022,7 @@ function Library:NewWindow(UserConfig)
     W.MenuButton = Control(Library.Icons.Menu, "Tabs", 0, function()
         W.ToggleDrawer()
     end, true)
-    W.MenuButton.Visible = W.Mobile
+    W.MenuButton.Visible = false
 
     if W.Config.ShowPalette then
         Control(Library.Icons.Command, "Command palette (Ctrl+K)", 1, function()
@@ -2228,7 +2231,7 @@ function Library:NewWindow(UserConfig)
         Size = UDim2.new(1, -120, 0, 20),
         Font = Library.Font.Bold,
         Text = "",
-        TextSize = 15,
+        TextSize = W.Mobile and 16 or 15,
         TextXAlignment = Enum.TextXAlignment.Left,
         TextTruncate = Enum.TextTruncate.AtEnd,
         ZIndex = 5
@@ -2293,82 +2296,29 @@ function Library:NewWindow(UserConfig)
         ZIndex = 20
     })
     W.Backdrop.MouseButton1Click:Connect(function()
-        if W.Mobile and W.DrawerOpen then
-            W.ToggleDrawer()
-        end
     end)
 
-    W.DrawerOpen = not W.Mobile
+    W.DrawerOpen = true
 
     function W.ToggleDrawer()
-        W.DrawerOpen = not W.DrawerOpen
-        if W.Mobile then
-            W.Backdrop.Visible = W.DrawerOpen
-            if W.DrawerOpen then
-                W.Sidebar.Visible = true
-                Library:Tween(W.Sidebar, NORMAL, { Position = UDim2.new(0, 0, 0, 0) })
-                Library:Tween(W.Backdrop, FAST, { BackgroundTransparency = 0.45 })
-            else
-                Library:Tween(W.Sidebar, NORMAL, { Position = UDim2.new(0, -W.SidebarWidth - 8, 0, 0) }, function()
-                    if not W.DrawerOpen then
-                        W.Sidebar.Visible = false
-                    end
-                end)
-                Library:Tween(W.Backdrop, FAST, { BackgroundTransparency = 1 }, function()
-                    if not W.DrawerOpen then
-                        W.Backdrop.Visible = false
-                    end
-                end)
-            end
-        else
-            W.Sidebar.Visible = true
-            W.Sidebar.Position = UDim2.new(0, 0, 0, 0)
-            W.Backdrop.Visible = false
-            W.Content.Position = UDim2.new(0, W.SidebarWidth, 0, 0)
-            W.Content.Size = UDim2.new(1, -W.SidebarWidth, 1, 0)
-        end
-        Library:Feedback(1.05)
     end
 
     function W.Relayout()
         local HeaderHeight = W.Header.Size.Y.Offset
         W.Body.Position = UDim2.new(0, 0, 0, HeaderHeight)
         W.Body.Size = UDim2.new(1, 0, 1, -HeaderHeight)
-        W.MenuButton.Visible = W.Mobile
-        if W.Mobile then
-            W.SidebarWidth = math.min(200, math.floor(Device.Viewport().X * 0.72))
-            W.Sidebar.Size = UDim2.new(0, W.SidebarWidth, 1, 0)
-            W.Sidebar.ZIndex = 25
-            W.Content.Position = UDim2.new(0, 0, 0, 0)
-            W.Content.Size = UDim2.new(1, 0, 1, 0)
-            if W.DrawerOpen then
-                W.Sidebar.Visible = true
-                W.Sidebar.Position = UDim2.new(0, 0, 0, 0)
-                W.Backdrop.Visible = true
-                W.Backdrop.BackgroundTransparency = 0.45
-            else
-                W.Sidebar.Visible = false
-                W.Sidebar.Position = UDim2.new(0, -W.SidebarWidth - 8, 0, 0)
-                W.Backdrop.Visible = false
-            end
-            W.Controls.Size = UDim2.new(0, 200, 0, 30)
-            if W.MaxButton then
-                W.MaxButton.Visible = false
-            end
-        else
-            if W.MaxButton then
-                W.MaxButton.Visible = true
-            end
-            W.SidebarWidth = Device.Viewport().X < 560 and 140 or 156
-            W.Sidebar.Size = UDim2.new(0, W.SidebarWidth, 1, 0)
-            W.Sidebar.ZIndex = 3
-            W.Sidebar.Visible = true
-            W.Sidebar.Position = UDim2.new(0, 0, 0, 0)
-            W.Backdrop.Visible = false
-            W.Content.Position = UDim2.new(0, W.SidebarWidth, 0, 0)
-            W.Content.Size = UDim2.new(1, -W.SidebarWidth, 1, 0)
-            W.Controls.Size = UDim2.new(0, 320, 0, 30)
-            W.DrawerOpen = true
+        W.MenuButton.Visible = false
+        W.SidebarWidth = W.Mobile and 148 or (Device.Viewport().X < 560 and 140 or 156)
+        W.Sidebar.Size = UDim2.new(0, W.SidebarWidth, 1, 0)
+        W.Sidebar.Visible = true
+        W.Sidebar.Position = UDim2.new(0, 0, 0, 0)
+        W.Sidebar.ZIndex = 3
+        W.Backdrop.Visible = false
+        W.Content.Position = UDim2.new(0, W.SidebarWidth, 0, 0)
+        W.Content.Size = UDim2.new(1, -W.SidebarWidth, 1, 0)
+        W.Controls.Size = UDim2.new(0, W.Mobile and 220 or 320, 0, 30)
+        if W.MaxButton then
+            W.MaxButton.Visible = not W.Mobile
         end
     end
 
@@ -2408,34 +2358,99 @@ function Library:NewWindow(UserConfig)
         end))
     end
 
-    W.FloatButton = New("TextButton", {
+    local FloatW = W.Mobile and 168 or 156
+    local FloatH = W.Mobile and 52 or 48
+    W.FloatButton = New("Frame", {
         Parent = W.Gui,
         AnchorPoint = Vector2.new(1, 1),
-        BackgroundColor3 = Color3.fromRGB(20, 20, 20),
-        BackgroundTransparency = 0.45,
         BorderSizePixel = 0,
-        Position = UDim2.new(1, -20, 1, -20),
-        Size = UDim2.fromOffset(W.Mobile and 58 or 50, W.Mobile and 58 or 50),
-        Text = "",
-        AutoButtonColor = false,
+        Position = UDim2.new(1, -18, 1, -18),
+        Size = UDim2.fromOffset(FloatW, FloatH),
         Visible = false,
         ZIndex = 50
     })
-    Library:Corner(W.FloatButton, UDim.new(1, 0))
+    Library:Corner(W.FloatButton, 12)
+    Library:Themed(W.FloatButton, "BackgroundColor3", "Elevated")
+    Library:Themed(W.FloatButton, "BackgroundTransparency", "ElevatedAlpha")
     Library:Stroke(W.FloatButton, "Stroke", 1.2)
-    Library:Shadow(W.FloatButton, 40, 0.6)
+    Library:Shadow(W.FloatButton, 40, 0.55)
+    Library:Sheen(W.FloatButton, 90).ZIndex = 50
 
-    local FloatIcon = IconLabel(W.FloatButton, Library.Icons.Up, W.Mobile and 24 or 20, "Text")
-    FloatIcon.AnchorPoint = Vector2.new(0.5, 0.5)
-    FloatIcon.Position = UDim2.fromScale(0.5, 0.5)
-    FloatIcon.ZIndex = 51
+    local FloatLogo = New("Frame", {
+        Parent = W.FloatButton,
+        AnchorPoint = Vector2.new(0, 0.5),
+        BorderSizePixel = 0,
+        Position = UDim2.new(0, 8, 0.5, 0),
+        Size = UDim2.fromOffset(W.Mobile and 32 or 30, W.Mobile and 32 or 30),
+        BackgroundTransparency = 0.86,
+        ZIndex = 51
+    })
+    Library:Corner(FloatLogo, 8)
+    Library:Themed(FloatLogo, "BackgroundColor3", "Accent")
+    local FloatLogoImg = New("ImageLabel", {
+        Parent = FloatLogo,
+        BackgroundTransparency = 1,
+        Size = UDim2.fromScale(1, 1),
+        Image = W.Config.Logo or "",
+        ScaleType = Enum.ScaleType.Crop,
+        ZIndex = 52
+    })
+    if W.Config.Icon then
+        Library:SetIcon(FloatLogoImg, W.Config.Icon, Library.Theme.AccentText)
+    end
+
+    local FloatTitle = New("TextLabel", {
+        Parent = W.FloatButton,
+        BackgroundTransparency = 1,
+        Position = UDim2.new(0, W.Mobile and 46 or 44, 0, 0),
+        Size = UDim2.new(1, W.Mobile and -90 or -86, 1, 0),
+        Font = Library.Font.Bold,
+        Text = W.Config.Title or "sh1ttybanana",
+        TextSize = W.Mobile and 13 or 12,
+        TextXAlignment = Enum.TextXAlignment.Left,
+        TextTruncate = Enum.TextTruncate.AtEnd,
+        ZIndex = 51
+    })
+    Library:Themed(FloatTitle, "TextColor3", "Text")
+
+    local FloatOpen = New("TextButton", {
+        Parent = W.FloatButton,
+        AnchorPoint = Vector2.new(1, 0.5),
+        BackgroundTransparency = 1,
+        BorderSizePixel = 0,
+        Position = UDim2.new(1, -6, 0.5, 0),
+        Size = UDim2.fromOffset(W.Mobile and 34 or 32, W.Mobile and 34 or 32),
+        Text = "",
+        AutoButtonColor = false,
+        ZIndex = 53
+    })
+    Library:Corner(FloatOpen, 9)
+    Library:Themed(FloatOpen, "BackgroundColor3", "Accent")
+    FloatOpen.BackgroundTransparency = 0.82
+    local FloatScan = IconLabel(FloatOpen, Library.Icons.Scan, W.Mobile and 18 or 16, "Accent")
+    FloatScan.AnchorPoint = Vector2.new(0.5, 0.5)
+    FloatScan.Position = UDim2.fromScale(0.5, 0.5)
+    FloatScan.ZIndex = 54
+    Library:Themed(FloatScan, "ImageColor3", "Accent")
+
+    FloatOpen.MouseEnter:Connect(function()
+        Library:Tween(FloatOpen, FAST, { BackgroundTransparency = 0.55 })
+    end)
+    FloatOpen.MouseLeave:Connect(function()
+        Library:Tween(FloatOpen, FAST, { BackgroundTransparency = 0.82 })
+    end)
+    FloatOpen.MouseButton1Click:Connect(function()
+        Library:Feedback(1.15)
+        W.SetOpen(true)
+    end)
 
     do
-        local Dragging, Moved, Origin, StartPosition = false, false, nil, nil
+        local Dragging, Origin, StartPosition, Moved = false, nil, nil, false
         W.FloatButton.InputBegan:Connect(function(Input)
             if Input.UserInputType == Enum.UserInputType.MouseButton1
                 or Input.UserInputType == Enum.UserInputType.Touch then
-                Dragging, Moved = true, false
+                Dragging = true
+                Moved = false
                 Origin = Input.Position
                 StartPosition = W.FloatButton.Position
             end
@@ -2457,12 +2472,18 @@ function Library:NewWindow(UserConfig)
             if Dragging and (Input.UserInputType == Enum.UserInputType.MouseButton1
                 or Input.UserInputType == Enum.UserInputType.Touch) then
                 Dragging = false
-                if not Moved then
-                    W.SetOpen(true)
-                end
             end
         end))
     end
+
+    Library.OnThemeChanged:Connect(function()
+        if W.FloatButton and W.FloatButton.Parent then
+            pcall(function()
+                W.FloatButton.BackgroundColor3 = Library.Theme.Elevated
+                W.FloatButton.BackgroundTransparency = Library.Theme.ElevatedAlpha
+            end)
+        end
+    end)
 
     function W.SetOpen(State)
         if State == nil then
@@ -2509,10 +2530,10 @@ function Library:NewWindow(UserConfig)
     local Camera = workspace.CurrentCamera
     if Camera then
         table.insert(W.Connections, Camera:GetPropertyChangedSignal("ViewportSize"):Connect(function()
-            local WasMobile = W.Mobile
             W.Mobile = Device.IsMobile()
             W.Fit()
             W.Relayout()
+            W.Clamp()
         end))
     end
 
@@ -2774,7 +2795,7 @@ local function BuildTab(W, Config, Group)
         Padding = UDim.new(0, W.Mobile and 8 or 10)
     })
 
-    local Height = W.Mobile and 42 or 36
+    local Height = W.Mobile and 46 or 36
     Tab.Button = New("TextButton", {
         Parent = Group and Group.Holder or W.TabScroll,
         Name = "TabButton",
@@ -2801,7 +2822,7 @@ local function BuildTab(W, Config, Group)
     Library:Corner(Tab.Indicator, UDim.new(1, 0))
     Library:Themed(Tab.Indicator, "BackgroundColor3", "Accent")
 
-    Tab.IconLabel = IconLabel(Tab.Button, Config.Icon, W.Mobile and 18 or 16, "Accent")
+    Tab.IconLabel = IconLabel(Tab.Button, Config.Icon, W.Mobile and 20 or 16, "Accent")
     Tab.IconLabel.AnchorPoint = Vector2.new(0, 0.5)
     Tab.IconLabel.Position = UDim2.new(0, 11, 0.5, 0)
     Tab.IconLabel.ImageTransparency = 0.35
@@ -2816,7 +2837,7 @@ local function BuildTab(W, Config, Group)
         Font = Library.Font.Bold,
         Text = Config.Title,
         TextTransparency = 0.4,
-        TextSize = W.Mobile and 13 or 12,
+        TextSize = W.Mobile and 14 or 12,
         TextXAlignment = Enum.TextXAlignment.Left,
         TextTruncate = Enum.TextTruncate.AtEnd,
         ZIndex = W.Sidebar.ZIndex + 2
@@ -7396,40 +7417,107 @@ function WM.AI(W)
         Bubble(Entry.Role, Entry.Text)
     end
 
+    local HasKey = Library.Groq.Key ~= ""
+    local SavedKey = FS.Read(W.Paths.Folder .. "/groq_key.txt")
+    if type(SavedKey) == "string" and Trim(SavedKey) ~= "" and Library.Groq.Key == "" then
+        Library.Groq.Key = Trim(SavedKey)
+        HasKey = true
+    end
+
     local KeyField = New("Frame", {
         Parent = Panel,
         AnchorPoint = Vector2.new(0, 1),
         BorderSizePixel = 0,
-        Position = UDim2.new(0, 10, 1, -54),
-        Size = UDim2.new(1, -20, 0, 36),
+        Position = UDim2.new(0, 10, 1, -10),
+        Size = UDim2.new(1, -20, 0, 40),
         ZIndex = 82,
-        Visible = Library.Groq.Key == ""
+        Visible = not HasKey
     })
     Library:Corner(KeyField, 10)
     Library:Themed(KeyField, "BackgroundColor3", "Inset")
     Library:Themed(KeyField, "BackgroundTransparency", "InsetAlpha")
     Library:Stroke(KeyField, "StrokeSoft", 1)
 
+    local KeyReal = ""
+    local KeyShown = false
+
     local KeyBox = New("TextBox", {
         Parent = KeyField,
         BackgroundTransparency = 1,
         Position = UDim2.new(0, 12, 0, 0),
-        Size = UDim2.new(1, -50, 1, 0),
+        Size = UDim2.new(1, -78, 1, 0),
         Font = Library.Font.Regular,
-        PlaceholderText = "API key not set — paste your own here",
+        PlaceholderText = "API key not set — paste your own",
         Text = "",
         TextSize = 12,
         TextXAlignment = Enum.TextXAlignment.Left,
         ClearTextOnFocus = false,
-        TextTransparency = 0,
         ZIndex = 83
     })
     Library:Themed(KeyBox, "TextColor3", "Text")
     Library:Themed(KeyBox, "PlaceholderColor3", "TextDisabled")
 
-    local KeySave = GlyphButton(KeyField, Library.Icons.Key, "Save key")
+    local function Mask(Text)
+        if Text == "" then
+            return ""
+        end
+        return string.rep("•", math.min(#Text, 28))
+    end
+
+    local function RefreshKeyDisplay()
+        if KeyShown then
+            KeyBox.Text = KeyReal
+        else
+            KeyBox.Text = Mask(KeyReal)
+        end
+    end
+
+    KeyBox:GetPropertyChangedSignal("Text"):Connect(function()
+        if KeyBox:GetAttribute("Lock") then
+            return
+        end
+        local T = KeyBox.Text
+        if KeyShown then
+            KeyReal = T
+        else
+            if T:find("•") then
+                return
+            end
+            KeyReal = T
+            KeyBox:SetAttribute("Lock", true)
+            KeyBox.Text = Mask(KeyReal)
+            KeyBox:SetAttribute("Lock", false)
+            KeyBox.CursorPosition = #KeyBox.Text + 1
+        end
+    end)
+
+    local EyeBtn = GlyphButton(KeyField, Library.Icons.EyeOff, "Show key")
+    EyeBtn.AnchorPoint = Vector2.new(1, 0.5)
+    EyeBtn.Position = UDim2.new(1, -38, 0.5, 0)
+    EyeBtn.Size = UDim2.fromOffset(28, 28)
+    EyeBtn.ZIndex = 83
+    for _, Child in ipairs(EyeBtn:GetDescendants()) do
+        if Child:IsA("GuiObject") then
+            Child.ZIndex = 84
+        end
+    end
+
+    EyeBtn.MouseButton1Click:Connect(function()
+        KeyShown = not KeyShown
+        local Icon = EyeBtn:FindFirstChildOfClass("ImageLabel")
+        if Icon then
+            Library:SetIcon(Icon, KeyShown and Library.Icons.Eye or Library.Icons.EyeOff)
+        end
+        KeyBox:SetAttribute("Lock", true)
+        RefreshKeyDisplay()
+        KeyBox:SetAttribute("Lock", false)
+        Library:Feedback(1.05)
+    end)
+
+    local KeySave = GlyphButton(KeyField, Library.Icons.Check, "Save key")
     KeySave.AnchorPoint = Vector2.new(1, 0.5)
     KeySave.Position = UDim2.new(1, -6, 0.5, 0)
+    KeySave.Size = UDim2.fromOffset(28, 28)
     KeySave.ZIndex = 83
     for _, Child in ipairs(KeySave:GetDescendants()) do
         if Child:IsA("GuiObject") then
@@ -7437,42 +7525,14 @@ function WM.AI(W)
         end
     end
 
-    local function ApplyKey(Value)
-        local Key = Trim(Value or "")
-        if Key == "" then
-            return
-        end
-        Library.Groq.Key = Key
-        KeyField.Visible = false
-        Field.Position = UDim2.new(0, 10, 1, -10)
-        FS.Write(W.Paths.Folder .. "/groq_key.txt", Key)
-        if W.API then
-            W.API:Notify({ Title = "API Key", Content = "Key saved for this session.", Type = "Success", Duration = 3 })
-        end
-    end
-
-    KeySave.MouseButton1Click:Connect(function()
-        ApplyKey(KeyBox.Text)
-    end)
-    KeyBox.FocusLost:Connect(function(Enter)
-        if Enter then
-            ApplyKey(KeyBox.Text)
-        end
-    end)
-
-    local SavedKey = FS.Read(W.Paths.Folder .. "/groq_key.txt")
-    if type(SavedKey) == "string" and Trim(SavedKey) ~= "" and Library.Groq.Key == "" then
-        Library.Groq.Key = Trim(SavedKey)
-        KeyField.Visible = false
-    end
-
     local Field = New("Frame", {
         Parent = Panel,
         AnchorPoint = Vector2.new(0, 1),
         BorderSizePixel = 0,
-        Position = UDim2.new(0, 10, 1, KeyField.Visible and -54 or -10),
+        Position = UDim2.new(0, 10, 1, -10),
         Size = UDim2.new(1, -20, 0, 40),
-        ZIndex = 82
+        ZIndex = 82,
+        Visible = HasKey
     })
     Library:Corner(Field, 10)
     Library:Themed(Field, "BackgroundColor3", "Inset")
@@ -7505,6 +7565,42 @@ function WM.AI(W)
         end
     end
 
+    local function ShowChat()
+        KeyField.Visible = false
+        Field.Visible = true
+    end
+
+    local function ShowKey()
+        Field.Visible = false
+        KeyField.Visible = true
+        KeyReal = ""
+        KeyBox:SetAttribute("Lock", true)
+        KeyBox.Text = ""
+        KeyBox:SetAttribute("Lock", false)
+    end
+
+    local function ApplyKey(Value)
+        local Key = Trim(Value or KeyReal or "")
+        if Key == "" then
+            return
+        end
+        Library.Groq.Key = Key
+        FS.Write(W.Paths.Folder .. "/groq_key.txt", Key)
+        ShowChat()
+        if W.API then
+            W.API:Notify({ Title = "API Key", Content = "Key saved for this session.", Type = "Success", Duration = 3 })
+        end
+    end
+
+    KeySave.MouseButton1Click:Connect(function()
+        ApplyKey(KeyReal)
+    end)
+    KeyBox.FocusLost:Connect(function(Enter)
+        if Enter then
+            ApplyKey(KeyReal)
+        end
+    end)
+
     local Busy = false
     local function Ask()
         local Text = Trim(Box.Text)
@@ -7512,9 +7608,8 @@ function WM.AI(W)
             return
         end
         if Library.Groq.Key == "" then
-            KeyField.Visible = true
-            Field.Position = UDim2.new(0, 10, 1, -54)
-            Bubble("assistant", "Enter a valid Groq API key above, then try again.")
+            ShowKey()
+            Bubble("assistant", "Enter a valid Groq API key, then try again.")
             return
         end
         Busy = true
@@ -7525,10 +7620,9 @@ function WM.AI(W)
         GroqAsk(History, function(Ok, Reply)
             Busy = false
             if not Ok and type(Reply) == "string" and (Reply:find("api key") or Reply:find("401") or Reply:find("invalid") or Reply:find("Unauthorized") or Reply:find("authentication")) then
-                KeyField.Visible = true
-                Field.Position = UDim2.new(0, 10, 1, -54)
-                Pending.Text = "API key invalid. Paste a valid key above."
                 Library.Groq.Key = ""
+                ShowKey()
+                Pending.Text = "API key invalid. Paste a valid key below."
                 return
             end
             Pending.Text = Ok and Reply or ("error: " .. tostring(Reply))
@@ -7753,9 +7847,6 @@ function WM.BuildAPI(W)
         Library:SetIcon(W.FavButton:FindFirstChildOfClass("ImageLabel"), Library.Icons.Star,
             Favorited and Library.Theme.Accent or Library.Theme.TextDim)
 
-        if W.Mobile and W.DrawerOpen then
-            W.ToggleDrawer()
-        end
     end
 
     function W.Focus(Frame)
