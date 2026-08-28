@@ -1,21 +1,5 @@
---[[
-    sh1ttybanana v2.0.0  -  "liquid"
-    Roblox executor UI library.
-
-    Library:NewWindow(config) -> Window
-    Window:Section(config)    -> sidebar group
-    Window:Tab(config)        -> tab
-    Tab:AddSection(name)      -> section
-    Section:AddToggle{...} / AddSlider{...} / AddDropdown{...} / ...
-
-    Every interactive element returns an object with
-    :Set(v) :Get() :SetVisible(b) :SetLocked(b) :Destroy() :OnChanged(fn)
-]]
-
 local Library = {}
-Library.Version = "2.0.0"
-Library.Codename = "liquid"
-
+Library.Version = "2.1.0"
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
@@ -39,8 +23,6 @@ local FAST = TweenInfo.new(0.16, Quart, Out)
 local NORMAL = TweenInfo.new(0.26, Quart, Out)
 local SLOW = TweenInfo.new(0.42, Quint, Out)
 local SPRING = TweenInfo.new(0.34, Back, Out)
-
--- ============================================================ helpers
 
 local function New(ClassName, Props, Children)
     local Obj = Instance.new(ClassName)
@@ -108,7 +90,6 @@ local function HttpGet(Url)
     return HttpService:GetAsync(Url)
 end
 
--- exploit globals are unreliable, every one of them is probed once and cached
 local Env = {}
 do
     local function Grab(Name)
@@ -212,8 +193,6 @@ end
 
 Library.FS = FS
 
--- ============================================================ signal
-
 local Signal = {}
 Signal.__index = Signal
 
@@ -247,8 +226,6 @@ function Signal:Destroy()
 end
 
 Library.Signal = Signal
-
--- ============================================================ themes
 
 Library.Themes = {
     Dark = {
@@ -507,8 +484,6 @@ function Library:ImportTheme(Json)
     return true, Name
 end
 
--- ============================================================ icons
-
 local IconPack
 do
     local Ok, Result = pcall(function()
@@ -575,8 +550,6 @@ function Library:NormalizeIcon(Name)
     return "lucide:" .. Name
 end
 
--- IconModule.Icon(name) returns { assetId, { ImageRectSize, ImageRectPosition } },
--- it does not take the label, so the sprite has to be applied by hand
 function Library:SetIcon(Object, Name, Color)
     if not Object then
         return
@@ -607,10 +580,6 @@ function Library:SetIcon(Object, Name, Color)
     return Object
 end
 
--- ============================================================ feedback
-
--- No click sounds. A UI library has no business making noise in someone
--- else's game, so Play and Vibrate stay inert unless explicitly switched on.
 Library.Sound = false
 Library.Haptics = false
 Library.Particles = true
@@ -658,8 +627,6 @@ function Library:Feedback(Pitch)
         Library:Vibrate(0.2)
     end
 end
-
--- ============================================================ primitives
 
 function Library:Tween(Object, Info, Properties, Callback)
     local Animation = TweenService:Create(Object, Info or NORMAL, Properties)
@@ -718,7 +685,6 @@ function Library:Gradient(Object, Colors, Rotation, Transparencies)
     return Gradient
 end
 
--- glass highlight: bright top edge fading out, only visible on glass themes
 function Library:Sheen(Object, Rotation)
     local Layer = New("Frame", {
         Parent = Object,
@@ -749,8 +715,6 @@ function Library:Sheen(Object, Rotation)
     return Layer
 end
 
--- Drop shadows are off. The switch stays so a window can opt back in with
--- Library.Shadows = true before it is built.
 Library.Shadows = false
 
 function Library:Shadow(Object, Spread, Alpha)
@@ -774,7 +738,6 @@ function Library:Shadow(Object, Spread, Alpha)
     return Shadow
 end
 
--- v1 divider: a line that fades out towards both ends
 function Library:FadeLine(Object, Horizontal)
     local Gradient = New("UIGradient", {
         Parent = Object,
@@ -816,8 +779,6 @@ function Library:StyleScroll(Scroll)
     return Scroll
 end
 
--- ============================================================ device
-
 local Device = {}
 
 function Device.Viewport()
@@ -835,15 +796,10 @@ end
 
 function Device.Scale()
     local Size = Device.Viewport()
-    if Device.IsMobile() then
-        return Clamp(Size.X / 520, 0.62, 1)
-    end
-    return Clamp(math.min(Size.X / 1280, Size.Y / 720), 0.7, 1.25)
+    return Clamp(math.min(Size.X / 1280, Size.Y / 720), 0.5, 1.25)
 end
 
 Library.Device = Device
-
--- ============================================================ flags
 
 Library.Flags = {}
 Library.Options = {}
@@ -865,7 +821,6 @@ function Library:SetFlag(Flag, Value)
     end
 end
 
--- serialise anything a component can hold into plain json-safe data
 local function Encode(Value)
     if typeof(Value) == "Color3" then
         return { __t = "Color3", math.floor(Value.R * 255 + 0.5), math.floor(Value.G * 255 + 0.5), math.floor(Value.B * 255 + 0.5) }
@@ -903,8 +858,6 @@ end
 
 Library.Encode = Encode
 Library.Decode = Decode
-
--- ============================================================ element base
 
 local Element = {}
 Element.__index = Element
@@ -984,8 +937,6 @@ end
 
 Library.Element = Element
 
--- ============================================================ shared builders
-
 Library.Font = {
     Regular = Enum.Font.Gotham,
     Medium = Enum.Font.GothamMedium,
@@ -1033,7 +984,6 @@ local function Blank(Parent, Props)
     return Frame
 end
 
--- a pill button used across header, modals and footers
 local function PillButton(Parent, Text, IconName, Width, Accent)
     local Button = New("TextButton", {
         Parent = Parent,
@@ -1089,7 +1039,6 @@ local function PillButton(Parent, Text, IconName, Width, Accent)
     return Button, TextPart, Icon
 end
 
--- circular header control (minimise / close / palette ...)
 local function GlyphButton(Parent, IconName, Tip)
     local Button = New("TextButton", {
         Parent = Parent,
@@ -1119,10 +1068,6 @@ local function GlyphButton(Parent, IconName, Tip)
     return Button, Icon
 end
 
--- ============================================================ row factory
-
--- Every element sits in one of these. RightWidth reserves space for the
--- control so the title block can never overlap it on a narrow window.
 local function MakeRow(Section, Kind, Title, Description, MinHeight, RightWidth)
     local Mobile = Section.Window.Mobile
     local Height = (MinHeight or 36) + (Mobile and 6 or 0)
@@ -1157,9 +1102,6 @@ local function MakeRow(Section, Kind, Title, Description, MinHeight, RightWidth)
         AutomaticSize = Enum.AutomaticSize.Y
     })
 
-    -- The row height is driven off the text stack instead of AutomaticSize:
-    -- a visible full size child (the click layer on a toggle) makes Roblox
-    -- add the padding on top of the minimum size and the row grows to 70px.
     local function Measure()
         local Wanted = math.max(Height, Stack.AbsoluteSize.Y + 20)
         if Row.Size.Y.Offset ~= Wanted then
@@ -1217,8 +1159,6 @@ local function MakeRow(Section, Kind, Title, Description, MinHeight, RightWidth)
     return Row, TitleLabel, DescLabel, Line, Stack
 end
 
--- ============================================================ element wiring
-
 local function Register(Section, Element)
     local Entry = {
         Kind = "Element",
@@ -1239,8 +1179,6 @@ local function Register(Section, Element)
     return Entry
 end
 
--- A locked row is not a row with a sheet of glass over it. The control is
--- swapped for a lock chip and the label dims, so nothing bleeds through.
 local function LockOverlay(Element, Config)
     local Window = Element.Section.Window
     local Row = Element.Frame
@@ -1305,7 +1243,6 @@ local function LockOverlay(Element, Config)
     Element.LockOverlay = Blocker
     Element.LockLabel = Text
 
-    -- everything the lock hid, so unlocking puts it back exactly as it was
     local Hidden = {}
 
     Element.PaintLock = function(State)
@@ -1320,7 +1257,6 @@ local function LockOverlay(Element, Config)
             end
             local Stack = Row:FindFirstChild("Text")
             if Stack then
-                -- block content (bars, grids, pickers) lives past the title pair
                 for _, Child in ipairs(Stack:GetChildren()) do
                     if Child:IsA("GuiObject") and Child.LayoutOrder >= 3 and Child.Visible then
                         Child.Visible = false
@@ -1382,8 +1318,6 @@ local function LockOverlay(Element, Config)
     return Blocker
 end
 
--- Builds the public element object: flags, auto-config, changed signal,
--- locking, palette registration.
 local function Finish(Section, Kind, Config, Frame, Handlers, TitleLabel, DescLabel)
     local Window = Section.Window
     local Element = Library.Element.new({
@@ -1443,8 +1377,6 @@ local function Finish(Section, Kind, Config, Frame, Handlers, TitleLabel, DescLa
     return Element
 end
 
--- ============================================================ window
-
 local function ParentGui(Gui)
     local Done = pcall(function()
         if type(gethui) == "function" then
@@ -1496,12 +1428,16 @@ function Library:NewWindow(UserConfig)
         CloseKey = nil,
         ShowPlayerCard = true,
         ShowAI = true,
+        ShowPalette = true,
+        ShowTheme = true,
+        ShowConfig = true,
+        ShowKeybinds = true,
+        ShowChangelog = false,
         Sound = false,
         Particles = true,
         GroqApiKey = nil,
         GroqPrompt = nil,
         GroqModel = nil,
-        -- optional, off unless a table is passed
         KeySystem = nil
     }, UserConfig or {})
 
@@ -1534,8 +1470,6 @@ function Library:NewWindow(UserConfig)
     if type(W.Config.Transparency) == "number" then
         Library.Theme.WindowAlpha = W.Config.Transparency
     end
-
-    -- ---------------------------------------------------------- storage
 
     W.Paths = {
         Root = "sh1ttybanana",
@@ -1581,8 +1515,6 @@ function Library:NewWindow(UserConfig)
         FS.WriteJSON(W.Paths.State, W.State)
     end
 
-    -- ---------------------------------------------------------- shell
-
     W.Gui = New("ScreenGui", {
         Name = RandomName(),
         ResetOnSpawn = false,
@@ -1592,12 +1524,6 @@ function Library:NewWindow(UserConfig)
     })
     ParentGui(W.Gui)
 
-    -- ---------------------------------------------------------- key system
-    -- Optional: only runs if UserConfig.KeySystem is a table. Blocks the
-    -- rest of the window from building until a valid key is entered, or
-    -- instantly skips if a previously-accepted key was saved to disk.
-    -- W.KeySystem always exists (even when unused) so API methods below
-    -- can safely call into it without checking for nil every time.
     W.KeySystem = { Config = nil, IsValid = function() return true end }
 
     if type(W.Config.KeySystem) == "table" and W.Config.KeySystem.Enabled ~= false then
@@ -1853,7 +1779,6 @@ function Library:NewWindow(UserConfig)
     Library:Themed(W.Main, "BackgroundColor3", "Main")
     Library:Themed(W.Main, "BackgroundTransparency", "WindowAlpha")
 
-    -- v1 edge: the window is outlined in the accent, not a neutral grey
     local MainStroke = New("UIStroke", {
         Parent = W.Main,
         Thickness = 1.4,
@@ -1870,28 +1795,18 @@ function Library:NewWindow(UserConfig)
     W.Sheen = Library:Sheen(W.Main, 90)
     W.Sheen.ZIndex = 2
 
-    -- ---------------------------------------------------------- fitting
-
     function W.Fit()
         local Viewport = Device.Viewport()
         local Wanted = W.Config.Size
         local Width, Height
         local Scale = 1
 
-        -- no enforced minimum: the configured size is used as-is on every
-        -- device. The only floor left is a 1px technical guard so layout
-        -- math never divides by zero -- it isn't a usability limit.
-        if W.Mobile then
-            Width = math.max(Viewport.X - 16, 1)
-            Height = math.max(Viewport.Y - 70, 1)
-        elseif W.Maximized then
+        if W.Maximized then
             Width = Viewport.X - 40
             Height = Viewport.Y - 60
         else
             Width = math.max(Wanted.X.Offset, 1)
             Height = math.max(Wanted.Y.Offset, 1)
-            -- the window keeps its designed size and only shrinks when the
-            -- viewport cannot hold it, it never blows up on a big monitor
             if W.Config.AutoScale then
                 Scale = Clamp(math.min((Viewport.X - 40) / Width, (Viewport.Y - 60) / Height), 0.4, 1)
             else
@@ -1933,8 +1848,6 @@ function Library:NewWindow(UserConfig)
             W.Root.Position = UDim2.fromScale(0.5, 0.5)
         end
     end
-
-    -- ---------------------------------------------------------- header
 
     W.Header = New("Frame", {
         Parent = W.Main,
@@ -2075,7 +1988,6 @@ function Library:NewWindow(UserConfig)
     Badge(W.Config.Version, "Accent", 2)
     Badge(W.Config.Tag, "Success", 3)
 
-    -- header controls
     W.Controls = Blank(W.Header, {
         AnchorPoint = Vector2.new(1, 0.5),
         Position = UDim2.new(1, -10, 0.5, 0),
@@ -2095,7 +2007,6 @@ function Library:NewWindow(UserConfig)
         local Button = GlyphButton(W.Controls, IconName, Tip)
         Button.LayoutOrder = Order
         Button.ZIndex = 6
-        -- touch clients get the same controls as desktop, nothing is dropped
         Button.Visible = true
         Button.MouseButton1Click:Connect(function()
             Library:Feedback(1.1)
@@ -2109,18 +2020,26 @@ function Library:NewWindow(UserConfig)
     end, true)
     W.MenuButton.Visible = false
 
-    Control(Library.Icons.Command, "Command palette (Ctrl+K)", 1, function()
-        WM.Palette(W)
-    end, false)
-    Control(Library.Icons.Palette, "Theme", 2, function()
-        WM.ThemePanel(W)
-    end, true)
-    Control(Library.Icons.Save, "Configs", 3, function()
-        WM.ConfigPanel(W)
-    end, false)
-    Control(Library.Icons.Key, "Keybinds", 4, function()
-        WM.KeybindPanel(W)
-    end, false)
+    if W.Config.ShowPalette then
+        Control(Library.Icons.Command, "Command palette (Ctrl+K)", 1, function()
+            WM.Palette(W)
+        end, false)
+    end
+    if W.Config.ShowTheme then
+        Control(Library.Icons.Palette, "Theme", 2, function()
+            WM.ThemePanel(W)
+        end, true)
+    end
+    if W.Config.ShowConfig then
+        Control(Library.Icons.Save, "Configs", 3, function()
+            WM.ConfigPanel(W)
+        end, false)
+    end
+    if W.Config.ShowKeybinds then
+        Control(Library.Icons.Key, "Keybinds", 4, function()
+            WM.KeybindPanel(W)
+        end, false)
+    end
     if W.Config.ShowAI then
         Control(Library.Icons.Bot, "AI assistant", 5, function()
             WM.ToggleAI(W)
@@ -2129,6 +2048,17 @@ function Library:NewWindow(UserConfig)
     if W.Config.ShowPlayerCard then
         Control(Library.Icons.User, "Player card", 6, function()
             WM.TogglePlayerCard(W)
+        end, false)
+    end
+    if W.Config.ShowChangelog then
+        Control(Library.Icons.Sparkles, "Changelog", 6.5, function()
+            WM.Changelog(W, {
+                Entries = {
+                    { Version = "v2.1.0", Notes = { "Removed mobile size limit", "Configurable topbar icons", "AI panel API key input", "Design consistency pass", "Version 2.1.0" } },
+                    { Version = "v2.0.0", Notes = { "Rebuilt component API", "Added Liquid Glass theme", "Added config profiles" } },
+                    { Version = "v1.0.0", Notes = { "Initial release" } },
+                },
+            })
         end, false)
     end
     Control(Library.Icons.Minimize, "Minimize", 7, function()
@@ -2144,8 +2074,6 @@ function Library:NewWindow(UserConfig)
         W.API:Destroy()
     end, true)
 
-    -- ---------------------------------------------------------- body
-
     W.Body = Blank(W.Main, {
         Name = "Body",
         Position = UDim2.new(0, 0, 0, W.Header.Size.Y.Offset),
@@ -2153,12 +2081,9 @@ function Library:NewWindow(UserConfig)
         ZIndex = 3
     })
 
-    -- narrow screens get a tighter sidebar instead of losing it to a drawer
     W.SidebarWidth = Device.Viewport().X < 560 and 140 or 156
     W.Inset = 0
 
-    -- v1 layout: a surface film panel closed by a fading accent line, always
-    -- in the layout on every device.
     W.Sidebar = New("Frame", {
         Parent = W.Body,
         Name = "Sidebar",
@@ -2179,7 +2104,6 @@ function Library:NewWindow(UserConfig)
     })
     Library:FadeLine(W.SidebarLine, false)
 
-    -- search box
     W.SearchBox = New("Frame", {
         Parent = W.Sidebar,
         BorderSizePixel = 0,
@@ -2237,7 +2161,6 @@ function Library:NewWindow(UserConfig)
         Padding = UDim.new(0, 4)
     })
 
-    -- sidebar footer: active profile
     W.ProfileButton = New("TextButton", {
         Parent = W.Sidebar,
         AnchorPoint = Vector2.new(0, 1),
@@ -2277,8 +2200,6 @@ function Library:NewWindow(UserConfig)
         Library:Feedback(1.1)
         WM.ConfigPanel(W)
     end)
-
-    -- ---------------------------------------------------------- content
 
     W.Content = Blank(W.Body, {
         Name = "Content",
@@ -2350,8 +2271,6 @@ function Library:NewWindow(UserConfig)
         ZIndex = 3
     })
 
-    -- title text lifts up when the tab has a description, so an empty
-    -- description never leaves a dead band under the header
     function W.SetPageHead(Title, Description, Icon)
         W.PageTitle.Text = Title or ""
         local HasDesc = (Description or "") ~= ""
@@ -2360,8 +2279,6 @@ function Library:NewWindow(UserConfig)
         W.PageTitle.Position = UDim2.new(0, 42, 0.5, HasDesc and -8 or 0)
         Library:SetIcon(W.PageIcon, Icon or Library.Icons.Tab, Library.Theme.Accent)
     end
-
-    -- ---------------------------------------------------------- mobile drawer
 
     W.Backdrop = New("TextButton", {
         Parent = W.Body,
@@ -2377,7 +2294,6 @@ function Library:NewWindow(UserConfig)
 
     W.DrawerOpen = true
 
-    -- kept for API compatibility, the sidebar is always in the layout now
     function W.ToggleDrawer()
     end
 
@@ -2388,8 +2304,6 @@ function Library:NewWindow(UserConfig)
         W.Content.Position = UDim2.new(0, W.SidebarWidth, 0, 0)
         W.Content.Size = UDim2.new(1, -W.SidebarWidth, 1, 0)
     end
-
-    -- ---------------------------------------------------------- dragging
 
     do
         local Dragging, Origin, StartPosition = false, nil, nil
@@ -2427,11 +2341,6 @@ function Library:NewWindow(UserConfig)
         end))
     end
 
-    -- ---------------------------------------------------------- visibility
-
-    -- classic bottom-right "reopen" bubble: translucent dark circle with
-    -- an up-chevron, matching the original floating button look rather
-    -- than a logo badge
     W.FloatButton = New("TextButton", {
         Parent = W.Gui,
         AnchorPoint = Vector2.new(1, 1),
@@ -2512,8 +2421,6 @@ function Library:NewWindow(UserConfig)
         Library:Feedback(State and 1.1 or 0.9)
     end
 
-    -- ---------------------------------------------------------- global input
-
     table.insert(W.Connections, UserInputService.InputBegan:Connect(function(Input, Typing)
         if Typing then
             return
@@ -2544,8 +2451,6 @@ function Library:NewWindow(UserConfig)
         end))
     end
 
-    -- ---------------------------------------------------------- config io
-
     W.SaveQueued = false
 
     function W.QueueSave()
@@ -2563,8 +2468,6 @@ function Library:NewWindow(UserConfig)
     W.Fit()
     return WM.BuildAPI(W)
 end
-
--- ============================================================ tabs
 
 local ComponentNames = {
     "Toggle", "Button", "Input", "Slider", "Dropdown", "Keybind",
@@ -2804,7 +2707,6 @@ local function BuildTab(W, Config, Group)
         Padding = UDim.new(0, 10)
     })
 
-    -- sidebar button
     local Height = W.Mobile and 42 or 36
     Tab.Button = New("TextButton", {
         Parent = Group and Group.Holder or W.TabScroll,
@@ -2923,7 +2825,6 @@ local function BuildTab(W, Config, Group)
         return BuildSection(Tab, SectionConfig)
     end
 
-    -- components added straight on the tab land in a lazily created card
     local function Default()
         if not Tab.DefaultSection then
             Tab.DefaultSection = BuildSection(Tab, { Title = Tab.Name, Headerless = true })
@@ -3088,8 +2989,6 @@ local function BuildGroup(W, Config)
     return API
 end
 
--- ============================================================ overlays
-
 local BindEscape
 
 local function GetOverlay(W)
@@ -3109,7 +3008,6 @@ local function LocalPosition(W, Object)
     return Vector2.new(Offset.X / Scale, Offset.Y / Scale), Object.AbsoluteSize / Scale
 end
 
--- floating panel anchored under a row, auto-flips when it would clip the bottom
 local function Popup(W, Source, Width, Height)
     local Overlay = GetOverlay(W)
     local Backdrop = New("TextButton", {
@@ -3194,8 +3092,6 @@ local function Boot(Section, Config, Element, Default)
     end
 end
 
--- ============================================================ toggle
-
 function Components.Toggle(Section, Config)
     Config = Merge({
         Title = "Toggle",
@@ -3268,7 +3164,6 @@ function Components.Toggle(Section, Config)
 
     Element = Finish(Section, "Toggle", Config, Row, Handlers, TitleLabel, DescLabel)
 
-    -- the track colour depends on state, repaint it when the palette swaps
     Library.OnThemeChanged:Connect(function()
         Paint(false)
     end)
@@ -3284,8 +3179,6 @@ function Components.Toggle(Section, Config)
     Boot(Section, Config, Element, Config.Default and true or false)
     return Element
 end
-
--- ============================================================ button
 
 function Components.Button(Section, Config)
     Config = Merge({
@@ -3355,8 +3248,6 @@ function Components.Button(Section, Config)
     Element.Fire = Fire
     return Element
 end
-
--- ============================================================ input
 
 function Components.Input(Section, Config)
     Config = Merge({
@@ -3514,8 +3405,6 @@ function Components.Input(Section, Config)
     return Element
 end
 
--- ============================================================ slider
-
 function Components.Slider(Section, Config)
     Config = Merge({
         Title = "Slider",
@@ -3530,8 +3419,6 @@ function Components.Slider(Section, Config)
     }, Config)
 
     local Mobile = Section.Window.Mobile
-    -- the readout is sized from the widest value it will ever hold, a fixed
-    -- box clips things like "2000 studs"
     local Sample = tostring(Config.Max) .. tostring(Config.Suffix or "")
     local BoxWidth = Clamp(#Sample * 7 + 18, 48, 118)
     local BarWidth = Mobile and 0 or 150
@@ -3666,8 +3553,6 @@ function Components.Slider(Section, Config)
     Boot(Section, Config, Element, Config.Default or Config.Min)
     return Element
 end
-
--- ============================================================ dropdown
 
 function Components.Dropdown(Section, Config)
     Config = Merge({
@@ -4003,8 +3888,6 @@ function Components.Dropdown(Section, Config)
     return Element
 end
 
--- ============================================================ keybind
-
 local KeyNames = {
     [Enum.KeyCode.LeftControl] = "LCtrl",
     [Enum.KeyCode.RightControl] = "RCtrl",
@@ -4157,8 +4040,6 @@ function WM.FireKeybinds(W, Input, Released)
         end
     end
 end
-
--- ============================================================ colorpicker
 
 local function HueBar(Parent)
     local Bar = New("Frame", {
@@ -4444,7 +4325,6 @@ function Components.Colorpicker(Section, Config)
     return Element
 end
 
--- inline RGB sliders, no popup
 function Components.ColorpickerRGB(Section, Config)
     Config = Merge({
         Title = "Color",
@@ -4575,8 +4455,6 @@ function Components.ColorpickerRGB(Section, Config)
     Boot(Section, Config, Element, Config.Default)
     return Element
 end
-
--- ============================================================ static rows
 
 function Components.MultiButton(Section, Config)
     Config = Merge({
@@ -5086,8 +4964,6 @@ function Components.Viewport(Section, Config)
     })
     Camera.Parent = View
 
-    -- cloned preview objects live in here, never the camera, so clearing
-    -- the preview on SetObject can never destroy the camera it needs
     local Models = New("Folder", { Parent = View, Name = "Models" })
 
     local HintIcon = IconLabel(Frame, Library.Icons.Command, 20, "TextDisabled")
@@ -5275,13 +5151,6 @@ function Components.Space(Section, Config)
     return Finish(Section, "Space", Config, Frame, Handlers, nil, nil)
 end
 
--- ============================================================ modals
-
--- Escape cannot be used to dismiss overlays: the core menu claims it before
--- any CAS priority we can ask for, and GuiService:SetMenuIsOpen(false) is
--- ignored, so pressing it would close the overlay and open the Roblox menu on
--- top. Overlays close on backdrop click or the X. A window can opt into a
--- close key of its own with Config.CloseKey.
 local EscapeCount = 0
 function BindEscape(OnEscape, Key)
     if typeof(Key) ~= "EnumItem" then
@@ -5523,7 +5392,6 @@ function WM.Dialog(W, Config)
     return Handle
 end
 
--- single line text prompt, used by the config manager and password locks
 function WM.Prompt(W, Config)
     Config = Merge({
         Title = "Input",
@@ -5666,8 +5534,6 @@ function WM.Password(W, Config)
         end
     })
 end
-
--- ============================================================ command palette
 
 function WM.Palette(W)
     if W.PaletteOpen then
@@ -5874,8 +5740,6 @@ function WM.Palette(W)
     end)
     return Handle
 end
-
--- ============================================================ config manager
 
 function WM.ConfigPanel(W)
     local Handle = WM.Modal(W, {
@@ -6105,8 +5969,6 @@ function WM.ConfigPanel(W)
     return Handle
 end
 
--- ============================================================ theme panel
-
 function WM.ThemePanel(W)
     local Handle = WM.Modal(W, {
         Title = "Appearance",
@@ -6234,8 +6096,6 @@ function WM.ThemePanel(W)
     end
     PaintThemes()
 
-    -- the active card highlight is painted with the accent, so it has to
-    -- follow a live accent change instead of keeping the colour it opened with
     local Repaint = Library.OnThemeChanged:Connect(PaintThemes)
 
     Caption("Accent", 3)
@@ -6485,8 +6345,6 @@ function WM.ThemePanel(W)
     return Handle
 end
 
--- ============================================================ keybind manager
-
 function WM.KeybindPanel(W)
     local Handle = WM.Modal(W, {
         Title = "Keybinds",
@@ -6637,8 +6495,6 @@ function WM.KeybindPanel(W)
     return Handle
 end
 
--- ============================================================ changelog
-
 function WM.Changelog(W, Config)
     Config = Merge({
         Title = "Changelog",
@@ -6736,8 +6592,6 @@ function WM.Changelog(W, Config)
 
     return Handle
 end
-
--- ============================================================ notifications
 
 function WM.Notify(W, Config)
     Config = Merge({
@@ -6963,8 +6817,6 @@ function WM.Notify(W, Config)
 
     return Handle
 end
-
--- ============================================================ player card
 
 local function ExecutorName()
     if Env.identifyexecutor then
@@ -7250,18 +7102,11 @@ function WM.TogglePlayerCard(W, State)
     end
 end
 
--- ============================================================ ai panel
-
 Library.Groq = {
     Endpoint = "https://api.groq.com/openai/v1/chat/completions",
     Key = "",
     Prompt = "You are a concise assistant embedded in a Roblox script hub.",
     Model = "openai/gpt-oss-120b",
-    -- Groq deprecated its Llama chat models (llama-3.3-70b-versatile,
-    -- llama-3.1-8b-instant) and the old qwen/deepseek preview slugs have
-    -- since rotated too -- verified against console.groq.com/docs/models.
-    -- Kept to Production-tier models/systems only, since Preview models
-    -- can be pulled without notice.
     Models = {
         "openai/gpt-oss-120b",
         "openai/gpt-oss-20b",
@@ -7288,7 +7133,7 @@ local function GroqAsk(History, OnDone)
             return OnDone(false, "no http request function in this executor")
         end
         if Library.Groq.Key == "" then
-            return OnDone(false, "no api key set, pass GroqApiKey in the window config")
+            return OnDone(false, "no api key set")
         end
         local Messages = { { role = "system", content = Library.Groq.Prompt } }
         for _, Entry in ipairs(History) do
@@ -7347,9 +7192,6 @@ function WM.AI(W)
         ClipsDescendants = true
     })
 
-    -- width tracks the window's actual current size instead of a fixed
-    -- number, so it never eats the whole screen on a small phone and
-    -- never looks stingy on a big one
     local function FitPanelWidth()
         local MainWidth = W.Main.AbsoluteSize.X
         if MainWidth <= 0 then
@@ -7487,11 +7329,81 @@ function WM.AI(W)
         Bubble(Entry.Role, Entry.Text)
     end
 
+    local KeyField = New("Frame", {
+        Parent = Panel,
+        AnchorPoint = Vector2.new(0, 1),
+        BorderSizePixel = 0,
+        Position = UDim2.new(0, 10, 1, -54),
+        Size = UDim2.new(1, -20, 0, 36),
+        ZIndex = 82,
+        Visible = Library.Groq.Key == ""
+    })
+    Library:Corner(KeyField, 10)
+    Library:Themed(KeyField, "BackgroundColor3", "Inset")
+    Library:Themed(KeyField, "BackgroundTransparency", "InsetAlpha")
+    Library:Stroke(KeyField, "StrokeSoft", 1)
+
+    local KeyBox = New("TextBox", {
+        Parent = KeyField,
+        BackgroundTransparency = 1,
+        Position = UDim2.new(0, 12, 0, 0),
+        Size = UDim2.new(1, -50, 1, 0),
+        Font = Library.Font.Regular,
+        PlaceholderText = "Paste Groq API key",
+        Text = "",
+        TextSize = 12,
+        TextXAlignment = Enum.TextXAlignment.Left,
+        ClearTextOnFocus = false,
+        TextTransparency = 0,
+        ZIndex = 83
+    })
+    Library:Themed(KeyBox, "TextColor3", "Text")
+    Library:Themed(KeyBox, "PlaceholderColor3", "TextDisabled")
+
+    local KeySave = GlyphButton(KeyField, Library.Icons.Key, "Save key")
+    KeySave.AnchorPoint = Vector2.new(1, 0.5)
+    KeySave.Position = UDim2.new(1, -6, 0.5, 0)
+    KeySave.ZIndex = 83
+    for _, Child in ipairs(KeySave:GetDescendants()) do
+        if Child:IsA("GuiObject") then
+            Child.ZIndex = 84
+        end
+    end
+
+    local function ApplyKey(Value)
+        local Key = Trim(Value or "")
+        if Key == "" then
+            return
+        end
+        Library.Groq.Key = Key
+        KeyField.Visible = false
+        Field.Position = UDim2.new(0, 10, 1, -10)
+        FS.Write(W.Paths.Folder .. "/groq_key.txt", Key)
+        if W.API then
+            W.API:Notify({ Title = "API Key", Content = "Key saved for this session.", Type = "Success", Duration = 3 })
+        end
+    end
+
+    KeySave.MouseButton1Click:Connect(function()
+        ApplyKey(KeyBox.Text)
+    end)
+    KeyBox.FocusLost:Connect(function(Enter)
+        if Enter then
+            ApplyKey(KeyBox.Text)
+        end
+    end)
+
+    local SavedKey = FS.Read(W.Paths.Folder .. "/groq_key.txt")
+    if type(SavedKey) == "string" and Trim(SavedKey) ~= "" and Library.Groq.Key == "" then
+        Library.Groq.Key = Trim(SavedKey)
+        KeyField.Visible = false
+    end
+
     local Field = New("Frame", {
         Parent = Panel,
         AnchorPoint = Vector2.new(0, 1),
         BorderSizePixel = 0,
-        Position = UDim2.new(0, 10, 1, -10),
+        Position = UDim2.new(0, 10, 1, KeyField.Visible and -54 or -10),
         Size = UDim2.new(1, -20, 0, 40),
         ZIndex = 82
     })
@@ -7532,6 +7444,12 @@ function WM.AI(W)
         if Text == "" or Busy then
             return
         end
+        if Library.Groq.Key == "" then
+            KeyField.Visible = true
+            Field.Position = UDim2.new(0, 10, 1, -54)
+            Bubble("assistant", "Enter a valid Groq API key above, then try again.")
+            return
+        end
         Busy = true
         Box.Text = ""
         table.insert(History, { Role = "user", Text = Text })
@@ -7539,6 +7457,13 @@ function WM.AI(W)
         local Pending = Bubble("assistant", "thinking...")
         GroqAsk(History, function(Ok, Reply)
             Busy = false
+            if not Ok and type(Reply) == "string" and (Reply:find("api key") or Reply:find("401") or Reply:find("invalid") or Reply:find("Unauthorized") or Reply:find("authentication")) then
+                KeyField.Visible = true
+                Field.Position = UDim2.new(0, 10, 1, -54)
+                Pending.Text = "API key invalid. Paste a valid key above."
+                Library.Groq.Key = ""
+                return
+            end
             Pending.Text = Ok and Reply or ("error: " .. tostring(Reply))
             if Ok then
                 table.insert(History, { Role = "assistant", Text = Reply })
@@ -7619,20 +7544,12 @@ function WM.ToggleAI(W, State)
     end
 end
 
--- ============================================================ public api
-
 function WM.BuildAPI(W)
     local API = {}
     W.API = API
     API.Window = W
     API.Gui = W.Gui
     API.Flags = Library.Flags
-
-    -- ---------------------------------------------------------- key system
-    -- Lets a dev change what counts as valid *after* NewWindow returns --
-    -- e.g. pulling a fresh key list from an HTTP endpoint on a timer.
-    -- Safe to call even if KeySystem was never configured; it just won't
-    -- do anything meaningful until W.KeySystem.Config exists.
 
     function API:AddKey(Key)
         if W.KeySystem.Config then
@@ -7683,8 +7600,6 @@ function WM.BuildAPI(W)
             pcall(function() FS.Write(W.Paths.KeyFile, "") end)
         end
     end
-
-    -- ---------------------------------------------------------- navigation
 
     function W.SelectTab(Tab)
         if type(Tab) == "string" then
@@ -7786,7 +7701,6 @@ function WM.BuildAPI(W)
         W.SelectTab(W.Active)
     end)
 
-    -- sidebar filter: matches tab names and any element inside them
     W.SearchInput:GetPropertyChangedSignal("Text"):Connect(function()
         local Query = W.SearchInput.Text:lower()
         for _, Tab in ipairs(W.Tabs) do
@@ -7813,7 +7727,6 @@ function WM.BuildAPI(W)
         end
     end)
 
-    -- page up / page down walk the tab list
     table.insert(W.Connections, UserInputService.InputBegan:Connect(function(Input, Typing)
         if Typing or not W.Open or not W.Active then
             return
@@ -7832,8 +7745,6 @@ function WM.BuildAPI(W)
             end
         end
     end))
-
-    -- ---------------------------------------------------------- structure
 
     function API:Section(Config)
         return BuildGroup(W, Config)
@@ -7861,8 +7772,6 @@ function WM.BuildAPI(W)
         end
         return Names
     end
-
-    -- ---------------------------------------------------------- config
 
     function API:GetConfig()
         local Data = { Flags = {}, Theme = Library.CurrentTheme }
@@ -7972,8 +7881,6 @@ function WM.BuildAPI(W)
         return W.Flags[Flag]
     end
 
-    -- ---------------------------------------------------------- panels
-
     function API:Notify(Config)
         return WM.Notify(W, Config)
     end
@@ -8019,8 +7926,6 @@ function WM.BuildAPI(W)
     function API:SetGroq(Key, Prompt, Model)
         Library:SetGroq(Key, Prompt, Model)
     end
-
-    -- ---------------------------------------------------------- window
 
     function API:Toggle(State)
         W.SetOpen(State)
@@ -8088,8 +7993,6 @@ function WM.BuildAPI(W)
             W.Gui:Destroy()
         end)
     end
-
-    -- ---------------------------------------------------------- boot
 
     if W.Config.GroqApiKey then
         Library:SetGroq(W.Config.GroqApiKey, W.Config.GroqPrompt, W.Config.GroqModel)

@@ -19,7 +19,7 @@ local Window = Library:NewWindow({
     AutoScale = true,
     AutoPosition = "Center",
     Blur = true,
-    Version = "v2.0",
+    Version = "v2.1",
     Tag = "beta",
     FolderName = "sh1ttybanana",
     ConfigName = "default",
@@ -29,6 +29,11 @@ local Window = Library:NewWindow({
     PaletteKey = Enum.KeyCode.K,
     ShowPlayerCard = true,
     ShowAI = true,
+    ShowPalette = true,
+    ShowTheme = true,
+    ShowConfig = true,
+    ShowKeybinds = true,
+    ShowChangelog = false,
     Sound = true,
     Particles = true,
     GroqApiKey = "gsk_YOUR_GROQ_KEY_HERE",
@@ -374,7 +379,7 @@ DemoSec:AddMultiButton({
         { Title = "Open Card", Callback = function() Window:TogglePlayerCard(true) end },
         { Title = "Show Changelog", Callback = function() Window:Changelog({
             Entries = {
-                { Version = "v2.0", Notes = { "Rebuilt component API", "Added Liquid Glass theme", "Added config profiles" } },
+                { Version = "v2.1", Notes = { "Rebuilt component API", "Added Liquid Glass theme", "Added config profiles" } },
                 { Version = "v1.0", Notes = { "Initial release" } },
             },
         }) end },
@@ -431,7 +436,7 @@ ToolsSection:AddButton({
 task.delay(1, function()
     Window:Notify({
         Title = "Welcome!",
-        Content = "sh1ttybanana loaded. Dev tab password: 1234",
+        Content = "sh1ttybanana loaded. Dev tab password: 1234 · v2.1.0",
         Type = "Success",
         Duration = 6,
     })
