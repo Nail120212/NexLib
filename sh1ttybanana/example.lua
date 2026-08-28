@@ -414,6 +414,19 @@ ToolsSection:AddButton({
         })
     end,
 })
+ToolsSection:AddButton({
+    Title = "Add a Key at Runtime",
+    Callback = function()
+        Window:AddKey("RUNTIME-KEY-9999")
+        Window:Notify({ Title = "Key System", Content = "Added RUNTIME-KEY-9999 as a valid key.", Type = "Info" })
+    end,
+})
+ToolsSection:AddButton({
+    Title = "Check a Key",
+    Callback = function()
+        print("Is 'TESTKEY' valid?", Window:CheckKey("TESTKEY"))
+    end,
+})
 
 task.delay(1, function()
     Window:Notify({

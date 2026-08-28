@@ -1596,6 +1596,10 @@ function Library:NewWindow(UserConfig)
     -- Optional: only runs if UserConfig.KeySystem is a table. Blocks the
     -- rest of the window from building until a valid key is entered, or
     -- instantly skips if a previously-accepted key was saved to disk.
+    -- W.KeySystem always exists (even when unused) so API methods below
+    -- can safely call into it without checking for nil every time.
+    W.KeySystem = { Config = nil, IsValid = function() return true end }
+
     if type(W.Config.KeySystem) == "table" and W.Config.KeySystem.Enabled ~= false then
         local KeyCfg = Merge({
             Title = "Key Required",
@@ -1619,6 +1623,8 @@ function Library:NewWindow(UserConfig)
             return false
         end
 
+        W.KeySystem.Config = KeyCfg
+        W.KeySystem.IsValid = IsValidKey
         W.Paths.KeyFile = W.Paths.Folder .. "/key.txt"
 
         local Skip = false
@@ -2423,31 +2429,30 @@ function Library:NewWindow(UserConfig)
 
     -- ---------------------------------------------------------- visibility
 
+    -- classic bottom-right "reopen" bubble: translucent dark circle with
+    -- an up-chevron, matching the original floating button look rather
+    -- than a logo badge
     W.FloatButton = New("TextButton", {
         Parent = W.Gui,
-        AnchorPoint = Vector2.new(0.5, 0.5),
+        AnchorPoint = Vector2.new(1, 1),
+        BackgroundColor3 = Color3.fromRGB(20, 20, 20),
+        BackgroundTransparency = 0.45,
         BorderSizePixel = 0,
-        Position = UDim2.new(0, 70, 0.5, 0),
-        Size = UDim2.fromOffset(W.Mobile and 54 or 46, W.Mobile and 54 or 46),
+        Position = UDim2.new(1, -20, 1, -20),
+        Size = UDim2.fromOffset(W.Mobile and 58 or 50, W.Mobile and 58 or 50),
         Text = "",
         AutoButtonColor = false,
         Visible = false,
         ZIndex = 50
     })
     Library:Corner(W.FloatButton, UDim.new(1, 0))
-    Library:Themed(W.FloatButton, "BackgroundColor3", "Main")
     Library:Stroke(W.FloatButton, "Stroke", 1.2)
     Library:Shadow(W.FloatButton, 40, 0.6)
 
-    local FloatIcon = New("ImageLabel", {
-        Parent = W.FloatButton,
-        AnchorPoint = Vector2.new(0.5, 0.5),
-        BackgroundTransparency = 1,
-        Position = UDim2.fromScale(0.5, 0.5),
-        Size = UDim2.fromOffset(W.Mobile and 28 or 24, W.Mobile and 28 or 24),
-        Image = W.Config.Logo or "",
-        ZIndex = 51
-    })
+    local FloatIcon = IconLabel(W.FloatButton, Library.Icons.Up, W.Mobile and 24 or 20, "Text")
+    FloatIcon.AnchorPoint = Vector2.new(0.5, 0.5)
+    FloatIcon.Position = UDim2.fromScale(0.5, 0.5)
+    FloatIcon.ZIndex = 51
 
     do
         local Dragging, Moved, Origin, StartPosition = false, false, nil, nil
@@ -7336,11 +7341,25 @@ function WM.AI(W)
         AnchorPoint = Vector2.new(1, 0),
         BorderSizePixel = 0,
         Position = UDim2.new(1, 0, 0, W.Header.Size.Y.Offset),
-        Size = UDim2.new(0, W.Mobile and 260 or 300, 1, -W.Header.Size.Y.Offset),
+        Size = UDim2.new(0, 300, 1, -W.Header.Size.Y.Offset),
         Visible = false,
         ZIndex = 80,
         ClipsDescendants = true
     })
+
+    -- width tracks the window's actual current size instead of a fixed
+    -- number, so it never eats the whole screen on a small phone and
+    -- never looks stingy on a big one
+    local function FitPanelWidth()
+        local MainWidth = W.Main.AbsoluteSize.X
+        if MainWidth <= 0 then
+            return
+        end
+        local Target = math.min(300, math.floor(MainWidth * 0.82))
+        Panel.Size = UDim2.new(0, Target, 1, -W.Header.Size.Y.Offset)
+    end
+    table.insert(W.Connections, W.Main:GetPropertyChangedSignal("AbsoluteSize"):Connect(FitPanelWidth))
+    task.defer(FitPanelWidth)
     Library:Themed(Panel, "BackgroundColor3", "Sidebar")
     Library:Themed(Panel, "BackgroundTransparency", "SidebarAlpha")
 
@@ -7608,6 +7627,62 @@ function WM.BuildAPI(W)
     API.Window = W
     API.Gui = W.Gui
     API.Flags = Library.Flags
+
+    -- ---------------------------------------------------------- key system
+    -- Lets a dev change what counts as valid *after* NewWindow returns --
+    -- e.g. pulling a fresh key list from an HTTP endpoint on a timer.
+    -- Safe to call even if KeySystem was never configured; it just won't
+    -- do anything meaningful until W.KeySystem.Config exists.
+
+    function API:AddKey(Key)
+        if W.KeySystem.Config then
+            table.insert(W.KeySystem.Config.Keys, tostring(Key))
+        end
+    end
+
+    function API:RemoveKey(Key)
+        if W.KeySystem.Config then
+            Key = tostring(Key)
+            for i = #W.KeySystem.Config.Keys, 1, -1 do
+                if W.KeySystem.Config.Keys[i] == Key then
+                    table.remove(W.KeySystem.Config.Keys, i)
+                end
+            end
+        end
+    end
+
+    function API:SetKeys(List)
+        if W.KeySystem.Config then
+            W.KeySystem.Config.Keys = List or {}
+        end
+    end
+
+    function API:GetKeys()
+        if W.KeySystem.Config then
+            local Copy = {}
+            for _, K in ipairs(W.KeySystem.Config.Keys) do
+                table.insert(Copy, K)
+            end
+            return Copy
+        end
+        return {}
+    end
+
+    function API:SetKeyCallback(Fn)
+        if W.KeySystem.Config then
+            W.KeySystem.Config.Callback = type(Fn) == "function" and Fn or nil
+        end
+    end
+
+    function API:CheckKey(Value)
+        return W.KeySystem.IsValid(tostring(Value))
+    end
+
+    function API:ForgetSavedKey()
+        if W.Paths.KeyFile then
+            pcall(function() FS.Write(W.Paths.KeyFile, "") end)
+        end
+    end
 
     -- ---------------------------------------------------------- navigation
 
