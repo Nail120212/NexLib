@@ -33,6 +33,8 @@ local Window = Library:NewWindow({
     ShowConfig = true,
     ShowKeybinds = true,
     ShowChangelog = false,
+    ShowWatermark = true,
+    Compact = false,
     Sound = false,
     Particles = true,
     GroqApiKey = nil,
@@ -553,6 +555,21 @@ ToolsSection:AddButton({
     Callback = function()
         Window:AddKey("RUNTIME-KEY-9999")
         Window:Notify({ Title = "Key System", Content = "Added RUNTIME-KEY-9999 as a valid key.", Type = "Info" })
+    end,
+})
+
+ToolsSection:AddButton({
+    Title = "Run SelfTest",
+    Callback = function()
+        Window:SelfTest()
+    end,
+})
+
+ToolsSection:AddButton({
+    Title = "Clear Groq Key",
+    Callback = function()
+        Window:ClearGroqKey()
+        Window:Notify({ Title = "Groq", Content = "API key cleared", Type = "Info" })
     end,
 })
 

@@ -804,6 +804,56 @@ end
 
 Library.Device = Device
 
+local DragLockCount = 0
+local DragLockPrevBehavior = nil
+local DragLockPrevIcon = nil
+
+function Library:BeginDragLock()
+    DragLockCount = DragLockCount + 1
+    if DragLockCount ~= 1 then
+        return
+    end
+    pcall(function()
+        DragLockPrevBehavior = UserInputService.MouseBehavior
+        DragLockPrevIcon = UserInputService.MouseIconEnabled
+        UserInputService.MouseBehavior = Enum.MouseBehavior.Default
+        UserInputService.MouseIconEnabled = true
+    end)
+    pcall(function()
+        ContextActionService:BindActionAtPriority("sh1ttybanana_drag_lock", function()
+            return Enum.ContextActionResult.Sink
+        end, false, 9000,
+            Enum.UserInputType.MouseButton2,
+            Enum.UserInputType.MouseWheel,
+            Enum.KeyCode.Thumbstick2)
+    end)
+    pcall(function()
+        GuiService.TouchControlsEnabled = false
+    end)
+end
+
+function Library:EndDragLock()
+    DragLockCount = math.max(DragLockCount - 1, 0)
+    if DragLockCount ~= 0 then
+        return
+    end
+    pcall(function()
+        ContextActionService:UnbindAction("sh1ttybanana_drag_lock")
+    end)
+    pcall(function()
+        if DragLockPrevBehavior ~= nil then
+            UserInputService.MouseBehavior = DragLockPrevBehavior
+        end
+        if DragLockPrevIcon ~= nil then
+            UserInputService.MouseIconEnabled = DragLockPrevIcon
+        end
+        GuiService.TouchControlsEnabled = true
+    end)
+    DragLockPrevBehavior = nil
+    DragLockPrevIcon = nil
+end
+
+
 Library.Flags = {}
 Library.Options = {}
 
@@ -884,7 +934,11 @@ function Element:Set(Value, Silent)
 end
 
 function Element:SetVisible(State)
-    self.Frame.Visible = State ~= false
+    local Show = State ~= false
+    if self.Frame then
+        self.Frame:SetAttribute("UserHidden", not Show)
+        self.Frame.Visible = Show
+    end
     return self
 end
 
@@ -1073,7 +1127,8 @@ end
 
 local function MakeRow(Section, Kind, Title, Description, MinHeight, RightWidth)
     local Mobile = Section.Window.Mobile
-    local Height = (MinHeight or 36) + (Mobile and 6 or 0)
+    local Compact = Section.Window.Config and Section.Window.Config.Compact
+    local Height = (MinHeight or 36) + (Mobile and (Compact and 4 or 10) or 0) - (Compact and not Mobile and 4 or 0)
     local Reserve = (RightWidth or 60) > 0 and ((RightWidth or 60) + 26) or 14
 
     local Row = New("Frame", {
@@ -1436,6 +1491,8 @@ function Library:NewWindow(UserConfig)
         ShowConfig = true,
         ShowKeybinds = true,
         ShowChangelog = false,
+        ShowWatermark = true,
+        Compact = false,
         Sound = false,
         Particles = true,
         GroqApiKey = nil,
@@ -1514,6 +1571,14 @@ function Library:NewWindow(UserConfig)
         }
         if W.Root then
             W.State.Position = { W.Root.Position.X.Offset, W.Root.Position.Y.Offset }
+        end
+        if W.FloatButton then
+            W.State.FloatPosition = {
+                W.FloatButton.Position.X.Scale,
+                W.FloatButton.Position.X.Offset,
+                W.FloatButton.Position.Y.Scale,
+                W.FloatButton.Position.Y.Offset
+            }
         end
         FS.WriteJSON(W.Paths.State, W.State)
     end
@@ -1766,7 +1831,8 @@ function Library:NewWindow(UserConfig)
         BackgroundTransparency = 1,
         BorderSizePixel = 0,
         Position = UDim2.fromScale(0.5, 0.5),
-        Size = W.Config.Size
+        Size = W.Config.Size,
+        ZIndex = 10
     })
     W.Scale = New("UIScale", { Parent = W.Root, Scale = 1 })
 
@@ -2325,9 +2391,22 @@ function Library:NewWindow(UserConfig)
     do
         local Dragging, Origin, StartPosition = false, nil, nil
         local function Begin(Input)
+            if Dragging then
+                return
+            end
             Dragging = true
             Origin = Input.Position
             StartPosition = W.Root.Position
+            Library:BeginDragLock()
+        end
+        local function End()
+            if not Dragging then
+                return
+            end
+            Dragging = false
+            Library:EndDragLock()
+            W.Clamp()
+            W.SaveState()
         end
         W.Header.InputBegan:Connect(function(Input)
             if Input.UserInputType == Enum.UserInputType.MouseButton1
@@ -2351,9 +2430,7 @@ function Library:NewWindow(UserConfig)
         table.insert(W.Connections, UserInputService.InputEnded:Connect(function(Input)
             if Dragging and (Input.UserInputType == Enum.UserInputType.MouseButton1
                 or Input.UserInputType == Enum.UserInputType.Touch) then
-                Dragging = false
-                W.Clamp()
-                W.SaveState()
+                End()
             end
         end))
     end
@@ -2367,14 +2444,14 @@ function Library:NewWindow(UserConfig)
         Position = UDim2.new(1, -18, 1, -18),
         Size = UDim2.fromOffset(FloatW, FloatH),
         Visible = false,
-        ZIndex = 50
+        ZIndex = 600
     })
     Library:Corner(W.FloatButton, 12)
     Library:Themed(W.FloatButton, "BackgroundColor3", "Elevated")
     Library:Themed(W.FloatButton, "BackgroundTransparency", "ElevatedAlpha")
     Library:Stroke(W.FloatButton, "Stroke", 1.2)
     Library:Shadow(W.FloatButton, 40, 0.55)
-    Library:Sheen(W.FloatButton, 90).ZIndex = 50
+    Library:Sheen(W.FloatButton, 90).ZIndex = 600
 
     local FloatLogo = New("Frame", {
         Parent = W.FloatButton,
@@ -2383,7 +2460,7 @@ function Library:NewWindow(UserConfig)
         Position = UDim2.new(0, 8, 0.5, 0),
         Size = UDim2.fromOffset(W.Mobile and 32 or 30, W.Mobile and 32 or 30),
         BackgroundTransparency = 0.86,
-        ZIndex = 51
+        ZIndex = 601
     })
     Library:Corner(FloatLogo, 8)
     Library:Themed(FloatLogo, "BackgroundColor3", "Accent")
@@ -2393,7 +2470,7 @@ function Library:NewWindow(UserConfig)
         Size = UDim2.fromScale(1, 1),
         Image = W.Config.Logo or "",
         ScaleType = Enum.ScaleType.Crop,
-        ZIndex = 52
+        ZIndex = 602
     })
     if W.Config.Icon then
         Library:SetIcon(FloatLogoImg, W.Config.Icon, Library.Theme.AccentText)
@@ -2409,7 +2486,7 @@ function Library:NewWindow(UserConfig)
         TextSize = W.Mobile and 13 or 12,
         TextXAlignment = Enum.TextXAlignment.Left,
         TextTruncate = Enum.TextTruncate.AtEnd,
-        ZIndex = 51
+        ZIndex = 601
     })
     Library:Themed(FloatTitle, "TextColor3", "Text")
 
@@ -2422,7 +2499,7 @@ function Library:NewWindow(UserConfig)
         Size = UDim2.fromOffset(W.Mobile and 34 or 32, W.Mobile and 34 or 32),
         Text = "",
         AutoButtonColor = false,
-        ZIndex = 53
+        ZIndex = 603
     })
     Library:Corner(FloatOpen, 9)
     Library:Themed(FloatOpen, "BackgroundColor3", "Accent")
@@ -2430,7 +2507,7 @@ function Library:NewWindow(UserConfig)
     local FloatScan = IconLabel(FloatOpen, Library.Icons.Scan, W.Mobile and 18 or 16, "Accent")
     FloatScan.AnchorPoint = Vector2.new(0.5, 0.5)
     FloatScan.Position = UDim2.fromScale(0.5, 0.5)
-    FloatScan.ZIndex = 54
+    FloatScan.ZIndex = 604
     Library:Themed(FloatScan, "ImageColor3", "Accent")
 
     FloatOpen.MouseEnter:Connect(function()
@@ -2453,6 +2530,7 @@ function Library:NewWindow(UserConfig)
                 Moved = false
                 Origin = Input.Position
                 StartPosition = W.FloatButton.Position
+                Library:BeginDragLock()
             end
         end)
         table.insert(W.Connections, UserInputService.InputChanged:Connect(function(Input)
@@ -2472,8 +2550,15 @@ function Library:NewWindow(UserConfig)
             if Dragging and (Input.UserInputType == Enum.UserInputType.MouseButton1
                 or Input.UserInputType == Enum.UserInputType.Touch) then
                 Dragging = false
+                Library:EndDragLock()
+                W.SaveState()
             end
         end))
+    end
+
+    if type(W.State.FloatPosition) == "table" and #W.State.FloatPosition >= 4 then
+        local FP = W.State.FloatPosition
+        W.FloatButton.Position = UDim2.new(FP[1], FP[2], FP[3], FP[4])
     end
 
     Library.OnThemeChanged:Connect(function()
@@ -2484,6 +2569,110 @@ function Library:NewWindow(UserConfig)
             end)
         end
     end)
+
+
+    do
+        local TipCard = New("Frame", {
+            Parent = W.Gui,
+            BorderSizePixel = 0,
+            Visible = false,
+            ZIndex = 700,
+            Size = UDim2.fromOffset(0, 28),
+            AutomaticSize = Enum.AutomaticSize.X
+        })
+        Library:Corner(TipCard, 7)
+        Library:Themed(TipCard, "BackgroundColor3", "Elevated")
+        Library:Themed(TipCard, "BackgroundTransparency", "ElevatedAlpha")
+        Library:Stroke(TipCard, "StrokeSoft", 1)
+        New("UIPadding", {
+            Parent = TipCard,
+            PaddingLeft = UDim.new(0, 10),
+            PaddingRight = UDim.new(0, 10)
+        })
+        local TipText = New("TextLabel", {
+            Parent = TipCard,
+            BackgroundTransparency = 1,
+            AutomaticSize = Enum.AutomaticSize.X,
+            Size = UDim2.fromOffset(0, 28),
+            Font = Library.Font.Medium,
+            Text = "",
+            TextSize = 11,
+            ZIndex = 701
+        })
+        Library:Themed(TipText, "TextColor3", "Text")
+        W.Tooltip = TipCard
+        W.TooltipLabel = TipText
+
+        local function ShowTip(Obj)
+            local Tip = Obj:GetAttribute("Tip")
+            if type(Tip) ~= "string" or Tip == "" then
+                TipCard.Visible = false
+                return
+            end
+            TipText.Text = Tip
+            TipCard.Visible = true
+            local Pos = Obj.AbsolutePosition
+            local Size = Obj.AbsoluteSize
+            local Vp = Device.Viewport()
+            local X = Pos.X + Size.X / 2 - TipCard.AbsoluteSize.X / 2
+            local Y = Pos.Y - 34
+            if Y < 8 then
+                Y = Pos.Y + Size.Y + 8
+            end
+            X = Clamp(X, 8, Vp.X - TipCard.AbsoluteSize.X - 8)
+            TipCard.Position = UDim2.fromOffset(X, Y)
+        end
+
+        local function HookTips(Root)
+            local function Bind(Obj)
+                if not Obj:IsA("GuiObject") then
+                    return
+                end
+                if Obj:GetAttribute("TipBound") then
+                    return
+                end
+                Obj:SetAttribute("TipBound", true)
+                Obj.MouseEnter:Connect(function()
+                    ShowTip(Obj)
+                end)
+                Obj.MouseLeave:Connect(function()
+                    TipCard.Visible = false
+                end)
+            end
+            for _, D in ipairs(Root:GetDescendants()) do
+                if D:GetAttribute("Tip") then
+                    Bind(D)
+                end
+            end
+            Root.DescendantAdded:Connect(function(D)
+                task.defer(function()
+                    if D.Parent and D:GetAttribute("Tip") then
+                        Bind(D)
+                    end
+                end)
+            end)
+        end
+        HookTips(W.Gui)
+    end
+
+
+    if W.Config.ShowWatermark ~= false then
+        local Mark = New("TextLabel", {
+            Parent = W.Gui,
+            BackgroundTransparency = 1,
+            AnchorPoint = Vector2.new(0, 1),
+            Position = UDim2.new(0, 12, 1, -10),
+            Size = UDim2.fromOffset(280, 16),
+            Font = Library.Font.Medium,
+            Text = (W.Config.Title or "sh1ttybanana") .. "  " .. tostring(W.Config.Version or Library.Version),
+            TextSize = 11,
+            TextXAlignment = Enum.TextXAlignment.Left,
+            TextTransparency = 0.45,
+            ZIndex = 5
+        })
+        Library:Themed(Mark, "TextColor3", "TextDim")
+        W.Watermark = Mark
+    end
 
     function W.SetOpen(State)
         if State == nil then
@@ -3084,7 +3273,7 @@ local function GetOverlay(W)
         W.Overlay = Blank(W.Main, {
             Name = "Overlay",
             Size = UDim2.fromScale(1, 1),
-            ZIndex = 100
+            ZIndex = 200
         })
     end
     return W.Overlay
@@ -3105,7 +3294,7 @@ local function Popup(W, Source, Width, Height)
         Size = UDim2.fromScale(1, 1),
         Text = "",
         AutoButtonColor = false,
-        ZIndex = 101
+        ZIndex = 201
     })
 
     local Position, Size = LocalPosition(W, Source)
@@ -3121,7 +3310,7 @@ local function Popup(W, Source, Width, Height)
         BorderSizePixel = 0,
         Position = UDim2.fromOffset(X, Y),
         Size = UDim2.fromOffset(Width, Height),
-        ZIndex = 102,
+        ZIndex = 202,
         ClipsDescendants = true
     })
     Library:Corner(Frame, 11)
@@ -3196,7 +3385,7 @@ function Components.Toggle(Section, Config)
         AnchorPoint = Vector2.new(1, 0.5),
         BorderSizePixel = 0,
         Position = UDim2.new(1, -14, 0.5, 0),
-        Size = UDim2.fromOffset(Section.Window.Mobile and 46 or 40, Section.Window.Mobile and 25 or 22)
+        Size = UDim2.fromOffset(Section.Window.Mobile and 52 or 40, Section.Window.Mobile and 28 or 22)
     })
     Library:Corner(Track, UDim.new(1, 0))
     Track.BackgroundColor3 = Color3.fromRGB(72, 72, 82)
@@ -3207,7 +3396,7 @@ function Components.Toggle(Section, Config)
         AnchorPoint = Vector2.new(0, 0.5),
         BorderSizePixel = 0,
         Position = UDim2.new(0, 3, 0.5, 0),
-        Size = UDim2.fromOffset(Section.Window.Mobile and 20 or 17, Section.Window.Mobile and 20 or 17)
+        Size = UDim2.fromOffset(Section.Window.Mobile and 24 or 17, Section.Window.Mobile and 24 or 17)
     })
     Library:Corner(Knob, UDim.new(1, 0))
     Knob.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
@@ -3781,7 +3970,7 @@ function Components.Dropdown(Section, Config)
                 BorderSizePixel = 0,
                 Position = UDim2.new(0, 8, 0, 8),
                 Size = UDim2.new(1, -16, 0, 28),
-                ZIndex = 103
+                ZIndex = (Handle and Handle.Frame and Handle.Frame.ZIndex or 202) + 1
             })
             Library:Corner(Field, 7)
             Library:Themed(Field, "BackgroundColor3", "Inset")
@@ -3797,7 +3986,7 @@ function Components.Dropdown(Section, Config)
                 TextSize = 11,
                 TextXAlignment = Enum.TextXAlignment.Left,
                 ClearTextOnFocus = false,
-                ZIndex = 104
+                ZIndex = (Handle and Handle.Frame and Handle.Frame.ZIndex or 202) + 2
             })
             Library:Themed(Search, "TextColor3", "Text")
             Library:Themed(Search, "PlaceholderColor3", "TextDisabled")
@@ -3813,7 +4002,7 @@ function Components.Dropdown(Section, Config)
             BorderSizePixel = 0,
             Position = UDim2.new(0, 6, 0, UseSearch and 42 or 6),
             Size = UDim2.new(1, -12, 1, UseSearch and -48 or -12),
-            ZIndex = 103
+            ZIndex = (Handle and Handle.Frame and Handle.Frame.ZIndex or 202) + 1
         })
         Library:StyleScroll(List)
         New("UIPadding", {
@@ -3855,7 +4044,7 @@ function Components.Dropdown(Section, Config)
                         AutoButtonColor = false,
                         LayoutOrder = Index,
                         BackgroundTransparency = Active and 0.85 or 1,
-                        ZIndex = 104
+                        ZIndex = (Handle and Handle.Frame and Handle.Frame.ZIndex or 202) + 2
                     })
                     Library:Corner(Item, 7)
                     Library:Themed(Item, "BackgroundColor3", "Accent")
@@ -3871,14 +4060,14 @@ function Components.Dropdown(Section, Config)
                         TextXAlignment = Enum.TextXAlignment.Left,
                         TextTruncate = Enum.TextTruncate.AtEnd,
                         TextColor3 = Active and Library.Theme.Text or Library.Theme.TextDim,
-                        ZIndex = 105
+                        ZIndex = (Handle and Handle.Frame and Handle.Frame.ZIndex or 202) + 3
                     })
 
                     if Active then
                         local Mark = IconLabel(Item, Library.Icons.Check, 14, "Accent")
                         Mark.AnchorPoint = Vector2.new(1, 0.5)
                         Mark.Position = UDim2.new(1, -8, 0.5, 0)
-                        Mark.ZIndex = 105
+                        Mark.ZIndex = (Handle and Handle.Frame and Handle.Frame.ZIndex or 202) + 3
                         Library:Themed(Mark, "ImageColor3", "Accent")
                     end
 
@@ -5280,7 +5469,7 @@ function WM.Modal(W, Config)
         Size = UDim2.fromScale(1, 1),
         Text = "",
         AutoButtonColor = false,
-        ZIndex = 110 + #W.Modals * 4
+        ZIndex = 210 + #W.Modals * 4
     })
 
     local MainSize = W.Main.AbsoluteSize / W.Scale.Scale
@@ -6045,7 +6234,28 @@ function WM.ConfigPanel(W)
         end
     end)
 
-    for _, Button in ipairs({ NewButton, CopyButton }) do
+    local ImportButton = PillButton(Footer, "Import JSON", Library.Icons.Folder, 130)
+    ImportButton.LayoutOrder = 3
+    ImportButton.ZIndex = Handle.Frame.ZIndex + 3
+    ImportButton.MouseButton1Click:Connect(function()
+        WM.Prompt(W, {
+            Title = "Import config JSON",
+            Placeholder = "Paste config JSON here",
+            Confirm = "Import",
+            Callback = function(Text)
+                local Ok, Data = pcall(HttpService.JSONDecode, HttpService, Text)
+                if not Ok or type(Data) ~= "table" then
+                    W.API:Notify({ Title = "Import failed", Content = "Invalid JSON", Type = "Error" })
+                    return
+                end
+                W.API:SetConfig(Data)
+                W.API:Notify({ Title = "Imported", Content = "Config applied", Type = "Success" })
+                Refresh()
+            end
+        })
+    end)
+
+    for _, Button in ipairs({ NewButton, CopyButton, ImportButton }) do
         for _, Child in ipairs(Button:GetDescendants()) do
             if Child:IsA("GuiObject") then
                 Child.ZIndex = Button.ZIndex + 1
@@ -6713,14 +6923,14 @@ function WM.Notify(W, Config)
         BorderSizePixel = 0,
         Position = UDim2.new(1, 320, 0, 0),
         Size = UDim2.fromOffset(Width, Height),
-        ZIndex = 300
+        ZIndex = 500
     })
     Library:Corner(Card, 12)
     Library:Themed(Card, "BackgroundColor3", "Elevated")
     Library:Themed(Card, "BackgroundTransparency", "ElevatedAlpha")
     New("UIStroke", { Parent = Card, Color = Tint, Transparency = 0.55, Thickness = 1.2 })
     Library:Shadow(Card, 50, 0.6)
-    Library:Sheen(Card, 90).ZIndex = 300
+    Library:Sheen(Card, 90).ZIndex = 500
 
     local IconHolder = New("Frame", {
         Parent = Card,
@@ -6729,7 +6939,7 @@ function WM.Notify(W, Config)
         BorderSizePixel = 0,
         Position = UDim2.fromOffset(12, 12),
         Size = UDim2.fromOffset(30, 30),
-        ZIndex = 301
+        ZIndex = 501
     })
     Library:Corner(IconHolder, 9)
     New("UIStroke", { Parent = IconHolder, Color = Tint, Transparency = 0.65, Thickness = 1 })
@@ -6740,7 +6950,7 @@ function WM.Notify(W, Config)
         BackgroundTransparency = 1,
         Position = UDim2.fromScale(0.5, 0.5),
         Size = UDim2.fromOffset(16, 16),
-        ZIndex = 302
+        ZIndex = 502
     })
     Library:SetIcon(Icon, Kind.Icon, Tint)
 
@@ -6754,7 +6964,7 @@ function WM.Notify(W, Config)
         TextSize = 13,
         TextXAlignment = Enum.TextXAlignment.Left,
         TextTruncate = Enum.TextTruncate.AtEnd,
-        ZIndex = 302
+        ZIndex = 502
     })
     Library:Themed(Title, "TextColor3", "Text")
 
@@ -6770,7 +6980,7 @@ function WM.Notify(W, Config)
         TextXAlignment = Enum.TextXAlignment.Left,
         TextYAlignment = Enum.TextYAlignment.Top,
         RichText = true,
-        ZIndex = 302
+        ZIndex = 502
     })
     Library:Themed(Content, "TextColor3", "TextDim")
 
@@ -6782,12 +6992,12 @@ function WM.Notify(W, Config)
         Size = UDim2.fromOffset(20, 20),
         Text = "",
         AutoButtonColor = false,
-        ZIndex = 303
+        ZIndex = 503
     })
     local CloseIcon = IconLabel(Close, Library.Icons.Close, 12, "TextDisabled")
     CloseIcon.AnchorPoint = Vector2.new(0.5, 0.5)
     CloseIcon.Position = UDim2.fromScale(0.5, 0.5)
-    CloseIcon.ZIndex = 304
+    CloseIcon.ZIndex = 504
 
     local Bar = New("Frame", {
         Parent = Card,
@@ -6797,7 +7007,7 @@ function WM.Notify(W, Config)
         BorderSizePixel = 0,
         Position = UDim2.new(0, 12, 1, -6),
         Size = UDim2.new(1, -24, 0, 3),
-        ZIndex = 302
+        ZIndex = 502
     })
     Library:Corner(Bar, UDim.new(1, 0))
 
@@ -6806,7 +7016,7 @@ function WM.Notify(W, Config)
             AnchorPoint = Vector2.new(0, 1),
             Position = UDim2.new(0, 12, 1, -12),
             Size = UDim2.new(1, -24, 0, 26),
-            ZIndex = 302
+            ZIndex = 502
         })
         New("UIListLayout", {
             Parent = Actions,
@@ -6819,11 +7029,11 @@ function WM.Notify(W, Config)
             local Button, TextLabel = PillButton(Actions, Info.Text or "Ok", Info.Icon, 0, Info.Accent)
             Button.Size = UDim2.new(1 / Count, -6 + 6 / Count, 1, 0)
             Button.LayoutOrder = Index
-            Button.ZIndex = 303
+            Button.ZIndex = 503
             TextLabel.TextSize = 11
             for _, Child in ipairs(Button:GetDescendants()) do
                 if Child:IsA("GuiObject") then
-                    Child.ZIndex = 304
+                    Child.ZIndex = 504
                 end
             end
             Button.MouseButton1Click:Connect(function()
@@ -6961,14 +7171,14 @@ function WM.PlayerCard(W)
         Position = UDim2.new(1, -20, 1, -20),
         Size = UDim2.fromOffset(268, 236),
         Visible = false,
-        ZIndex = 260
+        ZIndex = 400
     })
     Library:Corner(Card, 14)
     Library:Themed(Card, "BackgroundColor3", "Elevated")
     Library:Themed(Card, "BackgroundTransparency", "ElevatedAlpha")
     Library:Stroke(Card, "Stroke", 1.2)
     Library:Shadow(Card, 60, 0.6)
-    Library:Sheen(Card, 90).ZIndex = 260
+    Library:Sheen(Card, 90).ZIndex = 400
 
     local Avatar = New("ImageLabel", {
         Parent = Card,
@@ -6976,7 +7186,7 @@ function WM.PlayerCard(W)
         BorderSizePixel = 0,
         Position = UDim2.fromOffset(14, 14),
         Size = UDim2.fromOffset(52, 52),
-        ZIndex = 261
+        ZIndex = 401
     })
     Library:Corner(Avatar, 12)
     Library:Themed(Avatar, "BackgroundColor3", "Row")
@@ -7001,7 +7211,7 @@ function WM.PlayerCard(W)
         TextSize = 14,
         TextXAlignment = Enum.TextXAlignment.Left,
         TextTruncate = Enum.TextTruncate.AtEnd,
-        ZIndex = 261
+        ZIndex = 401
     })
     Library:Themed(Name, "TextColor3", "Text")
 
@@ -7015,7 +7225,7 @@ function WM.PlayerCard(W)
         TextSize = 11,
         TextXAlignment = Enum.TextXAlignment.Left,
         TextTruncate = Enum.TextTruncate.AtEnd,
-        ZIndex = 261
+        ZIndex = 401
     })
     Library:Themed(Handle2, "TextColor3", "TextDim")
 
@@ -7029,7 +7239,7 @@ function WM.PlayerCard(W)
         Font = Library.Font.Bold,
         Text = " " .. ExecutorName() .. " ",
         TextSize = 10,
-        ZIndex = 261
+        ZIndex = 401
     })
     Library:Corner(Badge, 5)
     Library:Themed(Badge, "BackgroundColor3", "Accent")
@@ -7038,17 +7248,17 @@ function WM.PlayerCard(W)
     local Close = GlyphButton(Card, Library.Icons.Close, "Close")
     Close.AnchorPoint = Vector2.new(1, 0)
     Close.Position = UDim2.new(1, -8, 0, 10)
-    Close.ZIndex = 262
+    Close.ZIndex = 402
     for _, Child in ipairs(Close:GetDescendants()) do
         if Child:IsA("GuiObject") then
-            Child.ZIndex = 263
+            Child.ZIndex = 403
         end
     end
 
     local Rows = Blank(Card, {
         Position = UDim2.fromOffset(14, 78),
         Size = UDim2.new(1, -28, 1, -92),
-        ZIndex = 261
+        ZIndex = 401
     })
     New("UIListLayout", {
         Parent = Rows,
@@ -7063,7 +7273,7 @@ function WM.PlayerCard(W)
             BorderSizePixel = 0,
             Size = UDim2.new(1, 0, 0, 26),
             LayoutOrder = Order,
-            ZIndex = 261
+            ZIndex = 401
         })
         Library:Corner(Row, 7)
         Library:Themed(Row, "BackgroundColor3", "Row")
@@ -7072,7 +7282,7 @@ function WM.PlayerCard(W)
         local Icon = IconLabel(Row, IconName, 13, "Accent")
         Icon.AnchorPoint = Vector2.new(0, 0.5)
         Icon.Position = UDim2.new(0, 9, 0.5, 0)
-        Icon.ZIndex = 262
+        Icon.ZIndex = 402
         Library:Themed(Icon, "ImageColor3", "Accent")
 
         local Value = New("TextLabel", {
@@ -7085,7 +7295,7 @@ function WM.PlayerCard(W)
             TextSize = 11,
             TextXAlignment = Enum.TextXAlignment.Left,
             TextTruncate = Enum.TextTruncate.AtEnd,
-            ZIndex = 262
+            ZIndex = 402
         })
         Library:Themed(Value, "TextColor3", "TextDim")
         Values[Key] = Value
@@ -7095,10 +7305,10 @@ function WM.PlayerCard(W)
             Copy.AnchorPoint = Vector2.new(1, 0.5)
             Copy.Position = UDim2.new(1, -4, 0.5, 0)
             Copy.Size = UDim2.fromOffset(24, 24)
-            Copy.ZIndex = 262
+            Copy.ZIndex = 402
             for _, Child in ipairs(Copy:GetDescendants()) do
                 if Child:IsA("GuiObject") then
-                    Child.ZIndex = 263
+                    Child.ZIndex = 403
                 end
             end
             Copy.MouseButton1Click:Connect(function()
@@ -7149,6 +7359,7 @@ function WM.PlayerCard(W)
                 Dragging = true
                 Origin = Input.Position
                 StartPosition = Card.Position
+                Library:BeginDragLock()
             end
         end)
         table.insert(W.Connections, UserInputService.InputChanged:Connect(function(Input)
@@ -7161,8 +7372,12 @@ function WM.PlayerCard(W)
                 )
             end
         end))
-        table.insert(W.Connections, UserInputService.InputEnded:Connect(function()
-            Dragging = false
+        table.insert(W.Connections, UserInputService.InputEnded:Connect(function(Input)
+            if Dragging and (Input.UserInputType == Enum.UserInputType.MouseButton1
+                or Input.UserInputType == Enum.UserInputType.Touch) then
+                Dragging = false
+                Library:EndDragLock()
+            end
         end))
     end
 
@@ -7213,6 +7428,21 @@ function Library:SetGroq(Key, Prompt, Model)
     if type(Model) == "string" and Model ~= "" then
         Library.Groq.Model = Model
     end
+end
+
+function Library:ClearGroqKey()
+    Library.Groq.Key = ""
+end
+
+function Library:RefreshGroqModels(List)
+    if type(List) == "table" and #List > 0 then
+        Library.Groq.Models = List
+        if not table.find(List, Library.Groq.Model) then
+            Library.Groq.Model = List[1]
+        end
+        return true
+    end
+    return false
 end
 
 local function GroqAsk(History, OnDone)
@@ -7276,7 +7506,7 @@ function WM.AI(W)
         Position = UDim2.new(1, 0, 0, W.Header.Size.Y.Offset),
         Size = UDim2.new(0, 300, 1, -W.Header.Size.Y.Offset),
         Visible = false,
-        ZIndex = 80,
+        ZIndex = 90,
         ClipsDescendants = true
     })
 
@@ -7689,6 +7919,7 @@ function WM.AI(W)
                 Dragging = true
                 Origin = Input.Position
                 StartPos = Panel.Position
+                Library:BeginDragLock()
             end
         end)
         table.insert(W.Connections, UserInputService.InputChanged:Connect(function(Input)
@@ -7708,6 +7939,7 @@ function WM.AI(W)
             if Dragging and (Input.UserInputType == Enum.UserInputType.MouseButton1
                 or Input.UserInputType == Enum.UserInputType.Touch) then
                 Dragging = false
+                Library:EndDragLock()
             end
         end))
     end
@@ -7893,19 +8125,68 @@ function WM.BuildAPI(W)
         W.SelectTab(W.Active)
     end)
 
+    local function HighlightText(Label, Full, Query)
+        if not Label then
+            return
+        end
+        Full = tostring(Full or "")
+        if Query == "" then
+            Label.Text = Full
+            Label.RichText = true
+            return
+        end
+        local Lower = Full:lower()
+        local Start = Lower:find(Query, 1, true)
+        if not Start then
+            Label.Text = Full
+            return
+        end
+        local Stop = Start + #Query - 1
+        local Before = Full:sub(1, Start - 1)
+        local Match = Full:sub(Start, Stop)
+        local After = Full:sub(Stop + 1)
+        Label.RichText = true
+        Label.Text = Before .. '<font color="#FFE566">' .. Match .. '</font>' .. After
+    end
+
     W.SearchInput:GetPropertyChangedSignal("Text"):Connect(function()
         local Query = W.SearchInput.Text:lower()
         for _, Tab in ipairs(W.Tabs) do
             local Match = Query == "" or Tab.Name:lower():find(Query, 1, true) ~= nil
             if not Match then
                 for _, Entry in ipairs(W.Index) do
-                    if Entry.Tab == Tab.Name and Entry.Name:lower():find(Query, 1, true) then
+                    if Entry.Tab == Tab.Name and (
+                        Entry.Name:lower():find(Query, 1, true)
+                        or (Entry.Description or ""):lower():find(Query, 1, true)
+                    ) then
                         Match = true
                         break
                     end
                 end
             end
             Tab.Button.Visible = Match
+            if Tab.Label then
+                HighlightText(Tab.Label, Tab.Name, Query)
+            end
+        end
+        for _, Entry in ipairs(W.Index) do
+            local Element = Entry.Element
+            if Element and Element.Frame and not Element.Registry.Dead then
+                local NameHit = Query ~= "" and Entry.Name:lower():find(Query, 1, true)
+                local DescHit = Query ~= "" and (Entry.Description or ""):lower():find(Query, 1, true)
+                local Hit = Query == "" or NameHit or DescHit
+                if Element.TitleLabel then
+                    HighlightText(Element.TitleLabel, Element.Title or Entry.Name, Query)
+                end
+                if Element.DescLabel and (Element.Description or "") ~= "" then
+                    HighlightText(Element.DescLabel, Element.Description, Query)
+                end
+                if Query ~= "" and Element.Frame then
+                    Element.Frame.Visible = Hit and (Element.Frame:GetAttribute("UserHidden") ~= true)
+                elseif Query == "" and Element.Frame and Element.Frame:GetAttribute("UserHidden") ~= true then
+                    Element.Frame.Visible = true
+                end
+            end
         end
         for _, Group in ipairs(W.Groups) do
             local Any = false
@@ -7916,6 +8197,24 @@ function WM.BuildAPI(W)
                 end
             end
             Group.Frame.Visible = Any
+        end
+    end)
+
+    W.SearchInput.FocusLost:Connect(function(Enter)
+        if not Enter then
+            return
+        end
+        local Query = W.SearchInput.Text:lower()
+        if Query == "" then
+            return
+        end
+        for _, Entry in ipairs(W.Index) do
+            if Entry.Name:lower():find(Query, 1, true) or (Entry.Description or ""):lower():find(Query, 1, true) then
+                if Entry.Jump then
+                    Entry.Jump()
+                end
+                break
+            end
         end
     end)
 
@@ -8117,6 +8416,58 @@ function WM.BuildAPI(W)
 
     function API:SetGroq(Key, Prompt, Model)
         Library:SetGroq(Key, Prompt, Model)
+    end
+
+    function API:RefreshGroqModels(List)
+        return Library:RefreshGroqModels(List)
+    end
+
+    function API:ClearGroqKey()
+        Library.Groq.Key = ""
+        pcall(function()
+            FS.Write(W.Paths.Folder .. "/groq_key.txt", "")
+        end)
+        if W.AIPanel then
+            W.AIPanel = nil
+        end
+    end
+
+    function API:SetCompact(State)
+        W.Config.Compact = State and true or false
+        W.Relayout()
+    end
+
+    function API:SelfTest()
+        local Report = { ok = 0, fail = 0, errors = {} }
+        local Tab = API:Tab({ Title = "_SelfTest", Icon = "terminal" })
+        local Sec = Tab:AddSection("Probe")
+        local kinds = {
+            function() return Sec:AddToggle({ Title = "t", Default = false }) end,
+            function() return Sec:AddSlider({ Title = "s", Min = 0, Max = 10, Default = 1 }) end,
+            function() return Sec:AddDropdown({ Title = "d", Options = { "a", "b" }, Default = "a" }) end,
+            function() return Sec:AddButton({ Title = "b", Callback = function() end }) end,
+            function() return Sec:AddInput({ Title = "i", Default = "" }) end,
+            function() return Sec:AddKeybind({ Title = "k", Default = Enum.KeyCode.G }) end,
+            function() return Sec:AddParagraph({ Title = "p", Content = "x" }) end,
+            function() return Sec:AddProgress({ Title = "pr", Default = 50 }) end,
+        }
+        for _, Fn in ipairs(kinds) do
+            local Ok, Err = pcall(Fn)
+            if Ok then
+                Report.ok = Report.ok + 1
+            else
+                Report.fail = Report.fail + 1
+                table.insert(Report.errors, tostring(Err))
+            end
+        end
+        pcall(function() Tab:Destroy() end)
+        API:Notify({
+            Title = "SelfTest",
+            Content = string.format("%d ok / %d fail", Report.ok, Report.fail),
+            Type = Report.fail == 0 and "Success" or "Warn",
+            Duration = 5
+        })
+        return Report
     end
 
     function API:Toggle(State)
