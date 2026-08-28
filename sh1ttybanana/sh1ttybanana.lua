@@ -366,7 +366,7 @@ Library.Themes = {
     }
 }
 
-Library.ThemeOrder = { "Dark", "Black", "Light", "Liquid Glass" }
+Library.ThemeOrder = { "Dark", "Liquid Glass" }
 Library.CurrentTheme = "Dark"
 Library.Theme = Library.Themes.Dark
 Library.ThemeObjects = {}
@@ -1906,7 +1906,7 @@ function Library:NewWindow(UserConfig)
     local TitleStack = Blank(Brand, {
         AnchorPoint = Vector2.new(0, 0.5),
         Position = UDim2.new(0, 46, 0.5, 0),
-        Size = UDim2.new(1, -376, 0, 36),
+        Size = UDim2.new(1, W.Mobile and -230 or -376, 0, 36),
         ZIndex = 5
     })
 
@@ -1988,10 +1988,11 @@ function Library:NewWindow(UserConfig)
     Badge(W.Config.Version, "Accent", 2)
     Badge(W.Config.Tag, "Success", 3)
 
+    local ControlsWidth = W.Mobile and 200 or 320
     W.Controls = Blank(W.Header, {
         AnchorPoint = Vector2.new(1, 0.5),
         Position = UDim2.new(1, -10, 0.5, 0),
-        Size = UDim2.new(0, 320, 0, 30),
+        Size = UDim2.new(0, ControlsWidth, 0, 30),
         ZIndex = 5
     })
     New("UIListLayout", {
@@ -2018,7 +2019,7 @@ function Library:NewWindow(UserConfig)
     W.MenuButton = Control(Library.Icons.Menu, "Tabs", 0, function()
         W.ToggleDrawer()
     end, true)
-    W.MenuButton.Visible = false
+    W.MenuButton.Visible = W.Mobile
 
     if W.Config.ShowPalette then
         Control(Library.Icons.Command, "Command palette (Ctrl+K)", 1, function()
@@ -2291,18 +2292,84 @@ function Library:NewWindow(UserConfig)
         Visible = false,
         ZIndex = 20
     })
+    W.Backdrop.MouseButton1Click:Connect(function()
+        if W.Mobile and W.DrawerOpen then
+            W.ToggleDrawer()
+        end
+    end)
 
-    W.DrawerOpen = true
+    W.DrawerOpen = not W.Mobile
 
     function W.ToggleDrawer()
+        W.DrawerOpen = not W.DrawerOpen
+        if W.Mobile then
+            W.Backdrop.Visible = W.DrawerOpen
+            if W.DrawerOpen then
+                W.Sidebar.Visible = true
+                Library:Tween(W.Sidebar, NORMAL, { Position = UDim2.new(0, 0, 0, 0) })
+                Library:Tween(W.Backdrop, FAST, { BackgroundTransparency = 0.45 })
+            else
+                Library:Tween(W.Sidebar, NORMAL, { Position = UDim2.new(0, -W.SidebarWidth - 8, 0, 0) }, function()
+                    if not W.DrawerOpen then
+                        W.Sidebar.Visible = false
+                    end
+                end)
+                Library:Tween(W.Backdrop, FAST, { BackgroundTransparency = 1 }, function()
+                    if not W.DrawerOpen then
+                        W.Backdrop.Visible = false
+                    end
+                end)
+            end
+        else
+            W.Sidebar.Visible = true
+            W.Sidebar.Position = UDim2.new(0, 0, 0, 0)
+            W.Backdrop.Visible = false
+            W.Content.Position = UDim2.new(0, W.SidebarWidth, 0, 0)
+            W.Content.Size = UDim2.new(1, -W.SidebarWidth, 1, 0)
+        end
+        Library:Feedback(1.05)
     end
 
     function W.Relayout()
         local HeaderHeight = W.Header.Size.Y.Offset
         W.Body.Position = UDim2.new(0, 0, 0, HeaderHeight)
         W.Body.Size = UDim2.new(1, 0, 1, -HeaderHeight)
-        W.Content.Position = UDim2.new(0, W.SidebarWidth, 0, 0)
-        W.Content.Size = UDim2.new(1, -W.SidebarWidth, 1, 0)
+        W.MenuButton.Visible = W.Mobile
+        if W.Mobile then
+            W.SidebarWidth = math.min(200, math.floor(Device.Viewport().X * 0.72))
+            W.Sidebar.Size = UDim2.new(0, W.SidebarWidth, 1, 0)
+            W.Sidebar.ZIndex = 25
+            W.Content.Position = UDim2.new(0, 0, 0, 0)
+            W.Content.Size = UDim2.new(1, 0, 1, 0)
+            if W.DrawerOpen then
+                W.Sidebar.Visible = true
+                W.Sidebar.Position = UDim2.new(0, 0, 0, 0)
+                W.Backdrop.Visible = true
+                W.Backdrop.BackgroundTransparency = 0.45
+            else
+                W.Sidebar.Visible = false
+                W.Sidebar.Position = UDim2.new(0, -W.SidebarWidth - 8, 0, 0)
+                W.Backdrop.Visible = false
+            end
+            W.Controls.Size = UDim2.new(0, 200, 0, 30)
+            if W.MaxButton then
+                W.MaxButton.Visible = false
+            end
+        else
+            if W.MaxButton then
+                W.MaxButton.Visible = true
+            end
+            W.SidebarWidth = Device.Viewport().X < 560 and 140 or 156
+            W.Sidebar.Size = UDim2.new(0, W.SidebarWidth, 1, 0)
+            W.Sidebar.ZIndex = 3
+            W.Sidebar.Visible = true
+            W.Sidebar.Position = UDim2.new(0, 0, 0, 0)
+            W.Backdrop.Visible = false
+            W.Content.Position = UDim2.new(0, W.SidebarWidth, 0, 0)
+            W.Content.Size = UDim2.new(1, -W.SidebarWidth, 1, 0)
+            W.Controls.Size = UDim2.new(0, 320, 0, 30)
+            W.DrawerOpen = true
+        end
     end
 
     do
@@ -2444,10 +2511,8 @@ function Library:NewWindow(UserConfig)
         table.insert(W.Connections, Camera:GetPropertyChangedSignal("ViewportSize"):Connect(function()
             local WasMobile = W.Mobile
             W.Mobile = Device.IsMobile()
-            if WasMobile ~= W.Mobile then
-                W.Relayout()
-            end
             W.Fit()
+            W.Relayout()
         end))
     end
 
@@ -2466,6 +2531,7 @@ function Library:NewWindow(UserConfig)
 
     ApplyStartPosition()
     W.Fit()
+    W.Relayout()
     return WM.BuildAPI(W)
 end
 
@@ -2539,7 +2605,7 @@ local function BuildSection(Tab, Config)
     New("UIListLayout", {
         Parent = Card,
         SortOrder = Enum.SortOrder.LayoutOrder,
-        Padding = UDim.new(0, 8)
+        Padding = UDim.new(0, W.Mobile and 6 or 8)
     })
 
     local Header
@@ -2694,17 +2760,18 @@ local function BuildTab(W, Config, Group)
         ZIndex = 3
     })
     Library:StyleScroll(Tab.Page)
+    local PagePad = W.Mobile and 10 or 14
     New("UIPadding", {
         Parent = Tab.Page,
-        PaddingTop = UDim.new(0, 12),
-        PaddingBottom = UDim.new(0, 16),
-        PaddingLeft = UDim.new(0, 14),
-        PaddingRight = UDim.new(0, 14)
+        PaddingTop = UDim.new(0, W.Mobile and 8 or 12),
+        PaddingBottom = UDim.new(0, W.Mobile and 12 or 16),
+        PaddingLeft = UDim.new(0, PagePad),
+        PaddingRight = UDim.new(0, PagePad)
     })
     New("UIListLayout", {
         Parent = Tab.Page,
         SortOrder = Enum.SortOrder.LayoutOrder,
-        Padding = UDim.new(0, 10)
+        Padding = UDim.new(0, W.Mobile and 8 or 10)
     })
 
     local Height = W.Mobile and 42 or 36
@@ -7349,7 +7416,7 @@ function WM.AI(W)
         Position = UDim2.new(0, 12, 0, 0),
         Size = UDim2.new(1, -50, 1, 0),
         Font = Library.Font.Regular,
-        PlaceholderText = "Paste Groq API key",
+        PlaceholderText = "API key not set — paste your own here",
         Text = "",
         TextSize = 12,
         TextXAlignment = Enum.TextXAlignment.Left,
@@ -7520,6 +7587,37 @@ function WM.AI(W)
         WM.ToggleAI(W, false)
     end)
 
+    do
+        local Dragging, Origin, StartPos = false, nil, nil
+        Head.InputBegan:Connect(function(Input)
+            if Input.UserInputType == Enum.UserInputType.MouseButton1
+                or Input.UserInputType == Enum.UserInputType.Touch then
+                Dragging = true
+                Origin = Input.Position
+                StartPos = Panel.Position
+            end
+        end)
+        table.insert(W.Connections, UserInputService.InputChanged:Connect(function(Input)
+            if not Dragging then
+                return
+            end
+            if Input.UserInputType == Enum.UserInputType.MouseMovement
+                or Input.UserInputType == Enum.UserInputType.Touch then
+                local Delta = Input.Position - Origin
+                Panel.Position = UDim2.new(
+                    StartPos.X.Scale, StartPos.X.Offset + Delta.X,
+                    StartPos.Y.Scale, StartPos.Y.Offset + Delta.Y
+                )
+            end
+        end))
+        table.insert(W.Connections, UserInputService.InputEnded:Connect(function(Input)
+            if Dragging and (Input.UserInputType == Enum.UserInputType.MouseButton1
+                or Input.UserInputType == Enum.UserInputType.Touch) then
+                Dragging = false
+            end
+        end))
+    end
+
     W.AIPanel = Panel
     return Panel
 end
@@ -7655,6 +7753,9 @@ function WM.BuildAPI(W)
         Library:SetIcon(W.FavButton:FindFirstChildOfClass("ImageLabel"), Library.Icons.Star,
             Favorited and Library.Theme.Accent or Library.Theme.TextDim)
 
+        if W.Mobile and W.DrawerOpen then
+            W.ToggleDrawer()
+        end
     end
 
     function W.Focus(Frame)

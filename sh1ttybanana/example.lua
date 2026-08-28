@@ -15,7 +15,6 @@ local Window = Library:NewWindow({
     Color = Color3.fromRGB(179, 0, 255),
     Theme = "Dark",
     Size = UDim2.fromOffset(700, 500),
-    MinSize = Vector2.new(540, 380),
     AutoScale = true,
     AutoPosition = "Center",
     Blur = true,
@@ -34,12 +33,11 @@ local Window = Library:NewWindow({
     ShowConfig = true,
     ShowKeybinds = true,
     ShowChangelog = false,
-    Sound = true,
+    Sound = false,
     Particles = true,
-    GroqApiKey = "gsk_YOUR_GROQ_KEY_HERE",
+    GroqApiKey = nil,
     GroqPrompt = "You are a helpful assistant inside a Roblox script menu called sh1ttybanana.",
     GroqModel = "openai/gpt-oss-120b",
-    -- Optional key system: omit this whole field to skip it entirely.
     KeySystem = {
         Enabled = true,
         Title = "sh1ttybanana Access",
@@ -47,15 +45,8 @@ local Window = Library:NewWindow({
         Keys = { "FREE-KEY-1234", "TESTKEY" },
         GetKeyLink = "https://discord.gg/example",
         SaveKey = true,
-        -- Callback = function(Value) return Value == MyOwnCheck(Value) end,
     },
 })
-
-local lp = game:GetService("Players").LocalPlayer
-
-local function getHum()
-    return lp.Character and lp.Character:FindFirstChild("Humanoid")
-end
 
 local MainGroup = Window:Section({ Title = "Main", Opened = true })
 local GeneralTab = MainGroup:Tab({ Title = "General", Icon = "layout-dashboard" })
@@ -82,8 +73,7 @@ MovSec:AddSlider({
     Flag = "WalkSpeed",
     Min = 16, Max = 500, Increment = 1, Default = 16,
     Callback = function(v)
-        local h = getHum()
-        if h then h.WalkSpeed = v end
+        print("WalkSpeed:", v)
     end,
 })
 
@@ -92,8 +82,7 @@ MovSec:AddSlider({
     Flag = "JumpPower",
     Min = 7, Max = 500, Increment = 1, Default = 50,
     Callback = function(v)
-        local h = getHum()
-        if h then h.JumpPower = v end
+        print("100 power")
     end,
 })
 
@@ -101,17 +90,30 @@ MovSec:AddToggle({
     Title = "Noclip",
     Flag = "Noclip",
     Default = false,
-    Callback = function(s) print("Noclip:", s) end,
+    Callback = function(s)
+        print("Noclip:", s)
+    end,
 })
 
-MovSec:AddToggle({ Title = "Fly", Flag = "Fly", Default = false, Callback = function(s) print("Fly:", s) end })
+MovSec:AddToggle({
+    Title = "Fly",
+    Flag = "Fly",
+    Default = false,
+    Callback = function(s)
+        print("Fly:", s)
+    end,
+})
+
 MovSec:AddKeybind({
     Title = "Fly Keybind",
     Flag = "FlyKey",
     Default = Enum.KeyCode.F,
     Mode = "Toggle",
-    Callback = function(k) print("Key:", k) end,
+    Callback = function(k)
+        print("Key:", k)
+    end,
 })
+
 MovSec:AddSeparator({ Title = "Danger Zone" })
 
 MovSec:AddButton({
@@ -123,8 +125,7 @@ MovSec:AddButton({
             Buttons = {
                 { Title = "Cancel" },
                 { Title = "Reset", Accent = true, Callback = function()
-                    local h = getHum()
-                    if h then h.Health = 0 end
+                    print("Reset Character")
                 end },
             },
         })
@@ -138,15 +139,20 @@ MovSec:AddInput({
     Placeholder = "Enter a nickname",
     MaxLength = 20,
     Clear = true,
-    OnEnter = function(text) print("Nickname set:", text) end,
-    Callback = function(text) print("Nickname changed:", text) end,
+    OnEnter = function(text)
+        print("Nickname set:", text)
+    end,
+    Callback = function(text)
+        print("Nickname changed:", text)
+    end,
 })
 
 local SessionProg = InfoSec:AddProgress({ Title = "Session Time", Default = 0, Suffix = "%" })
-local SessionStart = os.time()
 task.spawn(function()
+    local t = 0
     while task.wait(1) do
-        SessionProg:Set(math.min(math.floor((os.time() - SessionStart) / 36), 100))
+        t = math.min(t + 1, 100)
+        SessionProg:Set(t)
     end
 end)
 
@@ -154,9 +160,9 @@ InfoSec:AddTable({
     Title = "Game Info",
     Columns = { "Key", "Value" },
     Rows = {
-        { "Place ID", tostring(game.PlaceId) },
-        { "Username", lp.Name },
-        { "User ID", tostring(lp.UserId) },
+        { "Place ID", "0000000000" },
+        { "Username", "Player" },
+        { "User ID", "0" },
     },
 })
 
@@ -168,29 +174,56 @@ InfoSec:AddParagraph({
 local AimSec = CombatTab:AddSection("Aimbot")
 local SilentSec = CombatTab:AddSection("Silent Aim")
 
-AimSec:AddToggle({ Title = "Aimbot", Flag = "Aimbot", Default = false, Callback = function(s) print("Aimbot:", s) end })
-AimSec:AddSlider({ Title = "FOV", Flag = "AimFOV", Min = 10, Max = 800, Increment = 1, Default = 120, Callback = function(v) print("FOV:", v) end })
+AimSec:AddToggle({
+    Title = "Aimbot",
+    Flag = "Aimbot",
+    Default = false,
+    Callback = function(s)
+        print("Aimbot:", s)
+    end,
+})
+
+AimSec:AddSlider({
+    Title = "FOV",
+    Flag = "AimFOV",
+    Min = 10, Max = 800, Increment = 1, Default = 120,
+    Callback = function(v)
+        print("FOV:", v)
+    end,
+})
+
 AimSec:AddDropdown({
     Title = "Target Part",
     Flag = "TargetPart",
     Options = { "Head", "HumanoidRootPart", "Torso" },
     Default = "Head",
-    Callback = function(v) print("Target:", v) end,
+    Callback = function(v)
+        print("Target:", v)
+    end,
 })
+
 AimSec:AddColorpicker({
     Title = "FOV Circle Color",
     Flag = "FOVColor",
     Default = Color3.fromRGB(255, 0, 80),
-    Callback = function(c) print("Color:", c) end,
+    Callback = function(c)
+        print("Color:", c)
+    end,
 })
+
 AimSec:AddKeybind({
     Title = "Hold to Aim",
     Flag = "AimKey",
     Default = Enum.KeyCode.Q,
     Mode = "Hold",
-    Callback = function() print("Aiming") end,
-    OnRelease = function() print("Stopped aiming") end,
+    Callback = function()
+        print("Aiming")
+    end,
+    OnRelease = function()
+        print("Stopped aiming")
+    end,
 })
+
 AimSec:AddMultiButton({
     Title = "Quick Actions",
     Buttons = {
@@ -199,8 +232,24 @@ AimSec:AddMultiButton({
     },
 })
 
-SilentSec:AddToggle({ Title = "Silent Aim", Flag = "SilentAim", Default = false, Callback = function(s) print("Silent:", s) end })
-SilentSec:AddSlider({ Title = "Prediction", Flag = "Prediction", Min = 0, Max = 100, Increment = 1, Default = 10, Callback = function(v) print("Pred:", v) end })
+SilentSec:AddToggle({
+    Title = "Silent Aim",
+    Flag = "SilentAim",
+    Default = false,
+    Callback = function(s)
+        print("Silent:", s)
+    end,
+})
+
+SilentSec:AddSlider({
+    Title = "Prediction",
+    Flag = "Prediction",
+    Min = 0, Max = 100, Increment = 1, Default = 10,
+    Callback = function(v)
+        print("Pred:", v)
+    end,
+})
+
 SilentSec:AddCodeblock({
     Title = "Silent Aim Notes",
     Code = "-- fires without rotating your camera",
@@ -209,15 +258,41 @@ SilentSec:AddCodeblock({
 
 local ESPSec = VisualTab:AddSection("ESP")
 
-ESPSec:AddToggle({ Title = "Player ESP", Flag = "PlayerESP", Default = false, Callback = function(s) print("ESP:", s) end })
-ESPSec:AddToggle({ Title = "Box ESP", Flag = "BoxESP", Default = false, Callback = function(s) print("BoxESP:", s) end })
+ESPSec:AddToggle({
+    Title = "Player ESP",
+    Flag = "PlayerESP",
+    Default = false,
+    Callback = function(s)
+        print("ESP:", s)
+    end,
+})
+
+ESPSec:AddToggle({
+    Title = "Box ESP",
+    Flag = "BoxESP",
+    Default = false,
+    Callback = function(s)
+        print("BoxESP:", s)
+    end,
+})
+
 ESPSec:AddColorpickerRGB({
     Title = "ESP Color",
     Flag = "ESPColor",
     Default = Color3.fromRGB(255, 60, 60),
-    Callback = function(c) print("ESPCol:", c) end,
+    Callback = function(c)
+        print("ESPCol:", c)
+    end,
 })
-ESPSec:AddSlider({ Title = "ESP Range", Flag = "ESPRange", Min = 50, Max = 2000, Increment = 50, Default = 500, Callback = function(v) print("Range:", v) end })
+
+ESPSec:AddSlider({
+    Title = "ESP Range",
+    Flag = "ESPRange",
+    Min = 50, Max = 2000, Increment = 50, Default = 500,
+    Callback = function(v)
+        print("Range:", v)
+    end,
+})
 
 local AdvVisual = VisualTab:AddTabSection({ Title = "Advanced Visuals", Opened = false })
 
@@ -226,7 +301,7 @@ AdvVisual:AddToggle({
     Flag = "RemoveFog",
     Default = false,
     Callback = function(s)
-        game:GetService("Lighting").FogEnd = s and 100000 or 1000
+        print("RemoveFog:", s)
     end,
 })
 
@@ -234,7 +309,9 @@ AdvVisual:AddSlider({
     Title = "Camera FOV",
     Flag = "CamFOV",
     Min = 60, Max = 120, Increment = 1, Default = 70,
-    Callback = function(v) workspace.CurrentCamera.FieldOfView = v end,
+    Callback = function(v)
+        print("CamFOV:", v)
+    end,
 })
 
 AdvVisual:AddGrid({
@@ -283,11 +360,7 @@ WorldSec:AddSlider({
     Flag = "GlobalSpeed",
     Min = 0, Max = 100, Increment = 1, Default = 16,
     Callback = function(v)
-        for _, p in ipairs(game.Players:GetPlayers()) do
-            if p.Character and p.Character:FindFirstChild("Humanoid") then
-                p.Character.Humanoid.WalkSpeed = v
-            end
-        end
+        print("GlobalSpeed:", v)
     end,
 })
 
@@ -296,28 +369,46 @@ TpSec:AddInput({
     Placeholder = "Username",
     Clear = true,
     OnEnter = function(name)
-        local t = game.Players:FindFirstChild(name)
-        local root = lp.Character and lp.Character:FindFirstChild("HumanoidRootPart")
-        if t and t.Character and t.Character:FindFirstChild("HumanoidRootPart") and root then
-            root.CFrame = t.Character.HumanoidRootPart.CFrame * CFrame.new(0, 0, 3)
-        end
+        print("Teleport to:", name)
     end,
 })
 
 TpSec:AddButton({
     Title = "Teleport to Spawn",
     Callback = function()
-        local root = lp.Character and lp.Character:FindFirstChild("HumanoidRootPart")
-        if root then root.CFrame = CFrame.new(0, 10, 0) end
+        print("Teleport to Spawn")
     end,
 })
 
 local AntiSec = MiscTab:AddSection({ Title = "Anti", Lock = { Title = "Beta only" } })
 local LogSec = MiscTab:AddSection("Logger")
 
-AntiSec:AddToggle({ Title = "Anti AFK", Flag = "AntiAFK", Default = true, Callback = function(s) print("AntiAFK:", s) end })
-AntiSec:AddToggle({ Title = "Anti Void", Flag = "AntiVoid", Default = false, Callback = function(s) print("AntiVoid:", s) end })
-LogSec:AddToggle({ Title = "Remote Spy", Flag = "RemoteSpy", Default = false, Callback = function(s) print("RemoteSpy:", s) end })
+AntiSec:AddToggle({
+    Title = "Anti AFK",
+    Flag = "AntiAFK",
+    Default = true,
+    Callback = function(s)
+        print("AntiAFK:", s)
+    end,
+})
+
+AntiSec:AddToggle({
+    Title = "Anti Void",
+    Flag = "AntiVoid",
+    Default = false,
+    Callback = function(s)
+        print("AntiVoid:", s)
+    end,
+})
+
+LogSec:AddToggle({
+    Title = "Remote Spy",
+    Flag = "RemoteSpy",
+    Default = false,
+    Callback = function(s)
+        print("RemoteSpy:", s)
+    end,
+})
 
 local UISec = SettingsTab:AddSection("UI")
 local ConfigSec = SettingsTab:AddSection("Config")
@@ -328,10 +419,24 @@ UISec:AddButton({ Title = "Open Keybind Manager", Callback = function() Window:K
 UISec:AddSlider({
     Title = "Window Transparency",
     Min = 0, Max = 50, Increment = 1, Default = 3, Suffix = "%",
-    Callback = function(v) Window:SetTransparency(v / 100) end,
+    Callback = function(v)
+        Window:SetTransparency(v / 100)
+    end,
 })
-UISec:AddKeybind({ Title = "Toggle AI Assistant", Default = Enum.KeyCode.RightAlt, Callback = function() Window:ToggleAI() end })
-UISec:AddKeybind({ Title = "Toggle Player Card", Default = Enum.KeyCode.RightControl, Callback = function() Window:TogglePlayerCard() end })
+UISec:AddKeybind({
+    Title = "Toggle AI Assistant",
+    Default = Enum.KeyCode.RightAlt,
+    Callback = function()
+        Window:ToggleAI()
+    end,
+})
+UISec:AddKeybind({
+    Title = "Toggle Player Card",
+    Default = Enum.KeyCode.RightControl,
+    Callback = function()
+        Window:TogglePlayerCard()
+    end,
+})
 
 ConfigSec:AddButton({ Title = "Open Config Manager", Callback = function() Window:ConfigPanel() end })
 ConfigSec:AddButton({
@@ -362,9 +467,10 @@ local CodeSec = DevTab:AddSection("Codeblock")
 
 local HpBar = DemoSec:AddProgress({ Title = "Player Health", Default = 100, Suffix = "%" })
 task.spawn(function()
+    local h = 100
     while task.wait(0.5) do
-        local h = getHum()
-        if h then HpBar:Set(math.floor(h.Health)) end
+        h = h > 0 and h - 1 or 100
+        HpBar:Set(h)
     end
 end)
 
@@ -377,12 +483,25 @@ DemoSec:AddMultiButton({
     Buttons = {
         { Title = "Print Tabs", Callback = function() print(table.concat(Window:GetTabs(), ", ")) end },
         { Title = "Open Card", Callback = function() Window:TogglePlayerCard(true) end },
-        { Title = "Show Changelog", Callback = function() Window:Changelog({
-            Entries = {
-                { Version = "v2.1", Notes = { "Rebuilt component API", "Added Liquid Glass theme", "Added config profiles" } },
-                { Version = "v1.0", Notes = { "Initial release" } },
-            },
-        }) end },
+        { Title = "Show Changelog", Callback = function()
+            Window:Changelog({
+                Entries = {
+                    { Version = "v2.1.0", Notes = {
+                        "Mobile drawer sidebar (no size lock)",
+                        "Configurable topbar icons",
+                        "AI panel drag + API key textbox",
+                        "Default themes: Dark, Liquid Glass",
+                        "Tighter mobile spacing",
+                    }},
+                    { Version = "v2.0.0", Notes = {
+                        "Rebuilt component API",
+                        "Added Liquid Glass theme",
+                        "Added config profiles",
+                    }},
+                    { Version = "v1.0.0", Notes = { "Initial release" } },
+                },
+            })
+        end },
     },
 })
 
@@ -393,14 +512,20 @@ local LockedInput = CodeSec:AddInput({
 })
 
 CodeSec:AddCodeblock({
-    Title = "Kill Self",
-    Code = 'local h = game.Players.LocalPlayer.Character:FindFirstChild("Humanoid")\nif h then h.Health = 0 end',
+    Title = "Example Code",
+    Code = 'print("example")',
     Copy = true,
 })
 
 local ToolsSection = DevTab:AddTabSection({ Title = "More Tools", Opened = false })
 
-ToolsSection:AddButton({ Title = "Jump to Combat Tab", Callback = function() Window:SelectTab("Combat") end })
+ToolsSection:AddButton({
+    Title = "Jump to Combat Tab",
+    Callback = function()
+        Window:SelectTab("Combat")
+    end,
+})
+
 ToolsSection:AddButton({
     Title = "Unlock Admin Command",
     Callback = function()
@@ -408,6 +533,7 @@ ToolsSection:AddButton({
         Window:Notify({ Title = "Unlocked", Content = "Admin Command is now editable.", Type = "Success" })
     end,
 })
+
 ToolsSection:AddButton({
     Title = "Prompt Example",
     Callback = function()
@@ -415,10 +541,13 @@ ToolsSection:AddButton({
             Title = "Enter a value",
             Placeholder = "Type something",
             Confirm = "Submit",
-            Callback = function(text) print("Prompted:", text) end,
+            Callback = function(text)
+                print("Prompted:", text)
+            end,
         })
     end,
 })
+
 ToolsSection:AddButton({
     Title = "Add a Key at Runtime",
     Callback = function()
@@ -426,6 +555,7 @@ ToolsSection:AddButton({
         Window:Notify({ Title = "Key System", Content = "Added RUNTIME-KEY-9999 as a valid key.", Type = "Info" })
     end,
 })
+
 ToolsSection:AddButton({
     Title = "Check a Key",
     Callback = function()
@@ -436,7 +566,7 @@ ToolsSection:AddButton({
 task.delay(1, function()
     Window:Notify({
         Title = "Welcome!",
-        Content = "sh1ttybanana loaded. Dev tab password: 1234 · v2.1.0",
+        Content = "sh1ttybanana v2.1.0 loaded. Dev tab password: 1234",
         Type = "Success",
         Duration = 6,
     })
