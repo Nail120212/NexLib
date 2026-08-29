@@ -18,7 +18,7 @@ local Window = Library:NewWindow({
     AutoScale = true,
     AutoPosition = "Center",
     Blur = true,
-    Version = "v2.1",
+    Version = "v2.1.3",
     Tag = "beta",
     FolderName = "sh1ttybanana",
     ConfigName = "default",
@@ -40,13 +40,29 @@ local Window = Library:NewWindow({
     GroqApiKey = nil,
     GroqPrompt = "You are a helpful assistant inside a Roblox script menu called sh1ttybanana.",
     GroqModel = "openai/gpt-oss-120b",
+    PanicKey = Enum.KeyCode.End,
+    -- Built-in key UI by default. To use your own:
+    -- KeySystem = { Enabled = true, Custom = function(api)
+    --   -- build UI on api.Gui, then api.Resolve(true, key) or api.Resolve(false)
+    --   -- api.IsValid(key), api.SaveKey(key), api.Theme, api.Library, api.New
+    -- end },
     KeySystem = {
         Enabled = true,
-        Title = "sh1ttybanana Access",
-        Note = "Get a key from our Discord, then paste it below.",
+        Title = "sh1ttybanana",
+        Note = "Verify Key to enjoy",
         Keys = { "FREE-KEY-1234", "TESTKEY" },
         GetKeyLink = "https://discord.gg/example",
         SaveKey = true,
+        Changelog = {
+            { Version = "v2.1.3", Date = os.date("%b %d, %Y"), Notes = {
+                "Patriot-style key system",
+                "RangeSlider, ToggleGroup, FilePicker",
+                "ConfirmToggle, Hotbar",
+                "Panic key + roles + unload cleanup",
+                "Tab lock remember 10 minutes",
+            }},
+            { Version = "v2.1.0", Date = "Aug 2026", Notes = { "Mobile layout", "AI key field", "Search highlight" } },
+        },
     },
 })
 
@@ -64,7 +80,7 @@ local SettingsTab = SystemGroup:Tab({ Title = "Settings", Icon = "settings" })
 local DevTab = SystemGroup:Tab({
     Title = "Dev",
     Icon = "terminal",
-    Lock = { Password = "1234", Title = "Developer Only" },
+    Lock = { Password = "1234", Title = "Developer Only", RememberMinutes = 10 },
 })
 
 local MovSec = GeneralTab:AddSection("Movement")
@@ -583,7 +599,7 @@ ToolsSection:AddButton({
 task.delay(1, function()
     Window:Notify({
         Title = "Welcome!",
-        Content = "sh1ttybanana v2.1.0 loaded. Dev tab password: 1234",
+        Content = "sh1ttybanana v2.1.2 loaded. Dev tab password: 1234 (remembers 10 min)",
         Type = "Success",
         Duration = 6,
     })

@@ -1,5 +1,5 @@
 local Library = {}
-Library.Version = "2.1.0"
+Library.Version = "2.1.3"
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
@@ -1523,7 +1523,10 @@ function Library:NewWindow(UserConfig)
         GroqApiKey = nil,
         GroqPrompt = nil,
         GroqModel = nil,
-        KeySystem = nil
+        KeySystem = nil,
+        PanicKey = Enum.KeyCode.End,
+        PanicFlags = nil,
+        Roles = nil
     }, UserConfig or {})
 
     W.Tabs = {}
@@ -1626,7 +1629,9 @@ function Library:NewWindow(UserConfig)
             Keys = {},
             GetKeyLink = nil,
             SaveKey = true,
-            Callback = nil
+            Callback = nil,
+            Custom = nil,
+            UI = "default"
         }, W.Config.KeySystem)
 
         local function IsValidKey(Value)
@@ -1654,82 +1659,280 @@ function Library:NewWindow(UserConfig)
             end
         end
 
+        if not Skip and type(KeyCfg.Custom) == "function" then
+            local Done, Verified = false, false
+            local KeyApi = {
+                Gui = W.Gui,
+                Window = W,
+                Config = KeyCfg,
+                Theme = Library.Theme,
+                Library = Library,
+                IsValid = IsValidKey,
+                New = New,
+                Icons = Library.Icons,
+                SaveKey = function(Value)
+                    if KeyCfg.SaveKey ~= false and Value then
+                        FS.Folder(W.Paths.Folder)
+                        FS.Write(W.Paths.KeyFile, tostring(Value))
+                    end
+                end,
+                Resolve = function(Ok, Value)
+                    if Ok then
+                        if Value and KeyCfg.SaveKey ~= false then
+                            FS.Folder(W.Paths.Folder)
+                            FS.Write(W.Paths.KeyFile, tostring(Value))
+                        end
+                        Verified = true
+                    end
+                    Done = true
+                end,
+            }
+            local Ok, Err = pcall(KeyCfg.Custom, KeyApi)
+            if not Ok then
+                warn("[sh1ttybanana] KeySystem.Custom error:", Err)
+                Done = true
+                Verified = false
+            end
+            while not Done and W.Gui.Parent do
+                task.wait()
+            end
+            if not Verified then
+                pcall(function()
+                    W.Gui:Destroy()
+                end)
+                return setmetatable({}, { __index = function() return function() end end })
+            end
+            Skip = true
+        end
+
         if not Skip then
             local Gate = New("Frame", {
                 Parent = W.Gui,
                 Name = "KeyGate",
                 BackgroundColor3 = Color3.fromRGB(0, 0, 0),
-                BackgroundTransparency = 0.35,
+                BackgroundTransparency = 0.4,
                 BorderSizePixel = 0,
                 Size = UDim2.fromScale(1, 1),
                 ZIndex = 1000
             })
 
-            local Card = New("Frame", {
+            local Shell = New("Frame", {
                 Parent = Gate,
                 AnchorPoint = Vector2.new(0.5, 0.5),
+                BackgroundTransparency = 1,
                 BorderSizePixel = 0,
                 Position = UDim2.fromScale(0.5, 0.5),
-                Size = UDim2.fromOffset(340, 0),
-                AutomaticSize = Enum.AutomaticSize.Y,
+                Size = UDim2.fromOffset(W.Mobile and 320 or 820, W.Mobile and 420 or 340),
                 ZIndex = 1001
             })
-            Library:Corner(Card, 14)
-            Library:Themed(Card, "BackgroundColor3", "Card")
-            Library:Themed(Card, "BackgroundTransparency", "CardAlpha")
-            Library:Stroke(Card, "Stroke", 1.2)
-            Library:Shadow(Card, 60, 0.55)
-
-            New("UIPadding", {
-                Parent = Card,
-                PaddingTop = UDim.new(0, 22),
-                PaddingBottom = UDim.new(0, 20),
-                PaddingLeft = UDim.new(0, 22),
-                PaddingRight = UDim.new(0, 22)
-            })
             New("UIListLayout", {
-                Parent = Card,
-                SortOrder = Enum.SortOrder.LayoutOrder,
-                Padding = UDim.new(0, 12)
+                Parent = Shell,
+                FillDirection = W.Mobile and Enum.FillDirection.Vertical or Enum.FillDirection.Horizontal,
+                HorizontalAlignment = Enum.HorizontalAlignment.Center,
+                VerticalAlignment = Enum.VerticalAlignment.Center,
+                Padding = UDim.new(0, 10),
+                SortOrder = Enum.SortOrder.LayoutOrder
             })
 
-            local LockIcon = IconLabel(Card, Library.Icons.Lock, 26, "Accent")
-            LockIcon.LayoutOrder = 0
-            Library:Themed(LockIcon, "ImageColor3", "Accent")
-
-            local GateTitle = New("TextLabel", {
-                Parent = Card,
-                BackgroundTransparency = 1,
-                Size = UDim2.new(1, 0, 0, 22),
-                Font = Library.Font.Bold,
-                Text = KeyCfg.Title,
-                TextSize = 17,
-                LayoutOrder = 1
-            })
-            Library:Themed(GateTitle, "TextColor3", "Text")
-
-            if KeyCfg.Note ~= "" then
-                local GateNote = New("TextLabel", {
-                    Parent = Card,
-                    BackgroundTransparency = 1,
-                    Size = UDim2.new(1, 0, 0, 0),
-                    AutomaticSize = Enum.AutomaticSize.Y,
-                    Font = Library.Font.Regular,
-                    Text = KeyCfg.Note,
-                    TextSize = 12,
-                    TextWrapped = true,
-                    LayoutOrder = 2
+            local function Panel(Width, Order)
+                local P = New("Frame", {
+                    Parent = Shell,
+                    BorderSizePixel = 0,
+                    Size = UDim2.new(W.Mobile and 1 or 0, W.Mobile and 0 or Width, W.Mobile and 0 or 1, W.Mobile and 160 or 0),
+                    LayoutOrder = Order,
+                    ZIndex = 1002
                 })
-                Library:Themed(GateNote, "TextColor3", "TextDim")
+                Library:Corner(P, 14)
+                Library:Themed(P, "BackgroundColor3", "Elevated")
+                Library:Themed(P, "BackgroundTransparency", "ElevatedAlpha")
+                local Stroke = Library:Stroke(P, "Accent", 1.4)
+                Stroke.Transparency = 0.35
+                Library:Sheen(P, 90).ZIndex = 1002
+                New("UIPadding", {
+                    Parent = P,
+                    PaddingTop = UDim.new(0, 14),
+                    PaddingBottom = UDim.new(0, 14),
+                    PaddingLeft = UDim.new(0, 14),
+                    PaddingRight = UDim.new(0, 14)
+                })
+                return P
             end
 
-            local Field = New("Frame", {
-                Parent = Card,
+            local Left = Panel(220, 1)
+            local Mid = Panel(300, 2)
+            local Right = Panel(260, 3)
+            if W.Mobile then
+                Left.Size = UDim2.new(1, 0, 0, 0)
+                Left.AutomaticSize = Enum.AutomaticSize.Y
+                Mid.Size = UDim2.new(1, 0, 0, 0)
+                Mid.AutomaticSize = Enum.AutomaticSize.Y
+                Right.Visible = KeyCfg.Changelog ~= nil
+                if Right.Visible then
+                    Right.Size = UDim2.new(1, 0, 0, 180)
+                end
+            end
+
+            local Avatar = New("ImageLabel", {
+                Parent = Left,
+                BackgroundTransparency = 0.85,
                 BorderSizePixel = 0,
-                Size = UDim2.new(1, 0, 0, 38),
-                LayoutOrder = 3
+                Size = UDim2.fromOffset(64, 64),
+                Position = UDim2.new(0.5, -32, 0, 4),
+                ZIndex = 1003
             })
-            Library:Corner(Field, 9)
+            Library:Corner(Avatar, 12)
+            Library:Themed(Avatar, "BackgroundColor3", "Accent")
+            task.spawn(function()
+                local Ok, Url = pcall(function()
+                    return Players:GetUserThumbnailAsync(LocalPlayer.UserId, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size150x150)
+                end)
+                if Ok then
+                    Avatar.Image = Url
+                end
+            end)
+
+            local Welcome = New("TextLabel", {
+                Parent = Left,
+                BackgroundTransparency = 1,
+                Position = UDim2.new(0, 0, 0, 76),
+                Size = UDim2.new(1, 0, 0, 18),
+                Font = Library.Font.Bold,
+                Text = "Welcome, " .. (LocalPlayer.DisplayName or LocalPlayer.Name),
+                TextSize = 12,
+                TextTruncate = Enum.TextTruncate.AtEnd,
+                ZIndex = 1003
+            })
+            Library:Themed(Welcome, "TextColor3", "Text")
+
+            local function Meta(Y, Label, Value)
+                local L = New("TextLabel", {
+                    Parent = Left,
+                    BackgroundTransparency = 1,
+                    Position = UDim2.new(0, 0, 0, Y),
+                    Size = UDim2.new(1, 0, 0, 14),
+                    Font = Library.Font.Regular,
+                    Text = Label,
+                    TextSize = 11,
+                    TextXAlignment = Enum.TextXAlignment.Left,
+                    ZIndex = 1003
+                })
+                Library:Themed(L, "TextColor3", "TextDim")
+                local V = New("TextLabel", {
+                    Parent = Left,
+                    BackgroundTransparency = 1,
+                    Position = UDim2.new(0, 0, 0, Y + 14),
+                    Size = UDim2.new(1, 0, 0, 16),
+                    Font = Library.Font.Bold,
+                    Text = Value,
+                    TextSize = 12,
+                    TextXAlignment = Enum.TextXAlignment.Left,
+                    TextTruncate = Enum.TextTruncate.AtEnd,
+                    ZIndex = 1003
+                })
+                Library:Themed(V, "TextColor3", "Accent")
+                return V
+            end
+
+            local ExecName = "unknown"
+            if Env.identifyexecutor then
+                local Ok, N = pcall(Env.identifyexecutor)
+                if Ok and N then
+                    ExecName = tostring(N)
+                end
+            end
+            Meta(100, "Executor", ExecName)
+            Meta(140, "Device", Device.IsMobile() and "Mobile" or "Desktop")
+            local Hwid = "unavailable"
+            if Env.gethwid then
+                local Ok, V = pcall(Env.gethwid)
+                if Ok and V then
+                    Hwid = tostring(V)
+                end
+            end
+            local HwidLabel = Meta(180, "HWID", Hwid:sub(1, 14) .. (#Hwid > 14 and "..." or ""))
+            local CopyH = New("TextButton", {
+                Parent = Left,
+                BackgroundTransparency = 1,
+                Position = UDim2.new(1, -22, 0, 194),
+                Size = UDim2.fromOffset(20, 20),
+                Text = "",
+                ZIndex = 1004
+            })
+            local CopyIcon = IconLabel(CopyH, Library.Icons.Copy, 14, "TextDim")
+            CopyIcon.Size = UDim2.fromOffset(14, 14)
+            CopyH.MouseButton1Click:Connect(function()
+                if Env.setclipboard then
+                    pcall(Env.setclipboard, Hwid)
+                end
+            end)
+
+            local ClockL = New("TextLabel", {
+                Parent = Left,
+                BackgroundTransparency = 1,
+                AnchorPoint = Vector2.new(0, 1),
+                Position = UDim2.new(0, 0, 1, -2),
+                Size = UDim2.new(1, 0, 0, 32),
+                Font = Library.Font.Medium,
+                Text = os.date("%I:%M:%S %p\n%b %d, %Y"),
+                TextSize = 11,
+                TextYAlignment = Enum.TextYAlignment.Bottom,
+                ZIndex = 1003
+            })
+            Library:Themed(ClockL, "TextColor3", "TextDim")
+            task.spawn(function()
+                while Gate.Parent do
+                    ClockL.Text = os.date("%I:%M:%S %p\n%b %d, %Y")
+                    task.wait(1)
+                end
+            end)
+
+            local MidTitle = New("TextLabel", {
+                Parent = Mid,
+                BackgroundTransparency = 1,
+                Size = UDim2.new(1, 0, 0, 24),
+                Font = Library.Font.Bold,
+                Text = KeyCfg.Title or W.Config.Title or "Access",
+                TextSize = 18,
+                ZIndex = 1003
+            })
+            Library:Themed(MidTitle, "TextColor3", "Text")
+
+            local Banner = New("Frame", {
+                Parent = Mid,
+                BorderSizePixel = 0,
+                Position = UDim2.new(0, 0, 0, 36),
+                Size = UDim2.new(1, 0, 0, 36),
+                ZIndex = 1003
+            })
+            Library:Corner(Banner, 10)
+            Library:Themed(Banner, "BackgroundColor3", "Inset")
+            Library:Themed(Banner, "BackgroundTransparency", "InsetAlpha")
+            Library:Stroke(Banner, "StrokeSoft", 1)
+            local BanIcon = IconLabel(Banner, Library.Icons.User, 16, "Accent")
+            BanIcon.Position = UDim2.new(0, 12, 0.5, -8)
+            BanIcon.ZIndex = 1004
+            local BanText = New("TextLabel", {
+                Parent = Banner,
+                BackgroundTransparency = 1,
+                Position = UDim2.new(0, 36, 0, 0),
+                Size = UDim2.new(1, -44, 1, 0),
+                Font = Library.Font.Medium,
+                Text = KeyCfg.Note ~= "" and KeyCfg.Note or "Verify Key to enjoy",
+                TextSize = 13,
+                TextXAlignment = Enum.TextXAlignment.Left,
+                TextTruncate = Enum.TextTruncate.AtEnd,
+                ZIndex = 1004
+            })
+            Library:Themed(BanText, "TextColor3", "Accent")
+
+            local Field = New("Frame", {
+                Parent = Mid,
+                BorderSizePixel = 0,
+                Position = UDim2.new(0, 0, 0, 84),
+                Size = UDim2.new(1, 0, 0, 40),
+                ZIndex = 1003
+            })
+            Library:Corner(Field, 10)
             Library:Themed(Field, "BackgroundColor3", "Inset")
             Library:Themed(Field, "BackgroundTransparency", "InsetAlpha")
             local FieldLine = Library:Stroke(Field, "StrokeSoft", 1)
@@ -1737,69 +1940,96 @@ function Library:NewWindow(UserConfig)
             local Box = New("TextBox", {
                 Parent = Field,
                 BackgroundTransparency = 1,
-                Position = UDim2.new(0, 12, 0, 0),
-                Size = UDim2.new(1, -24, 1, 0),
+                Position = UDim2.new(0, 14, 0, 0),
+                Size = UDim2.new(1, -28, 1, 0),
                 Font = Library.Font.Regular,
-                PlaceholderText = "Enter key",
+                PlaceholderText = "Enter your key...",
                 Text = "",
                 TextSize = 13,
-                TextXAlignment = Enum.TextXAlignment.Left,
-                ClearTextOnFocus = false
+                ClearTextOnFocus = false,
+                ZIndex = 1004
             })
             Library:Themed(Box, "TextColor3", "Text")
             Library:Themed(Box, "PlaceholderColor3", "TextDisabled")
 
             local GateError = New("TextLabel", {
-                Parent = Card,
+                Parent = Mid,
                 BackgroundTransparency = 1,
+                Position = UDim2.new(0, 0, 0, 128),
                 Size = UDim2.new(1, 0, 0, 14),
                 Font = Library.Font.Regular,
                 Text = "",
                 TextSize = 11,
                 TextXAlignment = Enum.TextXAlignment.Left,
-                LayoutOrder = 4
+                ZIndex = 1003
             })
             Library:Themed(GateError, "TextColor3", "Error")
 
-            local GateRow = Blank(Card, {
-                Size = UDim2.new(1, 0, 0, 34),
-                LayoutOrder = 5
-            })
-            New("UIListLayout", {
-                Parent = GateRow,
-                FillDirection = Enum.FillDirection.Horizontal,
-                Padding = UDim.new(0, 8),
-                SortOrder = Enum.SortOrder.LayoutOrder
-            })
-
             if KeyCfg.GetKeyLink then
-                local GetKeyBtn = PillButton(GateRow, "Get Key", nil, 0)
-                GetKeyBtn.Size = UDim2.new(0.42, -4, 1, 0)
-                GetKeyBtn.LayoutOrder = 1
+                local GetKeyBtn = New("TextButton", {
+                    Parent = Mid,
+                    BorderSizePixel = 0,
+                    Position = UDim2.new(0, 0, 0, 150),
+                    Size = UDim2.new(1, 0, 0, 36),
+                    Text = "",
+                    AutoButtonColor = false,
+                    ZIndex = 1003
+                })
+                Library:Corner(GetKeyBtn, 10)
+                Library:Themed(GetKeyBtn, "BackgroundColor3", "Row")
+                Library:Themed(GetKeyBtn, "BackgroundTransparency", "RowAlpha")
+                Library:Stroke(GetKeyBtn, "StrokeSoft", 1)
+                local Gk = New("TextLabel", {
+                    Parent = GetKeyBtn,
+                    BackgroundTransparency = 1,
+                    Size = UDim2.fromScale(1, 1),
+                    Font = Library.Font.Medium,
+                    Text = "  Get Key",
+                    TextSize = 13,
+                    ZIndex = 1004
+                })
+                Library:Themed(Gk, "TextColor3", "Text")
                 GetKeyBtn.MouseButton1Click:Connect(function()
+                    if Env.setclipboard then
+                        pcall(Env.setclipboard, KeyCfg.GetKeyLink)
+                    end
                     pcall(function()
-                        if setclipboard then
-                            setclipboard(KeyCfg.GetKeyLink)
-                        end
-                    end)
-                    pcall(function()
-                        if GuiService and GuiService.OpenBrowserWindow then
+                        if GuiService.OpenBrowserWindow then
                             GuiService:OpenBrowserWindow(KeyCfg.GetKeyLink)
                         end
                     end)
-                    GateError.Text = "Link copied to clipboard"
+                    GateError.Text = "Link copied"
                     Library:Themed(GateError, "TextColor3", "TextDim")
                 end)
             end
 
-            local SubmitBtn = PillButton(GateRow, "Verify", Library.Icons.Check, 0, true)
-            SubmitBtn.Size = UDim2.new(KeyCfg.GetKeyLink and 0.58 or 1, KeyCfg.GetKeyLink and -4 or 0, 1, 0)
-            SubmitBtn.LayoutOrder = 2
+            local VerifyBtn = New("TextButton", {
+                Parent = Mid,
+                BorderSizePixel = 0,
+                Position = UDim2.new(0, 0, 0, KeyCfg.GetKeyLink and 196 or 150),
+                Size = UDim2.new(1, 0, 0, 40),
+                Text = "",
+                AutoButtonColor = false,
+                ZIndex = 1003
+            })
+            Library:Corner(VerifyBtn, 10)
+            Library:Themed(VerifyBtn, "BackgroundColor3", "Accent")
+            local Vtx = New("TextLabel", {
+                Parent = VerifyBtn,
+                BackgroundTransparency = 1,
+                Size = UDim2.fromScale(1, 1),
+                Font = Library.Font.Bold,
+                Text = "Verify Key",
+                TextSize = 14,
+                ZIndex = 1004
+            })
+            Library:Themed(Vtx, "TextColor3", "AccentText")
 
             local Verified = false
             local function TrySubmit()
                 local Value = Trim(Box.Text)
                 if Value == "" then
+                    GateError.Text = "Enter a key"
                     return
                 end
                 if IsValidKey(Value) then
@@ -1812,15 +2042,14 @@ function Library:NewWindow(UserConfig)
                     GateError.Text = "Invalid key"
                     Library:Themed(GateError, "TextColor3", "Error")
                     Library:Tween(FieldLine, FAST, { Color = Library.Theme.Error })
-                    task.delay(0.3, function()
+                    task.delay(0.35, function()
                         pcall(function()
                             Library:Tween(FieldLine, FAST, { Color = Library.Theme.StrokeSoft })
                         end)
                     end)
                 end
             end
-
-            SubmitBtn.MouseButton1Click:Connect(TrySubmit)
+            VerifyBtn.MouseButton1Click:Connect(TrySubmit)
             Box.FocusLost:Connect(function(Enter)
                 if Enter then
                     TrySubmit()
@@ -1830,13 +2059,76 @@ function Library:NewWindow(UserConfig)
                 Box:CaptureFocus()
             end)
 
+            local LogEntries = KeyCfg.Changelog or {
+                { Version = "v" .. Library.Version, Date = os.date("%b %d, %Y"), Notes = { "Key system UI", "New components", "Panic + roles" } }
+            }
+            local LogTitle = New("TextLabel", {
+                Parent = Right,
+                BackgroundTransparency = 1,
+                Size = UDim2.new(1, 0, 0, 20),
+                Font = Library.Font.Bold,
+                Text = "Changelog",
+                TextSize = 14,
+                TextXAlignment = Enum.TextXAlignment.Left,
+                ZIndex = 1003
+            })
+            Library:Themed(LogTitle, "TextColor3", "Text")
+            local LogScroll = New("ScrollingFrame", {
+                Parent = Right,
+                BackgroundTransparency = 1,
+                BorderSizePixel = 0,
+                Position = UDim2.new(0, 0, 0, 28),
+                Size = UDim2.new(1, 0, 1, -28),
+                ZIndex = 1003
+            })
+            Library:StyleScroll(LogScroll)
+            New("UIListLayout", {
+                Parent = LogScroll,
+                SortOrder = Enum.SortOrder.LayoutOrder,
+                Padding = UDim.new(0, 10)
+            })
+            for Index, Entry in ipairs(LogEntries) do
+                local Block = New("Frame", {
+                    Parent = LogScroll,
+                    BackgroundTransparency = 1,
+                    Size = UDim2.new(1, 0, 0, 0),
+                    AutomaticSize = Enum.AutomaticSize.Y,
+                    LayoutOrder = Index,
+                    ZIndex = 1004
+                })
+                local Head = New("TextLabel", {
+                    Parent = Block,
+                    BackgroundTransparency = 1,
+                    Size = UDim2.new(1, 0, 0, 16),
+                    Font = Library.Font.Bold,
+                    Text = tostring(Entry.Version or "Update") .. (Entry.Date and ("  ·  " .. Entry.Date) or ""),
+                    TextSize = 12,
+                    TextXAlignment = Enum.TextXAlignment.Left,
+                    ZIndex = 1005
+                })
+                Library:Themed(Head, "TextColor3", "Accent")
+                for Ni, Note in ipairs(Entry.Notes or {}) do
+                    local N = New("TextLabel", {
+                        Parent = Block,
+                        BackgroundTransparency = 1,
+                        Position = UDim2.new(0, 0, 0, 16 + (Ni - 1) * 14),
+                        Size = UDim2.new(1, 0, 0, 14),
+                        Font = Library.Font.Regular,
+                        Text = "·  " .. tostring(Note),
+                        TextSize = 11,
+                        TextXAlignment = Enum.TextXAlignment.Left,
+                        ZIndex = 1005
+                    })
+                    Library:Themed(N, "TextColor3", "TextDim")
+                end
+            end
+
             while not Verified and W.Gui.Parent do
                 task.wait()
             end
 
             if Gate.Parent then
                 Library:Tween(Gate, FAST, { BackgroundTransparency = 1 })
-                Library:Tween(Card, FAST, { BackgroundTransparency = 1 })
                 task.wait(0.15)
                 Gate:Destroy()
             end
@@ -2774,6 +3066,7 @@ local ComponentNames = {
     "Toggle", "Button", "Input", "Slider", "Dropdown", "Keybind",
     "Colorpicker", "ColorpickerRGB", "MultiButton", "Paragraph", "Label",
     "Tag", "Codeblock", "Progress", "Grid", "Table", "Image", "Viewport",
+    "RangeSlider", "ToggleGroup", "FilePicker", "ConfirmToggle", "Hotbar",
     "Separator", "Divider", "Space"
 }
 
@@ -3065,11 +3358,25 @@ local function BuildTab(W, Config, Group)
     Tab.LockIcon.Visible = Config.Lock ~= nil
 
     Tab.Unlocked = Config.Lock == nil
+    Tab.Role = Config.Role
 
     if Config.Lock then
         local LockConfig = type(Config.Lock) == "table" and Config.Lock or { Password = Config.LockPassword }
+        LockConfig.RememberMinutes = tonumber(LockConfig.RememberMinutes) or 10
         local Remember = W.State["unlock_" .. Config.Title]
-        if Remember and tostring(Remember) == tostring(LockConfig.Password) then
+        local Ok = false
+        if type(Remember) == "table" then
+            local Until = tonumber(Remember["until"] or Remember.Until)
+            local Pw = tostring(Remember.pw or Remember.Password or "")
+            if Until and Until > os.time() and Pw == tostring(LockConfig.Password) then
+                Ok = true
+            else
+                W.State["unlock_" .. Config.Title] = nil
+            end
+        elseif type(Remember) == "string" then
+            W.State["unlock_" .. Config.Title] = nil
+        end
+        if Ok then
             Tab.Unlocked = true
             Tab.LockIcon.Visible = false
         end
@@ -3323,7 +3630,9 @@ local function Popup(W, Source, Width, Height)
     })
 
     local Position, Size = LocalPosition(W, Source)
-    local MainSize = W.Main.AbsoluteSize / W.Scale.Scale
+    local MainSize = W.Main.AbsoluteSize / math.max(W.Scale.Scale, 0.001)
+    Width = math.min(Width, math.max(MainSize.X - 16, 120))
+    Height = math.min(Height, math.max(MainSize.Y - 16, 80))
     local X = Clamp(Position.X + Size.X - Width, 8, math.max(MainSize.X - Width - 8, 8))
     local Y = Position.Y + Size.Y + 6
     if Y + Height > MainSize.Y - 8 then
@@ -3722,8 +4031,8 @@ function Components.Slider(Section, Config)
 
     local Mobile = Section.Window.Mobile
     local Sample = tostring(Config.Max) .. tostring(Config.Suffix or "")
-    local BoxWidth = Clamp(#Sample * 7 + 18, 48, 118)
-    local BarWidth = Mobile and 0 or 150
+    local BoxWidth = Clamp(#Sample * 7 + 18, Mobile and 52 or 48, Mobile and 90 or 118)
+    local BarWidth = Mobile and 120 or 150
     local Reserve = Mobile and (BoxWidth + 6) or (BarWidth + BoxWidth + 22)
     local Row, TitleLabel, DescLabel, _, Stack = MakeRow(Section, "Slider", Config.Title, Config.Description,
         44, Reserve)
@@ -3977,13 +4286,18 @@ function Components.Dropdown(Section, Config)
     Element = Finish(Section, "Dropdown", Config, Row, Handlers, TitleLabel, DescLabel)
 
     local function OpenList()
-        local Count = math.min(#Options, 7)
+        local Mobile = Section.Window.Mobile
+        local MaxItems = Mobile and 12 or 8
+        local Count = math.min(#Options, MaxItems)
         local UseSearch = Config.Search
         if UseSearch == nil then
-            UseSearch = #Options > 8
+            UseSearch = #Options > (Mobile and 6 or 8)
         end
-        local Height = 20 + (UseSearch and 38 or 0) + math.max(Count, 1) * 32
-        Handle = Popup(Section.Window, Button, math.max(ButtonWidth, 190), Height)
+        local RowH = Mobile and 36 or 32
+        local Height = 20 + (UseSearch and 38 or 0) + math.max(Count, 1) * RowH
+        local Vp = Device.Viewport()
+        Height = math.min(Height, math.floor(Vp.Y * 0.55))
+        Handle = Popup(Section.Window, Button, math.max(ButtonWidth, Mobile and 200 or 190), Height)
         Library:Tween(Chevron, NORMAL, { Rotation = 180 })
 
         local SearchText = ""
@@ -4454,12 +4768,17 @@ function Components.Colorpicker(Section, Config)
     Element = Finish(Section, "Colorpicker", Config, Row, Handlers, TitleLabel, DescLabel)
 
     local function Open()
-        Handle = Popup(Section.Window, Swatch, 218, 208)
+        local Mobile = Section.Window.Mobile
+        local Pw = Mobile and math.min(Device.Viewport().X - 32, 280) or 218
+        local Ph = Mobile and 240 or 208
+        Handle = Popup(Section.Window, Swatch, Pw, Ph)
         local Frame = Handle.Frame
+        local BoxW = Mobile and (Pw - 50) or 160
+        local BoxH = Mobile and 140 or 120
 
         local Box = SaturationBox(Frame)
         Box.Position = UDim2.fromOffset(12, 12)
-        Box.Size = UDim2.fromOffset(160, 120)
+        Box.Size = UDim2.fromOffset(BoxW, BoxH)
         Box.ZIndex = 103
 
         local Cursor = New("Frame", {
@@ -4467,15 +4786,15 @@ function Components.Colorpicker(Section, Config)
             AnchorPoint = Vector2.new(0.5, 0.5),
             BackgroundColor3 = Color3.fromRGB(255, 255, 255),
             BorderSizePixel = 0,
-            Size = UDim2.fromOffset(10, 10),
+            Size = UDim2.fromOffset(Mobile and 14 or 10, Mobile and 14 or 10),
             ZIndex = 6
         })
         Library:Corner(Cursor, UDim.new(1, 0))
         Library:Stroke(Cursor, "Stroke", 1.5)
 
         local Bar = HueBar(Frame)
-        Bar.Position = UDim2.fromOffset(180, 12)
-        Bar.Size = UDim2.fromOffset(22, 120)
+        Bar.Position = UDim2.fromOffset(12 + BoxW + 8, 12)
+        Bar.Size = UDim2.fromOffset(Mobile and 28 or 22, BoxH)
         Bar.ZIndex = 103
 
         local HueCursor = New("Frame", {
@@ -4489,14 +4808,15 @@ function Components.Colorpicker(Section, Config)
         })
         Library:Corner(HueCursor, UDim.new(1, 0))
 
+        local BottomY = 12 + BoxH + 12
         local HexBox = New("TextBox", {
             Parent = Frame,
             BorderSizePixel = 0,
-            Position = UDim2.fromOffset(12, 144),
-            Size = UDim2.fromOffset(120, 30),
+            Position = UDim2.fromOffset(12, BottomY),
+            Size = UDim2.fromOffset(Mobile and BoxW - 70 or 120, Mobile and 34 or 30),
             Font = Library.Font.Mono,
             Text = "",
-            TextSize = 12,
+            TextSize = Library.TextSize(12, 1),
             ClearTextOnFocus = false,
             ZIndex = 103
         })
@@ -4509,16 +4829,16 @@ function Components.Colorpicker(Section, Config)
         local Preview = New("Frame", {
             Parent = Frame,
             BorderSizePixel = 0,
-            Position = UDim2.fromOffset(140, 144),
-            Size = UDim2.fromOffset(62, 30),
+            Position = UDim2.fromOffset(12 + (Mobile and BoxW - 58 or 128), BottomY),
+            Size = UDim2.fromOffset(Mobile and 58 or 62, Mobile and 34 or 30),
             ZIndex = 103
         })
         Library:Corner(Preview, 7)
         Library:Stroke(Preview, "Stroke", 1)
 
-        local Copy = PillButton(Frame, "Copy hex", Library.Icons.Copy, 194)
-        Copy.Position = UDim2.fromOffset(12, 180)
-        Copy.Size = UDim2.fromOffset(190, 22)
+        local Copy = PillButton(Frame, "Copy hex", Library.Icons.Copy, Mobile and (Pw - 24) or 194)
+        Copy.Position = UDim2.fromOffset(12, BottomY + (Mobile and 42 or 36))
+        Copy.Size = UDim2.fromOffset(Mobile and (Pw - 24) or 190, Mobile and 28 or 22)
         Copy.ZIndex = 103
 
         function Handle.Sync()
@@ -4636,28 +4956,31 @@ function Components.ColorpickerRGB(Section, Config)
         Callback = function() end
     }, Config)
 
-    local Row, TitleLabel, DescLabel, _, Stack = MakeRow(Section, "ColorpickerRGB", Config.Title, Config.Description, 44, 40)
+    local Mobile = Section.Window.Mobile
+    local BarH = Mobile and 18 or 14
+    local Gap = Mobile and 6 or 4
+    local BarsH = BarH * 3 + Gap * 2
+    local Row, TitleLabel, DescLabel, _, Stack, Measure = MakeRow(Section, "ColorpickerRGB", Config.Title, Config.Description, 48 + BarsH, 40)
 
     local Preview = New("Frame", {
         Parent = Row,
         AnchorPoint = Vector2.new(1, 0),
         BorderSizePixel = 0,
         Position = UDim2.new(1, -14, 0, 10),
-        Size = UDim2.fromOffset(34, 22),
+        Size = UDim2.fromOffset(Mobile and 36 or 34, Mobile and 24 or 22),
         BackgroundColor3 = Config.Default
     })
     Library:Corner(Preview, 6)
     Library:Stroke(Preview, "Stroke", 1)
 
     local Holder = Blank(Stack, {
-        Size = UDim2.new(1, 0, 0, 44),
+        Size = UDim2.new(1, 0, 0, BarsH),
         LayoutOrder = 3
     })
     New("UIListLayout", {
         Parent = Holder,
         SortOrder = Enum.SortOrder.LayoutOrder,
-        Padding = UDim.new(0, 4),
-        VerticalAlignment = Enum.VerticalAlignment.Bottom
+        Padding = UDim.new(0, Gap)
     })
 
     local Channels = { R = 0, G = 0, B = 0 }
@@ -4691,14 +5014,14 @@ function Components.ColorpickerRGB(Section, Config)
 
     local Order = { "R", "G", "B" }
     for Index, Name in ipairs(Order) do
-        local Line = Blank(Holder, { Size = UDim2.new(1, 0, 0, 12), LayoutOrder = Index })
+        local Line = Blank(Holder, { Size = UDim2.new(1, 0, 0, BarH), LayoutOrder = Index })
         local Text = New("TextLabel", {
             Parent = Line,
             BackgroundTransparency = 1,
-            Size = UDim2.fromOffset(44, 12),
+            Size = UDim2.fromOffset(Mobile and 52 or 44, BarH),
             Font = Library.Font.Bold,
             Text = Name .. " 0",
-            TextSize = 10,
+            TextSize = Library.TextSize(10, 1),
             TextXAlignment = Enum.TextXAlignment.Left
         })
         Library:Themed(Text, "TextColor3", "TextDim")
@@ -4708,7 +5031,7 @@ function Components.ColorpickerRGB(Section, Config)
             AnchorPoint = Vector2.new(1, 0.5),
             BorderSizePixel = 0,
             Position = UDim2.new(1, 0, 0.5, 0),
-            Size = UDim2.new(1, -50, 0, 6),
+            Size = UDim2.new(1, Mobile and -58 or -50, 0, Mobile and 10 or 6),
             Active = true
         })
         Library:Corner(Track, UDim.new(1, 0))
@@ -4754,6 +5077,10 @@ function Components.ColorpickerRGB(Section, Config)
         end))
     end
 
+    if Measure then
+        task.defer(Measure)
+        task.delay(0.08, Measure)
+    end
     Boot(Section, Config, Element, Config.Default)
     return Element
 end
@@ -5410,6 +5737,464 @@ function Components.Viewport(Section, Config)
     return Element
 end
 
+
+function Components.RangeSlider(Section, Config)
+    Config = Merge({
+        Title = "Range",
+        Description = "",
+        Min = 0,
+        Max = 100,
+        Increment = 1,
+        Default = { 20, 80 },
+        Flag = nil,
+        Callback = function() end
+    }, Config)
+    local MinV, MaxV = Config.Min, Config.Max
+    local Low = tonumber(Config.Default and Config.Default[1]) or MinV
+    local High = tonumber(Config.Default and Config.Default[2]) or MaxV
+    Low, High = Clamp(Low, MinV, MaxV), Clamp(High, MinV, MaxV)
+    if Low > High then
+        Low, High = High, Low
+    end
+
+    local Row, TitleLabel, DescLabel = MakeRow(Section, "RangeSlider", Config.Title, Config.Description, 52, 90)
+    local ValueLabel = New("TextLabel", {
+        Parent = Row,
+        AnchorPoint = Vector2.new(1, 0.5),
+        BackgroundTransparency = 1,
+        Position = UDim2.new(1, -14, 0.5, 0),
+        Size = UDim2.fromOffset(80, 18),
+        Font = Library.Font.Medium,
+        Text = tostring(Low) .. " - " .. tostring(High),
+        TextSize = Library.TextSize(11, 1),
+        TextXAlignment = Enum.TextXAlignment.Right
+    })
+    Library:Themed(ValueLabel, "TextColor3", "TextDim")
+
+    local Track = New("Frame", {
+        Parent = Row,
+        AnchorPoint = Vector2.new(0, 1),
+        BorderSizePixel = 0,
+        Position = UDim2.new(0, 14, 1, -12),
+        Size = UDim2.new(1, -108, 0, 4)
+    })
+    Library:Corner(Track, UDim.new(1, 0))
+    Library:Themed(Track, "BackgroundColor3", "Inset")
+
+    local Fill = New("Frame", {
+        Parent = Track,
+        BorderSizePixel = 0,
+        Size = UDim2.fromScale(0.5, 1)
+    })
+    Library:Corner(Fill, UDim.new(1, 0))
+    Library:Themed(Fill, "BackgroundColor3", "Accent")
+
+    local function Thumb()
+        local T = New("TextButton", {
+            Parent = Track,
+            AnchorPoint = Vector2.new(0.5, 0.5),
+            BorderSizePixel = 0,
+            Position = UDim2.fromScale(0, 0.5),
+            Size = UDim2.fromOffset(14, 14),
+            Text = "",
+            AutoButtonColor = false,
+            ZIndex = 5
+        })
+        Library:Corner(T, UDim.new(1, 0))
+        Library:Themed(T, "BackgroundColor3", "Text")
+        return T
+    end
+    local T1, T2 = Thumb(), Thumb()
+    local Element
+    local function Paint()
+        local Span = math.max(MaxV - MinV, 1e-6)
+        local A = (Low - MinV) / Span
+        local B = (High - MinV) / Span
+        T1.Position = UDim2.fromScale(A, 0.5)
+        T2.Position = UDim2.fromScale(B, 0.5)
+        Fill.Position = UDim2.fromScale(A, 0)
+        Fill.Size = UDim2.fromScale(math.max(B - A, 0), 1)
+        ValueLabel.Text = tostring(Low) .. " - " .. tostring(High)
+    end
+    local function FromX(X)
+        local Abs = Track.AbsolutePosition.X
+        local Wd = math.max(Track.AbsoluteSize.X, 1)
+        local Alpha = Clamp((X - Abs) / Wd, 0, 1)
+        return Round(MinV + Alpha * (MaxV - MinV), Config.Increment)
+    end
+    local Active = nil
+    local function Begin(Which)
+        Active = Which
+        Library:BeginDragLock()
+    end
+    local function End()
+        if Active then
+            Active = nil
+            Library:EndDragLock()
+        end
+    end
+    T1.InputBegan:Connect(function(I)
+        if I.UserInputType == Enum.UserInputType.MouseButton1 or I.UserInputType == Enum.UserInputType.Touch then
+            Begin(1)
+        end
+    end)
+    T2.InputBegan:Connect(function(I)
+        if I.UserInputType == Enum.UserInputType.MouseButton1 or I.UserInputType == Enum.UserInputType.Touch then
+            Begin(2)
+        end
+    end)
+    table.insert(Section.Window.Connections, UserInputService.InputChanged:Connect(function(I)
+        if not Active then
+            return
+        end
+        if I.UserInputType == Enum.UserInputType.MouseMovement or I.UserInputType == Enum.UserInputType.Touch then
+            local V = FromX(I.Position.X)
+            if Active == 1 then
+                Low = Clamp(V, MinV, High)
+            else
+                High = Clamp(V, Low, MaxV)
+            end
+            Paint()
+            Element.Emit({ Low, High })
+        end
+    end))
+    table.insert(Section.Window.Connections, UserInputService.InputEnded:Connect(function(I)
+        if I.UserInputType == Enum.UserInputType.MouseButton1 or I.UserInputType == Enum.UserInputType.Touch then
+            End()
+        end
+    end))
+    local Handlers = {}
+    function Handlers.Get()
+        return { Low, High }
+    end
+    function Handlers.Set(Value, Silent)
+        if type(Value) == "table" then
+            Low = Clamp(tonumber(Value[1]) or Low, MinV, MaxV)
+            High = Clamp(tonumber(Value[2]) or High, MinV, MaxV)
+            if Low > High then
+                Low, High = High, Low
+            end
+            Paint()
+            Element.Emit({ Low, High }, Silent)
+        end
+    end
+    Element = Finish(Section, "RangeSlider", Config, Row, Handlers, TitleLabel, DescLabel)
+    Paint()
+    return Element
+end
+
+function Components.ToggleGroup(Section, Config)
+    Config = Merge({
+        Title = "Mode",
+        Description = "",
+        Options = { "A", "B", "C" },
+        Default = nil,
+        Flag = nil,
+        Callback = function() end
+    }, Config)
+    local Options = Config.Options or {}
+    local Selected = Config.Default or Options[1]
+    local Row, TitleLabel, DescLabel, _, Stack, Measure = MakeRow(Section, "ToggleGroup", Config.Title, Config.Description, 48, 0)
+    local Holder = Blank(Stack, {
+        Size = UDim2.new(1, 0, 0, 32),
+        LayoutOrder = 3
+    })
+    New("UIListLayout", {
+        Parent = Holder,
+        FillDirection = Enum.FillDirection.Horizontal,
+        Padding = UDim.new(0, 6),
+        SortOrder = Enum.SortOrder.LayoutOrder
+    })
+    local Buttons = {}
+    local Element
+    local function Paint()
+        for Name, Btn in pairs(Buttons) do
+            local On = Name == Selected
+            Library:Tween(Btn, FAST, {
+                BackgroundTransparency = On and 0.15 or Library.Theme.InsetAlpha
+            })
+            local Lab = Btn:FindFirstChildOfClass("TextLabel")
+            if Lab then
+                Lab.TextColor3 = On and Library.Theme.AccentText or Library.Theme.TextDim
+            end
+            if On then
+                Btn.BackgroundColor3 = Library.Theme.Accent
+            else
+                Btn.BackgroundColor3 = Library.Theme.Inset
+            end
+        end
+    end
+    for Index, Opt in ipairs(Options) do
+        local Name = tostring(Opt)
+        local Btn = New("TextButton", {
+            Parent = Holder,
+            BorderSizePixel = 0,
+            Size = UDim2.new(1 / #Options, -4, 0, 30),
+            Text = "",
+            AutoButtonColor = false,
+            LayoutOrder = Index
+        })
+        Library:Corner(Btn, 8)
+        Library:Stroke(Btn, "StrokeSoft", 1)
+        local Lab = New("TextLabel", {
+            Parent = Btn,
+            BackgroundTransparency = 1,
+            Size = UDim2.fromScale(1, 1),
+            Font = Library.Font.Medium,
+            Text = Name,
+            TextSize = Library.TextSize(12, 1)
+        })
+        Buttons[Name] = Btn
+        Btn.MouseButton1Click:Connect(function()
+            Selected = Name
+            Paint()
+            Element.Emit(Selected)
+            Library:Feedback(1.05)
+        end)
+    end
+    local Handlers = {}
+    function Handlers.Get()
+        return Selected
+    end
+    function Handlers.Set(Value, Silent)
+        if Value ~= nil then
+            Selected = tostring(Value)
+            Paint()
+            Element.Emit(Selected, Silent)
+        end
+    end
+    Element = Finish(Section, "ToggleGroup", Config, Row, Handlers, TitleLabel, DescLabel)
+    Paint()
+    if Measure then
+        task.defer(Measure)
+    end
+    return Element
+end
+
+function Components.FilePicker(Section, Config)
+    Config = Merge({
+        Title = "Files",
+        Description = "",
+        Folder = nil,
+        Extension = ".json",
+        Flag = nil,
+        Callback = function() end
+    }, Config)
+    local Folder = Config.Folder or (Section.Window.Paths and Section.Window.Paths.Configs) or "sh1ttybanana"
+    local Row, TitleLabel, DescLabel, _, Stack, Measure = MakeRow(Section, "FilePicker", Config.Title, Config.Description, 80, 0)
+    local List = New("ScrollingFrame", {
+        Parent = Stack,
+        BackgroundTransparency = 1,
+        BorderSizePixel = 0,
+        Size = UDim2.new(1, 0, 0, 72),
+        LayoutOrder = 3,
+        ScrollBarThickness = 3
+    })
+    Library:StyleScroll(List)
+    New("UIListLayout", {
+        Parent = List,
+        SortOrder = Enum.SortOrder.LayoutOrder,
+        Padding = UDim.new(0, 4)
+    })
+    local Selected, Element
+    local function Refresh()
+        for _, Child in ipairs(List:GetChildren()) do
+            if Child:IsA("GuiObject") then
+                Child:Destroy()
+            end
+        end
+        local Files = FS.List(Folder)
+        local Order = 0
+        for _, Path in ipairs(Files) do
+            local Name = tostring(Path):match("([^/\\]+)$") or tostring(Path)
+            if not Config.Extension or Name:sub(-#Config.Extension) == Config.Extension or Config.Extension == "" then
+                Order = Order + 1
+                local Item = New("TextButton", {
+                    Parent = List,
+                    BorderSizePixel = 0,
+                    Size = UDim2.new(1, -4, 0, 26),
+                    Text = "",
+                    AutoButtonColor = false,
+                    LayoutOrder = Order
+                })
+                Library:Corner(Item, 7)
+                Library:Themed(Item, "BackgroundColor3", "Inset")
+                Library:Themed(Item, "BackgroundTransparency", "InsetAlpha")
+                local Lab = New("TextLabel", {
+                    Parent = Item,
+                    BackgroundTransparency = 1,
+                    Position = UDim2.new(0, 10, 0, 0),
+                    Size = UDim2.new(1, -20, 1, 0),
+                    Font = Library.Font.Medium,
+                    Text = Name,
+                    TextSize = Library.TextSize(11, 1),
+                    TextXAlignment = Enum.TextXAlignment.Left,
+                    TextTruncate = Enum.TextTruncate.AtEnd
+                })
+                Library:Themed(Lab, "TextColor3", "TextDim")
+                Item.MouseButton1Click:Connect(function()
+                    Selected = Name
+                    Lab.TextColor3 = Library.Theme.Accent
+                    Element.Emit(Name)
+                    Library:Feedback(1.05)
+                end)
+            end
+        end
+        if Measure then
+            task.defer(Measure)
+        end
+    end
+    Refresh()
+    local Handlers = {}
+    function Handlers.Get()
+        return Selected
+    end
+    function Handlers.Set(Value, Silent)
+        Selected = Value and tostring(Value) or nil
+        Element.Emit(Selected, Silent)
+    end
+    Element = Finish(Section, "FilePicker", Config, Row, Handlers, TitleLabel, DescLabel)
+    function Element:Refresh()
+        Refresh()
+    end
+    return Element
+end
+
+function Components.ConfirmToggle(Section, Config)
+    Config = Merge({
+        Title = "Confirm Toggle",
+        Description = "",
+        Default = false,
+        ConfirmOn = true,
+        ConfirmOff = false,
+        ConfirmTitle = "Confirm",
+        ConfirmContent = "Are you sure?",
+        Flag = nil,
+        Callback = function() end
+    }, Config)
+    local State = Config.Default and true or false
+    local Row, TitleLabel, DescLabel = MakeRow(Section, "ConfirmToggle", Config.Title, Config.Description, 42, 70)
+    local Switch = New("TextButton", {
+        Parent = Row,
+        AnchorPoint = Vector2.new(1, 0.5),
+        BorderSizePixel = 0,
+        Position = UDim2.new(1, -14, 0.5, 0),
+        Size = UDim2.fromOffset(Section.Window.Mobile and 52 or 40, Section.Window.Mobile and 28 or 22),
+        Text = "",
+        AutoButtonColor = false
+    })
+    Library:Corner(Switch, UDim.new(1, 0))
+    local Knob = New("Frame", {
+        Parent = Switch,
+        AnchorPoint = Vector2.new(0, 0.5),
+        BorderSizePixel = 0,
+        Position = UDim2.new(0, 3, 0.5, 0),
+        Size = UDim2.fromOffset(Section.Window.Mobile and 22 or 16, Section.Window.Mobile and 22 or 16)
+    })
+    Library:Corner(Knob, UDim.new(1, 0))
+    Library:Themed(Knob, "BackgroundColor3", "Text")
+    local Element
+    local function Paint(Animated)
+        local On = State
+        local Info = Animated and FAST or TweenInfo.new(0)
+        Library:Tween(Switch, Info, {
+            BackgroundColor3 = On and Library.Theme.Accent or Library.Theme.Inset
+        })
+        Library:Tween(Knob, Info, {
+            Position = UDim2.new(On and 1 or 0, On and -3 or 3, 0.5, 0),
+            AnchorPoint = Vector2.new(On and 1 or 0, 0.5)
+        })
+    end
+    local function Apply(NewState, Silent)
+        State = NewState and true or false
+        Paint(not Silent)
+        Element.Emit(State, Silent)
+    end
+    local function Request(NewState)
+        local Need = (NewState and Config.ConfirmOn) or ((not NewState) and Config.ConfirmOff)
+        if not Need then
+            Apply(NewState)
+            return
+        end
+        Section.Window.API:Dialog({
+            Title = Config.ConfirmTitle,
+            Content = Config.ConfirmContent,
+            Buttons = {
+                { Title = "Cancel" },
+                { Title = "Confirm", Accent = true, Callback = function()
+                    Apply(NewState)
+                end }
+            }
+        })
+    end
+    Switch.MouseButton1Click:Connect(function()
+        Request(not State)
+    end)
+    local Handlers = {}
+    function Handlers.Get()
+        return State
+    end
+    function Handlers.Set(Value, Silent)
+        Apply(Value and true or false, Silent)
+    end
+    Element = Finish(Section, "ConfirmToggle", Config, Row, Handlers, TitleLabel, DescLabel)
+    Paint(false)
+    return Element
+end
+
+function Components.Hotbar(Section, Config)
+    Config = Merge({
+        Title = "Quick Actions",
+        Description = "",
+        Items = {}
+    }, Config)
+    local Row, TitleLabel, DescLabel, _, Stack, Measure = MakeRow(Section, "Hotbar", Config.Title, Config.Description, 56, 0)
+    local Holder = Blank(Stack, {
+        Size = UDim2.new(1, 0, 0, 40),
+        LayoutOrder = 3
+    })
+    New("UIListLayout", {
+        Parent = Holder,
+        FillDirection = Enum.FillDirection.Horizontal,
+        Padding = UDim.new(0, 6),
+        SortOrder = Enum.SortOrder.LayoutOrder
+    })
+    for Index, Info in ipairs(Config.Items or {}) do
+        local Btn = New("TextButton", {
+            Parent = Holder,
+            BorderSizePixel = 0,
+            Size = UDim2.fromOffset(40, 36),
+            Text = "",
+            AutoButtonColor = false,
+            LayoutOrder = Index
+        })
+        Library:Corner(Btn, 9)
+        Library:Themed(Btn, "BackgroundColor3", "Inset")
+        Library:Themed(Btn, "BackgroundTransparency", "InsetAlpha")
+        Library:Stroke(Btn, "StrokeSoft", 1)
+        if Info.Icon then
+            local Ic = IconLabel(Btn, Info.Icon, 18, "Accent")
+            Ic.AnchorPoint = Vector2.new(0.5, 0.5)
+            Ic.Position = UDim2.fromScale(0.5, 0.5)
+            Library:Themed(Ic, "ImageColor3", "Accent")
+        end
+        if Info.Tip then
+            Btn:SetAttribute("Tip", Info.Tip)
+        end
+        Btn.MouseButton1Click:Connect(function()
+            Library:Feedback(1.1)
+            if Info.Callback then
+                task.spawn(Info.Callback)
+            end
+        end)
+    end
+    if Measure then
+        task.defer(Measure)
+    end
+    local Handlers = { Get = function() end, Set = function() end }
+    return Finish(Section, "Hotbar", Config, Row, Handlers, TitleLabel, DescLabel)
+end
+
 function Components.Separator(Section, Config)
     Config = Merge({ Title = "", Text = nil }, Config)
     local Text = Config.Text or Config.Title or ""
@@ -5866,7 +6651,14 @@ function WM.Password(W, Config)
                 return false, "wrong password"
             end
             if Config.Remember and Config.Key then
-                W.State["unlock_" .. Config.Key] = tostring(Config.Password)
+                local Mins = 10
+                if Config.RememberMinutes then
+                    Mins = tonumber(Config.RememberMinutes) or 10
+                end
+                W.State["unlock_" .. Config.Key] = {
+                    pw = tostring(Config.Password),
+                    ["until"] = os.time() + math.floor(Mins * 60)
+                }
                 W.SaveState()
             end
             if Config.OnUnlock then
@@ -6956,6 +7748,14 @@ function WM.Changelog(W, Config)
     return Handle
 end
 
+Library.NotifyTemplates = Library.NotifyTemplates or {}
+
+function Library:RegisterNotifyTemplate(Name, Template)
+    if type(Name) == "string" and type(Template) == "table" then
+        Library.NotifyTemplates[Name] = Template
+    end
+end
+
 function WM.Notify(W, Config)
     Config = Merge({
         Title = "Notification",
@@ -6964,8 +7764,15 @@ function WM.Notify(W, Config)
         Type = "Info",
         Duration = 4,
         Buttons = {},
-        Progress = false
+        Progress = false,
+        Color = nil,
+        Icon = nil,
+        Template = nil
     }, Config or {})
+
+    if Config.Template and Library.NotifyTemplates[Config.Template] then
+        Config = Merge(Library.NotifyTemplates[Config.Template], Config)
+    end
 
     local Body = Config.Content ~= "" and Config.Content or (Config.Desc or "")
     local Kinds = {
@@ -6975,7 +7782,10 @@ function WM.Notify(W, Config)
         Error = { Key = "Error", Icon = "circle-x" }
     }
     local Kind = Kinds[Config.Type] or Kinds.Info
-    local Tint = Library.Theme[Kind.Key]
+    local Tint = Config.Color or Library.Theme[Kind.Key]
+    if Config.Icon then
+        Kind = { Key = Kind.Key, Icon = Config.Icon }
+    end
 
     local HasButtons = #Config.Buttons > 0
     local Height = 64 + (Body ~= "" and 14 or 0) + (HasButtons and 34 or 0)
@@ -8103,12 +8913,28 @@ function WM.BuildAPI(W)
             return
         end
 
+        if Tab.Role then
+            local Roles = W.Config.Roles
+            local Allowed = true
+            if type(Roles) == "table" then
+                Allowed = Roles[Tab.Role] == true or Roles[tostring(Tab.Role)] == true
+            elseif type(W.RoleCheck) == "function" then
+                local Ok, Res = pcall(W.RoleCheck, Tab.Role)
+                Allowed = Ok and Res == true
+            end
+            if not Allowed then
+                API:Notify({ Title = "Access denied", Content = "Missing role: " .. tostring(Tab.Role), Type = "Error", Duration = 3 })
+                return
+            end
+        end
+
         if not Tab.Unlocked then
             WM.Password(W, {
                 Title = Tab.LockConfig and Tab.LockConfig.Title or ("Locked: " .. Tab.Name),
                 Description = Tab.LockConfig and Tab.LockConfig.Description or "Enter the password to unlock this tab",
                 Password = Tab.LockConfig and Tab.LockConfig.Password or "",
                 Remember = not (Tab.LockConfig and Tab.LockConfig.Remember == false),
+                RememberMinutes = Tab.LockConfig and Tab.LockConfig.RememberMinutes or 10,
                 Key = Tab.Name,
                 OnUnlock = function()
                     Tab.Unlocked = true
@@ -8283,8 +9109,45 @@ function WM.BuildAPI(W)
         end
     end)
 
+    W.Panicked = false
+    function W.Panic(State)
+        if State == nil then
+            State = not W.Panicked
+        end
+        W.Panicked = State and true or false
+        if W.Panicked then
+            W.SetOpen(false)
+            local Flags = W.Config.PanicFlags
+            if type(Flags) == "table" then
+                for _, Flag in ipairs(Flags) do
+                    pcall(function()
+                        API:SetFlag(Flag, false)
+                    end)
+                end
+            else
+                for Flag, Element in pairs(W.Flags) do
+                    if Element and Element.Kind == "Toggle" then
+                        pcall(function()
+                            Element:Set(false)
+                        end)
+                    end
+                end
+            end
+            API:Notify({ Title = "Panic", Content = "UI hidden and toggles disabled", Type = "Warn", Duration = 3 })
+        else
+            W.SetOpen(true)
+        end
+    end
+
     table.insert(W.Connections, UserInputService.InputBegan:Connect(function(Input, Typing)
-        if Typing or not W.Open or not W.Active then
+        if Typing then
+            return
+        end
+        if W.Config.PanicKey and Input.KeyCode == W.Config.PanicKey then
+            W.Panic()
+            return
+        end
+        if not W.Open or not W.Active then
             return
         end
         local Step = 0
@@ -8582,24 +9445,62 @@ function WM.BuildAPI(W)
     function API:Destroy()
         W.SaveState()
         if W.Config.AutoSave then
-            API:SaveConfig(W.Profile)
+            pcall(function()
+                API:SaveConfig(W.Profile)
+            end)
+        end
+        for Flag, Element in pairs(W.Flags) do
+            pcall(function()
+                if Element.Kind == "Toggle" then
+                    Element:Set(false, true)
+                end
+                Element.Locked = true
+            end)
         end
         for _, Connection in ipairs(W.Connections) do
             pcall(function()
                 Connection:Disconnect()
             end)
         end
+        table.clear(W.Connections)
         for _, Bind in ipairs(W.Keybinds) do
-            Bind.Element.Locked = true
+            pcall(function()
+                Bind.Element.Locked = true
+            end)
         end
+        pcall(function()
+            Library:EndDragLock()
+        end)
         if W.Blur then
             pcall(function()
                 W.Blur:Destroy()
             end)
         end
+        if W.OnDestroy then
+            pcall(W.OnDestroy)
+        end
         Library:Tween(W.Main, FAST, { BackgroundTransparency = 1 }, function()
-            W.Gui:Destroy()
+            pcall(function()
+                W.Gui:Destroy()
+            end)
         end)
+    end
+
+    function API:Panic(State)
+        return W.Panic(State)
+    end
+
+    function API:SetRole(Role, Allowed)
+        W.Config.Roles = W.Config.Roles or {}
+        W.Config.Roles[Role] = Allowed and true or false
+    end
+
+    function API:SetRoleCheck(Fn)
+        W.RoleCheck = type(Fn) == "function" and Fn or nil
+    end
+
+    function API:RegisterNotifyTemplate(Name, Template)
+        Library:RegisterNotifyTemplate(Name, Template)
     end
 
     if W.Config.GroqApiKey then
