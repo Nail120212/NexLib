@@ -14,11 +14,24 @@ local Window = Library:NewWindow({
     Logo = "rbxassetid://89646749075297",
     Color = Color3.fromRGB(179, 0, 255),
     Theme = "Dark",
+    SafeArea = false,
+    DockPanels = true,
+    ReduceMotion = false,
+    NotifyMax = 4,
+    NotifyDND = false,
+    StrictMode = false,
+    -- Advanced theme tokens (optional). Example:
+    -- AdvancedTheme = {
+    --     Accent = Color3.fromRGB(198, 108, 255),
+    --     TabText = Color3.fromRGB(255, 255, 255),
+    --     Text = Color3.fromRGB(255, 255, 255),
+    --     RowAlpha = 0.92,
+    -- },
     Size = UDim2.fromOffset(700, 500),
     AutoScale = true,
     AutoPosition = "Center",
     Blur = true,
-    Version = "v2.1.3",
+    Version = "V0.1 Alpha",
     Tag = "beta",
     FolderName = "sh1ttybanana",
     ConfigName = "default",
@@ -34,6 +47,7 @@ local Window = Library:NewWindow({
     ShowKeybinds = true,
     ShowChangelog = false,
     ShowWatermark = true,
+    WatermarkText = "NexxWare SB V0.1",
     Compact = false,
     Sound = false,
     Particles = true,
@@ -54,7 +68,7 @@ local Window = Library:NewWindow({
         GetKeyLink = "https://discord.gg/example",
         SaveKey = true,
         Changelog = {
-            { Version = "v2.1.3", Date = os.date("%b %d, %Y"), Notes = {
+            { Version = "V0.1 Alpha", Date = os.date("%b %d, %Y"), Notes = {
                 "Patriot-style key system",
                 "RangeSlider, ToggleGroup, FilePicker",
                 "ConfirmToggle, Hotbar",
@@ -68,7 +82,7 @@ local Window = Library:NewWindow({
 
 local MainGroup = Window:Section({ Title = "Main", Opened = true })
 local GeneralTab = MainGroup:Tab({ Title = "General", Icon = "layout-dashboard" })
-local CombatTab = MainGroup:Tab({ Title = "Combat", Icon = "crosshair" })
+local CombatTab = MainGroup:Tab({ Title = "Combat", Icon = "gravity:ban" }) -- gravity: or lucide: or bare name
 local VisualTab = MainGroup:Tab({ Title = "Visual", Icon = "eye" })
 
 local WorldGroup = Window:Section({ Title = "World", Opened = true })
@@ -574,6 +588,12 @@ ToolsSection:AddButton({
     end,
 })
 
+ToolsSection:AddButton({
+    Title = "About",
+    Callback = function()
+        Window:About()
+    end,
+})
 ToolsSection:AddButton({
     Title = "Run SelfTest",
     Callback = function()
