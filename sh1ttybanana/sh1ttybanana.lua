@@ -436,19 +436,74 @@ end
 
 
 local GravityIcons = {}
-task.spawn(function()
-    local Ok, Src = pcall(function()
-        return HttpGet("https://raw.githubusercontent.com/Nail120212/NexLib/refs/heads/main/Icons/gravity.lua")
+local GravityPending = {}
+
+local function ApplyGravityAsset(Object, Key)
+    if not Object then
+        return false
+    end
+    Key = tostring(Key or ""):lower():gsub("^%s+", ""):gsub("%s+$", "")
+    local Asset = GravityIcons[Key] or GravityIcons[Key:gsub("_", "-")]
+    if type(Asset) ~= "string" or Asset == "" then
+        return false
+    end
+    Object.Image = Asset
+    Object.ImageRectSize = Vector2.new()
+    Object.ImageRectOffset = Vector2.new()
+    pcall(function()
+        Object.ScaleType = Enum.ScaleType.Fit
     end)
-    if Ok and type(Src) == "string" and Src ~= "" then
-        local Ok2, Data = pcall(function()
-            return loadstring(Src)()
-        end)
-        if Ok2 and type(Data) == "table" then
-            GravityIcons = Data
+    return true
+end
+
+local function FlushGravity()
+    for Index = #GravityPending, 1, -1 do
+        local Item = GravityPending[Index]
+        if Item and Item.Object and ApplyGravityAsset(Item.Object, Item.Key) then
+            table.remove(GravityPending, Index)
+        elseif not Item or not Item.Object or not Item.Object.Parent then
+            table.remove(GravityPending, Index)
         end
     end
+end
+
+local function LoadGravityPack()
+    local Url = "https://raw.githubusercontent.com/Nail120212/NexLib/refs/heads/main/Icons/gravity.lua"
+    local Src
+    local Ok, Result = pcall(HttpGet, Url)
+    if Ok and type(Result) == "string" and #Result > 40 then
+        Src = Result
+    elseif Env.request then
+        local OkReq, Response = pcall(Env.request, { Url = Url, Method = "GET" })
+        if OkReq and type(Response) == "table" and type(Response.Body) == "string" then
+            Src = Response.Body
+        end
+    end
+    if type(Src) ~= "string" or #Src < 40 then
+        return false
+    end
+    local OkLoad, Data = pcall(function()
+        local Fn = loadstring(Src)
+        if type(Fn) ~= "function" then
+            error("gravity pack")
+        end
+        return Fn()
+    end)
+    if not OkLoad or type(Data) ~= "table" then
+        return false
+    end
+    GravityIcons = Data
+    FlushGravity()
+    return true
+end
+
+task.spawn(function()
+    if not LoadGravityPack() then
+        task.wait(0.8)
+        LoadGravityPack()
+    end
 end)
+
 
 Library.Icons = {
     Minimize = "minus",
@@ -519,15 +574,27 @@ function Library:SetIcon(Object, Name, Color)
     end
     local Resolved = Library:NormalizeIcon(Name)
     if Resolved:sub(1, 8) == "gravity:" then
-        local Key = Resolved:sub(9)
-        local Asset = GravityIcons[Key] or GravityIcons[Key:lower()]
-        if type(Asset) == "string" then
-            Object.Image = Asset
-            Object.ImageRectSize = Vector2.new()
-            Object.ImageRectOffset = Vector2.new()
-        else
-            Object.Image = ""
+        local Key = Resolved:sub(9):gsub("^%s+", ""):gsub("%s+$", "")
+        if ApplyGravityAsset(Object, Key) then
+            if Color then
+                Object.ImageColor3 = Color
+            end
+            return Object
         end
+        table.insert(GravityPending, { Object = Object, Key = Key, Color = Color })
+        if IconPack and IconPack.Icon then
+            local Ok, Data = pcall(IconPack.Icon, "lucide:" .. Key)
+            if Ok and type(Data) == "table" and Data[1] then
+                Object.Image = tostring(Data[1])
+                local Rect = Data[2]
+                Object.ImageRectSize = type(Rect) == "table" and Rect.ImageRectSize or Vector2.new()
+                Object.ImageRectOffset = type(Rect) == "table" and Rect.ImageRectPosition or Vector2.new()
+            end
+        end
+        if Color then
+            Object.ImageColor3 = Color
+        end
+        return Object
     elseif Resolved:find("rbxasset") or Resolved:find("http") then
         Object.Image = Resolved
         Object.ImageRectSize = Vector2.new()
@@ -4002,6 +4069,7 @@ function Components.Button(Section, Config)
         Description = "",
         Confirm = false,
         Cooldown = 0,
+        Icon = nil,
         Callback = function() end
     }, Config)
     local Cool = tonumber(Config.Cooldown) or 0
@@ -4009,7 +4077,7 @@ function Components.Button(Section, Config)
 
     local Row, TitleLabel, DescLabel = MakeRow(Section, "Button", Config.Title, Config.Description, 44, 30)
 
-    local Arrow = IconLabel(Row, Library.Icons.Right, 16, "Accent")
+    local Arrow = IconLabel(Row, Config.Icon or Library.Icons.Right, 16, "Accent")
     Arrow.AnchorPoint = Vector2.new(1, 0.5)
     Arrow.Position = UDim2.new(1, -14, 0.5, 0)
     Arrow.ZIndex = 6
@@ -5315,38 +5383,79 @@ function Components.MultiButton(Section, Config)
     }, Config)
 
     local Mobile = Section.Window.Mobile
-    local Count = math.max(#(Config.Buttons or {}), 1)
-    local BtnH = Mobile and 34 or 30
-    local Rows = Mobile and (Count > 2 and 2 or 1) or 1
-    local PerRow = math.ceil(Count / Rows)
-    local HolderH = Rows * BtnH + (Rows - 1) * 6
+    local List = Config.Buttons or {}
+    local Count = math.max(#List, 1)
+    local BtnH = Mobile and 36 or 32
+    local Gap = 8
+    local RowCount = math.ceil(Count / 2)
+    local HolderH = RowCount * BtnH + math.max(RowCount - 1, 0) * Gap
     local Row, TitleLabel, DescLabel, _, Stack, Measure = MakeRow(Section, "MultiButton", Config.Title, Config.Description, 48 + HolderH, 0)
+    Row.ClipsDescendants = false
 
     local Holder = Blank(Stack, {
         Size = UDim2.new(1, 0, 0, HolderH),
-        LayoutOrder = 3
+        LayoutOrder = 3,
+        ZIndex = 4
     })
     New("UIListLayout", {
         Parent = Holder,
-        FillDirection = Enum.FillDirection.Horizontal,
+        FillDirection = Enum.FillDirection.Vertical,
         SortOrder = Enum.SortOrder.LayoutOrder,
-        Padding = UDim.new(0, 6),
-        Wraps = true
+        Padding = UDim.new(0, Gap)
     })
 
-    for Index, Info in ipairs(Config.Buttons or {}) do
-        local Button, TextLabel = PillButton(Holder, Info.Title or Info.Text or "Button", Info.Icon, 0, Info.Accent)
-        local WFrac = 1 / PerRow
-        Button.Size = UDim2.new(WFrac, -6 + 6 / PerRow, 0, BtnH)
-        Button.LayoutOrder = Index
-        if TextLabel then
-            TextLabel.TextSize = Library.TextSize(11, 1)
-        end
-        Button.MouseButton1Click:Connect(function()
-            if Info.Callback then
-                task.spawn(Info.Callback)
+    for RowIndex = 1, RowCount do
+        local First = List[(RowIndex - 1) * 2 + 1]
+        local Second = List[(RowIndex - 1) * 2 + 2]
+        local Line = Blank(Holder, {
+            Size = UDim2.new(1, 0, 0, BtnH),
+            LayoutOrder = RowIndex,
+            ZIndex = 5
+        })
+        if First and Second then
+            local Left, LeftText = PillButton(Line, First.Title or First.Text or "Button", First.Icon, 0, First.Accent)
+            Left.AnchorPoint = Vector2.new(0, 0)
+            Left.Position = UDim2.new(0, 0, 0, 0)
+            Left.Size = UDim2.new(0.5, -Gap * 0.5, 1, 0)
+            Left.ZIndex = 6
+            if LeftText then
+                LeftText.TextSize = Library.TextSize(11, 1)
+                LeftText.ZIndex = 7
             end
-        end)
+            Left.MouseButton1Click:Connect(function()
+                if First.Callback then
+                    task.spawn(First.Callback)
+                end
+            end)
+
+            local Right, RightText = PillButton(Line, Second.Title or Second.Text or "Button", Second.Icon, 0, Second.Accent)
+            Right.AnchorPoint = Vector2.new(1, 0)
+            Right.Position = UDim2.new(1, 0, 0, 0)
+            Right.Size = UDim2.new(0.5, -Gap * 0.5, 1, 0)
+            Right.ZIndex = 6
+            if RightText then
+                RightText.TextSize = Library.TextSize(11, 1)
+                RightText.ZIndex = 7
+            end
+            Right.MouseButton1Click:Connect(function()
+                if Second.Callback then
+                    task.spawn(Second.Callback)
+                end
+            end)
+        elseif First then
+            local Full, FullText = PillButton(Line, First.Title or First.Text or "Button", First.Icon, 0, First.Accent)
+            Full.Size = UDim2.new(1, 0, 1, 0)
+            Full.ZIndex = 6
+            if FullText then
+                FullText.TextSize = Library.TextSize(11, 1)
+                FullText.ZIndex = 7
+            end
+            Full.MouseButton1Click:Connect(function()
+                if First.Callback then
+                    task.spawn(First.Callback)
+                end
+            end)
+        end
     end
     if Measure then
         task.defer(Measure)
@@ -5356,6 +5465,7 @@ function Components.MultiButton(Section, Config)
     local Handlers = { Get = function() end, Set = function() end }
     return Finish(Section, "MultiButton", Config, Row, Handlers, TitleLabel, DescLabel)
 end
+
 
 function Components.Paragraph(Section, Config)
     Config = Merge({
@@ -8822,6 +8932,9 @@ function WM.PlayerCard(W)
     do
         local Dragging, Origin, StartPosition = false, nil, nil
         Card.InputBegan:Connect(function(Input)
+            if Card:GetAttribute("Docked") then
+                return
+            end
             if Input.UserInputType == Enum.UserInputType.MouseButton1
                 or Input.UserInputType == Enum.UserInputType.Touch then
                 Dragging = true
@@ -8857,6 +8970,58 @@ function WM.PlayerCard(W)
     return Card
 end
 
+local function RestorePages(W)
+    if W.Pages then
+        W.Pages.Visible = true
+    end
+    if W.PageHeader then
+        W.PageHeader.Visible = true
+    end
+    if W.PageLine then
+        W.PageLine.Visible = true
+    end
+    if W.Active then
+        W.SetPageHead(W.Active.Name, W.Active.Description, W.Active.Icon)
+    end
+end
+
+local function DockPanel(W, Panel)
+    if W.AIPanel and W.AIPanel ~= Panel then
+        W.AIPanel.Visible = false
+        W.AIPanel:SetAttribute("Docked", false)
+    end
+    if W.Card and W.Card ~= Panel then
+        W.Card.Visible = false
+        W.Card:SetAttribute("Docked", false)
+    end
+    Panel.Parent = W.Content
+    Panel.AnchorPoint = Vector2.new(0, 0)
+    Panel.Position = UDim2.fromOffset(0, 0)
+    Panel.Size = UDim2.new(1, 0, 1, 0)
+    Panel.ZIndex = 60
+    Panel:SetAttribute("Docked", true)
+    pcall(function()
+        Panel.BackgroundColor3 = Library.Theme.Elevated
+        Panel.BackgroundTransparency = math.min(Library.Theme.ElevatedAlpha or 0.12, 0.16)
+    end)
+    for _, D in ipairs(Panel:GetDescendants()) do
+        if D:IsA("GuiObject") then
+            D.ZIndex = math.max(D.ZIndex or 1, 61)
+        end
+    end
+    if W.Pages then
+        W.Pages.Visible = false
+    end
+    if W.PageHeader then
+        W.PageHeader.Visible = false
+    end
+    if W.PageLine then
+        W.PageLine.Visible = false
+    end
+    Panel.Visible = true
+    Library:Pop(Panel, 0.22, 0.97)
+end
+
 function WM.TogglePlayerCard(W, State)
     local Card = WM.PlayerCard(W)
     if State == nil then
@@ -8864,32 +9029,11 @@ function WM.TogglePlayerCard(W, State)
     end
     if W.Config.DockPanels and W.Content then
         if State then
-            Card.Parent = W.Content
-            Card.AnchorPoint = Vector2.new(0, 0)
-            Card.Position = UDim2.fromOffset(0, 0)
-            Card.Size = UDim2.new(1, 0, 1, 0)
-            Card.ZIndex = 50
-            for _, D in ipairs(Card:GetDescendants()) do
-                if D:IsA("GuiObject") then
-                    D.ZIndex = math.max(D.ZIndex or 1, 51)
-                end
-            end
-            Card.Visible = true
-            Library:Pop(Card, 0.28, 0.96)
-            if W.Pages then
-                W.Pages.Visible = false
-            end
-            if W.PageHeader then
-                W.SetPageHead("Player", "Session info", Library.Icons.User)
-            end
+            DockPanel(W, Card)
         else
             Card.Visible = false
-            if W.Pages then
-                W.Pages.Visible = true
-            end
-            if W.Active then
-                W.SetPageHead(W.Active.Name, W.Active.Description, W.Active.Icon)
-            end
+            Card:SetAttribute("Docked", false)
+            RestorePages(W)
         end
         return
     end
@@ -9049,6 +9193,12 @@ function WM.AI(W)
     })
 
     local function FitPanelWidth()
+        if Panel:GetAttribute("Docked") then
+            Panel.AnchorPoint = Vector2.new(0, 0)
+            Panel.Position = UDim2.fromOffset(0, 0)
+            Panel.Size = UDim2.new(1, 0, 1, 0)
+            return
+        end
         local MainWidth = W.Main.AbsoluteSize.X
         if MainWidth <= 0 then
             return
@@ -9058,8 +9208,9 @@ function WM.AI(W)
     end
     table.insert(W.Connections, W.Main:GetPropertyChangedSignal("AbsoluteSize"):Connect(FitPanelWidth))
     task.defer(FitPanelWidth)
-    Library:Themed(Panel, "BackgroundColor3", "Sidebar")
-    Library:Themed(Panel, "BackgroundTransparency", "SidebarAlpha")
+    Library:Themed(Panel, "BackgroundColor3", "Elevated")
+    Library:Themed(Panel, "BackgroundTransparency", "ElevatedAlpha")
+    Library:Stroke(Panel, "StrokeSoft", 1)
 
     local Edge = New("Frame", {
         Parent = Panel,
@@ -9070,7 +9221,7 @@ function WM.AI(W)
     })
     Library:Themed(Edge, "BackgroundColor3", "Stroke")
 
-    local Head = Blank(Panel, { Size = UDim2.new(1, 0, 0, 44), ZIndex = 82 })
+    local Head = Blank(Panel, { Size = UDim2.new(1, 0, 0, 48), ZIndex = 82 })
 
     local HeadIcon = IconLabel(Head, Library.Icons.Bot, 18, "Accent")
     HeadIcon.AnchorPoint = Vector2.new(0, 0.5)
@@ -9078,12 +9229,24 @@ function WM.AI(W)
     HeadIcon.ZIndex = 83
     Library:Themed(HeadIcon, "ImageColor3", "Accent")
 
+    local HeadTitle = New("TextLabel", {
+        Parent = Head,
+        BackgroundTransparency = 1,
+        Position = UDim2.new(0, 40, 0, 6),
+        Size = UDim2.new(1, -130, 0, 18),
+        Font = Library.Font.Bold,
+        Text = "AI Assistant",
+        TextSize = 13,
+        TextXAlignment = Enum.TextXAlignment.Left,
+        ZIndex = 83
+    })
+    Library:Themed(HeadTitle, "TextColor3", "Text")
+
     local ModelButton = New("TextButton", {
         Parent = Head,
-        AnchorPoint = Vector2.new(0, 0.5),
         BackgroundTransparency = 1,
-        Position = UDim2.new(0, 38, 0.5, 0),
-        Size = UDim2.new(1, -110, 0, 30),
+        Position = UDim2.new(0, 40, 0, 24),
+        Size = UDim2.new(1, -130, 0, 16),
         Font = Library.Font.Medium,
         Text = Library.Groq.Model,
         TextSize = 11,
@@ -9092,7 +9255,7 @@ function WM.AI(W)
         AutoButtonColor = false,
         ZIndex = 83
     })
-    Library:Themed(ModelButton, "TextColor3", "Text")
+    Library:Themed(ModelButton, "TextColor3", "TextDim")
 
     local ExportButton = GlyphButton(Head, Library.Icons.Copy, "Export chat")
     ExportButton.AnchorPoint = Vector2.new(1, 0.5)
@@ -9141,8 +9304,8 @@ function WM.AI(W)
         Parent = Panel,
         BackgroundTransparency = 1,
         BorderSizePixel = 0,
-        Position = UDim2.new(0, 10, 0, 46),
-        Size = UDim2.new(1, -20, 1, -128),
+        Position = UDim2.new(0, 10, 0, 50),
+        Size = UDim2.new(1, -20, 1, -132),
         ZIndex = 82
     })
     Library:StyleScroll(Log)
@@ -9221,8 +9384,8 @@ function WM.AI(W)
         BackgroundColor3 = Color3.fromRGB(0, 0, 0),
         BackgroundTransparency = 0.2,
         BorderSizePixel = 0,
-        Position = UDim2.new(0, 0, 0, 44),
-        Size = UDim2.new(1, 0, 1, -44),
+        Position = UDim2.new(0, 0, 0, 48),
+        Size = UDim2.new(1, 0, 1, -48),
         ZIndex = 95,
         Visible = false
     })
@@ -9626,6 +9789,9 @@ function WM.AI(W)
     do
         local Dragging, Origin, StartPos = false, nil, nil
         Head.InputBegan:Connect(function(Input)
+            if Panel:GetAttribute("Docked") then
+                return
+            end
             if Input.UserInputType == Enum.UserInputType.MouseButton1
                 or Input.UserInputType == Enum.UserInputType.Touch then
                 Dragging = true
@@ -9675,37 +9841,21 @@ function WM.ToggleAI(W, State)
     local Top = W.Header.Size.Y.Offset
     if W.Config.DockPanels and W.Content then
         if State then
-            Panel.Parent = W.Content
-            Panel.AnchorPoint = Vector2.new(0, 0)
-            Panel.Position = UDim2.fromOffset(0, 0)
+            DockPanel(W, Panel)
             Panel.Size = UDim2.new(1, 0, 1, 0)
-            Panel.ZIndex = 50
-            for _, D in ipairs(Panel:GetDescendants()) do
-                if D:IsA("GuiObject") and (D.ZIndex or 0) < 50 then
-                    D.ZIndex = math.max(D.ZIndex or 1, 51)
-                end
-            end
-            Panel.Visible = true
-            Library:Pop(Panel, 0.28, 0.96)
-            if W.Pages then
-                W.Pages.Visible = false
-            end
-            if W.PageHeader then
-                W.SetPageHead("AI Assistant", "Docked panel", Library.Icons.Bot)
-            end
+            Panel.Position = UDim2.fromOffset(0, 0)
         else
             Panel.Visible = false
-            if W.Pages then
-                W.Pages.Visible = true
-            end
-            if W.Active then
-                W.SetPageHead(W.Active.Name, W.Active.Description, W.Active.Icon)
-            end
+            Panel:SetAttribute("Docked", false)
+            RestorePages(W)
         end
         return
     end
+    Panel:SetAttribute("Docked", false)
     if State then
         Panel.Visible = true
+        Panel.Parent = W.Main
+        Panel.AnchorPoint = Vector2.new(1, 0)
         Panel.Size = UDim2.new(0, math.min(320, (W.Main and W.Main.AbsoluteSize.X or 400) * 0.42), 1, -(Top or 54))
         Panel.Position = UDim2.new(1, Width, 0, Top)
         Library:Tween(Panel, NORMAL, { Position = UDim2.new(1, 0, 0, Top) })
@@ -9832,6 +9982,15 @@ function WM.BuildAPI(W)
         end
 
         W.Active = Tab
+        if W.AIPanel and W.AIPanel.Visible and W.AIPanel:GetAttribute("Docked") then
+            W.AIPanel.Visible = false
+            W.AIPanel:SetAttribute("Docked", false)
+        end
+        if W.Card and W.Card.Visible and W.Card:GetAttribute("Docked") then
+            W.Card.Visible = false
+            W.Card:SetAttribute("Docked", false)
+        end
+        RestorePages(W)
         W.SetPageHead(Tab.Name, Tab.Description, Tab.Icon)
         Library:Pop(Tab.Page, 0.24, 0.99)
 

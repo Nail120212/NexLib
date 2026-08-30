@@ -1,17 +1,18 @@
 --[[
-  NexxWare SB V0.1 — full example
-  author: nexxzel
-  base: kingrua
+  NexxWare SB V0.1 example
+  Author: nexxzel
+  One section per component
 ]]
 
-local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/Nail120212/NexLib/refs/heads/main/sh1ttybanana/sh1ttybanana.lua"))()
--- or: local Library = loadfile("sh1ttybanana.lua")()
+local Library = loadstring(game:HttpGet(
+    "https://raw.githubusercontent.com/Nail120212/NexLib/refs/heads/main/sh1ttybanana/sh1ttybanana.lua"
+))()
 
 local Window = Library:NewWindow({
     Title = "NexxWare",
-    Description = "SB full demo",
+    Description = "by nexxzel · SB V0.1",
     Version = "V0.1 Alpha",
-    Theme = "Liquid Glass", -- or "Fluid Glass Black"
+    Theme = "Liquid Glass",
     Size = UDim2.fromOffset(720, 520),
     WatermarkText = "NexxWare SB V0.1",
     ShowWatermark = true,
@@ -19,280 +20,309 @@ local Window = Library:NewWindow({
     ShowPlayerCard = true,
     DockPanels = true,
     ShowChangelog = false,
-    SafeArea = false,
-    NotifyMax = 4,
     PanicKey = Enum.KeyCode.End,
-    KeySystem = {
-        Enabled = false, -- set true + Keys / Custom to test gate
-        Title = "NexxWare",
-        Note = "Verify Key to enjoy",
-        Keys = { "FREE-KEY-1234" },
-        GetKeyLink = "https://discord.gg/example",
-        Changelog = {
-            { Version = "V0.1", Date = "2026", Notes = { "Liquid Glass", "Fluid Glass Black", "All components" } },
-        },
-    },
-    AdvancedTheme = {
-        -- Neutral = Color3.fromRGB(200, 200, 210),
-        -- TabText = Color3.fromRGB(235, 235, 245),
-        -- Accent = Color3.fromRGB(198, 108, 255),
-    },
+    KeySystem = { Enabled = false },
 })
 
--- ═══════════════════════════════════════
--- BUTTONS
--- ═══════════════════════════════════════
-local ButtonsTab = Window:Tab({ Title = "Buttons", Icon = "mouse-pointer-click" })
+-- ───────────── BUTTONS ─────────────
+local Buttons = Window:Tab({ Title = "Buttons", Icon = "mouse-pointer-click" })
 
-local NormalSec = ButtonsTab:AddSection("Normal Button")
-NormalSec:AddButton({
-    Title = "Primary action",
-    Description = "Cooldown 1s example",
-    Cooldown = 1,
+local SecButton = Buttons:AddSection("Button")
+SecButton:AddButton({
+    Title = "Normal Button",
+    Description = "Single action row",
+    Cooldown = 0.5,
     Callback = function()
         Window:Notify({ Title = "Button", Content = "clicked", Type = "Success" })
     end,
 })
-NormalSec:AddButton({
-    Title = "About modal",
-    Callback = function()
-        Window:About()
-    end,
-})
 
-local MultiSec = ButtonsTab:AddSection("Multibutton")
-MultiSec:AddMultiButton({
-    Title = "Quick actions",
+local SecMulti = Buttons:AddSection("MultiButton")
+SecMulti:AddMultiButton({
+    Title = "MultiButton",
+    Description = "Two on top (half) · one full width below",
     Buttons = {
-        { Title = "A", Callback = function() print("A") end },
-        { Title = "B", Accent = true, Callback = function() print("B") end },
-        { Title = "C", Callback = function() print("C") end },
+        { Title = "One", Callback = function() print("one") end },
+        { Title = "Two", Accent = true, Callback = function() print("two") end },
+        { Title = "Three", Callback = function() print("three") end },
     },
 })
-MultiSec:AddHotbar({
-    Title = "Icon hotbar",
+
+local SecHotbar = Buttons:AddSection("Hotbar")
+SecHotbar:AddHotbar({
+    Title = "Hotbar",
     Items = {
-        { Icon = "lucide:sparkles", Tip = "Sparkle", Callback = function() print("sparkle") end },
-        { Icon = "gravity:ban", Tip = "Ban (gravity)", Callback = function() print("ban") end },
-        { Icon = "refresh-cw", Tip = "Refresh", Callback = function() print("refresh") end },
+        { Icon = "lucide:sparkles", Tip = "Lucide", Callback = function() print("sparkles") end },
+        { Icon = "gravity:ban", Tip = "Gravity", Callback = function() print("ban") end },
+        { Icon = "refresh-cw", Tip = "Bare lucide", Callback = function() print("refresh") end },
     },
 })
 
--- ═══════════════════════════════════════
--- INPUTS
--- ═══════════════════════════════════════
-local InputsTab = Window:Tab({ Title = "Inputs", Icon = "keyboard" })
+local SecConfirm = Buttons:AddSection("ConfirmToggle")
+SecConfirm:AddConfirmToggle({
+    Title = "ConfirmToggle",
+    Description = "Asks before enabling",
+    ConfirmOn = true,
+    ConfirmTitle = "Enable?",
+    ConfirmContent = "Are you sure?",
+    Flag = "ConfirmDemo",
+    Callback = function(v) print("confirm", v) end,
+})
 
-local ToggleSec = InputsTab:AddSection("Toggles")
-ToggleSec:AddToggle({
-    Title = "Enable feature",
-    Description = "Standard toggle",
-    Flag = "FeatOn",
+-- ───────────── TOGGLES ─────────────
+local Toggles = Window:Tab({ Title = "Toggles", Icon = "toggle-left" })
+
+local SecToggle = Toggles:AddSection("Toggle")
+SecToggle:AddToggle({
+    Title = "Toggle",
+    Description = "On / off",
+    Flag = "ToggleDemo",
     Default = false,
     Callback = function(v) print("toggle", v) end,
 })
-ToggleSec:AddConfirmToggle({
-    Title = "Dangerous flag",
-    Description = "Confirms before ON",
-    ConfirmOn = true,
-    ConfirmTitle = "Enable?",
-    ConfirmContent = "This is destructive.",
-    Flag = "Danger",
-    Callback = function(v) print("confirm", v) end,
-})
-ToggleSec:AddToggleGroup({
-    Title = "Mode",
+
+local SecGroup = Toggles:AddSection("ToggleGroup")
+SecGroup:AddToggleGroup({
+    Title = "ToggleGroup",
     Options = { "Legit", "Rage", "Silent" },
     Default = "Legit",
-    Flag = "Mode",
-    Callback = function(v) print("mode", v) end,
+    Flag = "ModeDemo",
+    Callback = function(v) print("group", v) end,
 })
 
-local SliderSec = InputsTab:AddSection("Sliders")
-SliderSec:AddSlider({
-    Title = "WalkSpeed",
-    Min = 0, Max = 100, Default = 16, Increment = 1,
-    Flag = "WalkSpeed",
-    Callback = function(v) print("speed", v) end,
+-- ───────────── SLIDERS ─────────────
+local Sliders = Window:Tab({ Title = "Sliders", Icon = "sliders-horizontal" })
+
+local SecSlider = Sliders:AddSection("Slider")
+SecSlider:AddSlider({
+    Title = "Slider",
+    Min = 0, Max = 100, Default = 25, Increment = 1,
+    Flag = "SliderDemo",
+    Callback = function(v) print("slider", v) end,
 })
-SliderSec:AddRangeSlider({
-    Title = "FOV band",
-    Min = 10, Max = 500, Default = { 70, 120 }, Increment = 5,
-    Flag = "FovBand",
+
+local SecRange = Sliders:AddSection("RangeSlider")
+SecRange:AddRangeSlider({
+    Title = "RangeSlider",
+    Min = 0, Max = 200, Default = { 40, 120 }, Increment = 5,
+    Flag = "RangeDemo",
     Callback = function(v) print("range", v[1], v[2]) end,
 })
-SliderSec:AddProgress({ Title = "Load", Default = 0.42, Flag = "LoadPct" })
 
-local FieldSec = InputsTab:AddSection("Fields")
-FieldSec:AddInput({
-    Title = "Nickname",
-    Placeholder = "Enter name",
-    Flag = "Nick",
-    Callback = function(t) print("nick", t) end,
+local SecProg = Sliders:AddSection("Progress")
+SecProg:AddProgress({
+    Title = "Progress",
+    Default = 0.65,
+    Flag = "ProgressDemo",
 })
-FieldSec:AddKeybind({
-    Title = "Panic bind",
-    Default = Enum.KeyCode.End,
-    Flag = "PanicBind",
-    Callback = function() print("key") end,
+
+-- ───────────── FIELDS ─────────────
+local Fields = Window:Tab({ Title = "Fields", Icon = "keyboard" })
+
+local SecInput = Fields:AddSection("Input")
+SecInput:AddInput({
+    Title = "Input",
+    Placeholder = "Type here",
+    Flag = "InputDemo",
+    Callback = function(t) print("input", t) end,
 })
-FieldSec:AddDropdown({
-    Title = "Weapon",
-    Options = { "Pistol", "Rifle", "Sniper", "SMG", "Shotgun" },
-    Default = "Rifle",
+
+local SecKeybind = Fields:AddSection("Keybind")
+SecKeybind:AddKeybind({
+    Title = "Keybind",
+    Default = Enum.KeyCode.Q,
+    Flag = "KeyDemo",
+    Callback = function() print("keybind") end,
+})
+
+local SecDropdown = Fields:AddSection("Dropdown")
+SecDropdown:AddDropdown({
+    Title = "Dropdown",
+    Options = { "Alpha", "Beta", "Gamma", "Delta" },
+    Default = "Beta",
     Search = true,
-    Flag = "Weapon",
-    Callback = function(v) print("weapon", v) end,
-})
-FieldSec:AddPlayerSelector({
-    Title = "Target",
-    Flag = "Target",
-    Callback = function(name) print("target", name) end,
+    Flag = "DropDemo",
+    Callback = function(v) print("dropdown", v) end,
 })
 
--- ═══════════════════════════════════════
--- COLORS / MEDIA
--- ═══════════════════════════════════════
-local VisualTab = Window:Tab({ Title = "Visual", Icon = "eye" })
+local SecPlayer = Fields:AddSection("PlayerSelector")
+SecPlayer:AddPlayerSelector({
+    Title = "PlayerSelector",
+    Flag = "PlayerDemo",
+    Callback = function(name) print("player", name) end,
+})
 
-local ColorSec = VisualTab:AddSection("Colors")
-ColorSec:AddColorpicker({
-    Title = "Accent pick",
+-- ───────────── COLORS ─────────────
+local Colors = Window:Tab({ Title = "Colors", Icon = "palette" })
+
+local SecCP = Colors:AddSection("Colorpicker")
+SecCP:AddColorpicker({
+    Title = "Colorpicker",
     Default = Color3.fromRGB(198, 108, 255),
-    Flag = "AccentPick",
+    Flag = "ColorDemo",
     Callback = function(c) print("color", c) end,
 })
-ColorSec:AddColorpickerRGB({
-    Title = "ESP Color",
+
+local SecRGB = Colors:AddSection("ColorpickerRGB")
+SecRGB:AddColorpickerRGB({
+    Title = "ColorpickerRGB",
     Default = Color3.fromRGB(255, 80, 120),
-    Flag = "EspColor",
+    Flag = "RgbDemo",
     Callback = function(c) print("rgb", c) end,
 })
 
-local MediaSec = VisualTab:AddSection("Media")
-MediaSec:AddImage({
-    Title = "Banner",
+-- ───────────── MEDIA ─────────────
+local Media = Window:Tab({ Title = "Media", Icon = "image" })
+
+local SecImage = Media:AddSection("Image")
+SecImage:AddImage({
+    Title = "Image",
     Image = "rbxassetid://89646749075297",
-    Height = 100,
+    Height = 110,
 })
-MediaSec:AddViewport({
-    Title = "Item Preview",
+
+local SecView = Media:AddSection("Viewport")
+SecView:AddViewport({
+    Title = "Viewport",
     Description = "Drag to rotate",
-    Height = 140,
+    Height = 150,
 })
-MediaSec:AddGrid({
-    Title = "Weapon Slots",
+
+local SecGrid = Media:AddSection("Grid")
+SecGrid:AddGrid({
+    Title = "Grid",
     Columns = 3,
     Height = 64,
     Items = {
-        { Title = "Pistol", Icon = "lucide:crosshair", Callback = function() print("pistol") end },
-        { Title = "Rifle", Icon = "gravity:ban", Callback = function() print("rifle") end },
-        { Title = "Sniper", Icon = "lucide:focus", Callback = function() print("sniper") end },
-        { Title = "SMG", Icon = "lucide:zap", Callback = function() print("smg") end },
-        { Title = "Shotgun", Icon = "lucide:flame", Callback = function() print("shotgun") end },
-        { Title = "Knife", Icon = "lucide:sword", Callback = function() print("knife") end },
+        { Title = "A", Icon = "lucide:star", Callback = function() print("A") end },
+        { Title = "B", Icon = "gravity:ban", Callback = function() print("B") end },
+        { Title = "C", Icon = "lucide:zap", Callback = function() print("C") end },
+        { Title = "D", Icon = "lucide:flame", Callback = function() print("D") end },
+        { Title = "E", Icon = "lucide:focus", Callback = function() print("E") end },
+        { Title = "F", Icon = "sword", Callback = function() print("F") end },
     },
 })
 
--- ═══════════════════════════════════════
--- DATA / TEXT
--- ═══════════════════════════════════════
-local DataTab = Window:Tab({ Title = "Data", Icon = "table" })
+-- ───────────── TEXT / DATA ─────────────
+local Data = Window:Tab({ Title = "Data", Icon = "table" })
 
-local TableSec = DataTab:AddSection("Table & tags")
-TableSec:AddTable({
-    Title = "Game Info",
+local SecTable = Data:AddSection("Table")
+SecTable:AddTable({
+    Title = "Table",
     Columns = { "Key", "Value" },
     Rows = {
-        { "PlaceId", tostring(game.PlaceId) },
-        { "User", game.Players.LocalPlayer.Name },
-        { "Theme", "Liquid Glass" },
+        { "Author", "nexxzel" },
+        { "Lib", "sh1ttybanana" },
+        { "Version", "V0.1 Alpha" },
     },
 })
-TableSec:AddTag({
-    Title = "Channel",
+
+local SecTag = Data:AddSection("Tag")
+SecTag:AddTag({
+    Title = "Tag",
     Name = "Beta",
     Icon = "lucide:sparkles",
     Color = Color3.fromRGB(255, 180, 60),
 })
-TableSec:AddLabel({ Title = "Plain label", Icon = "lucide:info" })
-TableSec:AddParagraph({
-    Title = "About this tab",
-    Content = "Tables, tags, labels, paragraphs, and code live here.",
+
+local SecLabel = Data:AddSection("Label")
+SecLabel:AddLabel({
+    Title = "Label",
+    Icon = "lucide:info",
 })
 
-local CodeSec = DataTab:AddSection("Codeblock")
-CodeSec:AddCodeblock({
-    Title = "Example",
-    Code = 'print("NexxWare SB V0.1")\nlocal x = 1 + 2\nreturn x',
+local SecPara = Data:AddSection("Paragraph")
+SecPara:AddParagraph({
+    Title = "Paragraph",
+    Content = "Longer text block for descriptions and notes.",
+})
+
+local SecCode = Data:AddSection("Codeblock")
+SecCode:AddCodeblock({
+    Title = "Codeblock",
+    Code = 'print("nexxzel")\nlocal n = 1 + 2\nreturn n',
     Copy = true,
 })
-CodeSec:AddLogConsole({
-    Title = "Console",
-    Height = 110,
+
+local SecLog = Data:AddSection("LogConsole")
+SecLog:AddLogConsole({
+    Title = "LogConsole",
+    Height = 120,
 })
-CodeSec:AddFilePicker({
-    Title = "Configs",
+
+local SecFile = Data:AddSection("FilePicker")
+SecFile:AddFilePicker({
+    Title = "FilePicker",
     Extension = ".json",
     Callback = function(n) print("file", n) end,
 })
 
--- ═══════════════════════════════════════
--- ICONS DEMO
--- ═══════════════════════════════════════
-local IconsTab = Window:Tab({ Title = "Icons", Icon = "lucide:sparkles" })
-local LucideSec = IconsTab:AddSection("Lucide (default)")
-LucideSec:AddButton({ Title = "lucide:home", Icon = "lucide:home", Callback = function() end })
-LucideSec:AddButton({ Title = "bare name → lucide", Icon = "settings", Callback = function() end })
-local GravSec = IconsTab:AddSection("Gravity")
-GravSec:AddButton({ Title = "gravity:ban", Icon = "gravity:ban", Callback = function() end })
-GravSec:AddButton({ Title = "gravity:alarm", Icon = "gravity:alarm", Callback = function() end })
-GravSec:AddHotbar({
-    Title = "Mix",
+local SecSep = Data:AddSection("Separator / Divider / Space")
+SecSep:AddSeparator({ Title = "Separator" })
+SecSep:AddDivider()
+SecSep:AddSpace({ Height = 12 })
+
+-- ───────────── ICONS ─────────────
+local Icons = Window:Tab({ Title = "Icons", Icon = "lucide:sparkles" })
+
+local SecLucide = Icons:AddSection("Lucide")
+SecLucide:AddButton({ Title = "lucide:home", Icon = "lucide:home", Callback = function() end })
+SecLucide:AddButton({ Title = "settings (bare → lucide)", Icon = "settings", Callback = function() end })
+
+local SecGrav = Icons:AddSection("Gravity")
+SecGrav:AddButton({ Title = "gravity:ban", Icon = "gravity:ban", Callback = function() end })
+SecGrav:AddButton({ Title = "gravity:alarm", Icon = "gravity:alarm", Callback = function() end })
+SecGrav:AddHotbar({
+    Title = "Mixed icons",
     Items = {
-        { Icon = "lucide:star", Tip = "Lucide star" },
-        { Icon = "gravity:archive", Tip = "Gravity archive" },
-        { Icon = "bot", Tip = "Bare lucide bot" },
+        { Icon = "lucide:star", Tip = "lucide star" },
+        { Icon = "gravity:archive", Tip = "gravity archive" },
+        { Icon = "bot", Tip = "bare lucide bot" },
     },
 })
 
--- ═══════════════════════════════════════
--- SYSTEM
--- ═══════════════════════════════════════
-local SystemTab = Window:Tab({ Title = "System", Icon = "settings" })
-local SysSec = SystemTab:AddSection("Tools")
-SysSec:AddButton({
+-- ───────────── SYSTEM ─────────────
+local System = Window:Tab({ Title = "System", Icon = "settings" })
+
+local SecTheme = System:AddSection("Theme")
+SecTheme:AddButton({
+    Title = "Liquid Glass",
+    Callback = function() Window:SetTheme("Liquid Glass") end,
+})
+SecTheme:AddButton({
+    Title = "Fluid Glass Black",
+    Callback = function() Window:SetTheme("Fluid Glass Black") end,
+})
+
+local SecTools = System:AddSection("Tools")
+SecTools:AddButton({
+    Title = "About",
+    Callback = function() Window:About() end,
+})
+SecTools:AddButton({
     Title = "SelfTest",
     Callback = function() Window:SelfTest() end,
 })
-SysSec:AddButton({
+SecTools:AddButton({
+    Title = "Notify",
+    Callback = function()
+        Window:Notify({ Title = "NexxWare", Content = "by nexxzel", Type = "Info" })
+    end,
+})
+SecTools:AddButton({
     Title = "Panic",
     Callback = function() Window:Panic(true) end,
 })
-SysSec:AddButton({
-    Title = "Theme → Fluid Glass Black",
-    Callback = function() Window:SetTheme("Fluid Glass Black") end,
-})
-SysSec:AddButton({
-    Title = "Theme → Liquid Glass",
-    Callback = function() Window:SetTheme("Liquid Glass") end,
-})
-SysSec:AddSeparator({ Title = "Layout" })
-SysSec:AddButton({
-    Title = "Notify test",
-    Callback = function()
-        Window:Notify({ Title = "NexxWare", Content = "Hello from SB V0.1", Type = "Info" })
-    end,
-})
 
-local DevTab = Window:Tab({
+local Dev = Window:Tab({
     Title = "Dev",
     Icon = "terminal",
     Lock = { Password = "1234", Title = "Dev only", RememberMinutes = 10 },
 })
-DevTab:AddSection("Locked area"):AddParagraph({
-    Title = "Unlocked",
-    Content = "Password 1234 · remembers 10 minutes",
+local SecDev = Dev:AddSection("Locked")
+SecDev:AddParagraph({
+    Title = "Dev tab",
+    Content = "Password: 1234 · remember 10 minutes",
 })
 
-print("NexxWare SB V0.1 example loaded")
+print("[nexxzel] NexxWare SB V0.1 example ready")
