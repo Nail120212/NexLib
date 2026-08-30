@@ -1,16 +1,8 @@
---[[
-	Fluid Glass UI Library
-	Theme: Liquid Glass / Fluid Glass (transparent only)
-	Icons: NexLib raw (Lucide + Gravity)
-	  "search"            → lucide (default)
-	  "Lucide:crosshair"  → lucide
-	  "gravity:gear"      → gravity
-]]
-
-local FluidGlass = {
-	Version = "2.0.0",
+local NexxWareX = {
+	Version = "2.1.0",
 	Flags = {},
 	Windows = {},
+	Signals = {},
 }
 
 local TweenService = game:GetService("TweenService")
@@ -23,34 +15,20 @@ local LocalPlayer = Players.LocalPlayer
 local Mouse = LocalPlayer:GetMouse()
 
 local function GuiParent()
-	local ok, hui = pcall(function()
-		return gethui()
-	end)
-	if ok and hui then
-		return hui
-	end
-	local ok2, core = pcall(function()
-		return game:GetService("CoreGui")
-	end)
-	if ok2 and core then
-		return core
-	end
+	local ok, hui = pcall(function() return gethui() end)
+	if ok and hui then return hui end
+	local ok2, core = pcall(function() return game:GetService("CoreGui") end)
+	if ok2 and core then return core end
 	return LocalPlayer:WaitForChild("PlayerGui")
 end
 
 local function HttpGet(url)
-	local ok, body = pcall(function()
-		return game:HttpGet(url)
-	end)
-	if ok and type(body) == "string" and #body > 10 then
-		return body
-	end
+	local ok, body = pcall(function() return game:HttpGet(url) end)
+	if ok and type(body) == "string" and #body > 10 then return body end
 	local req = (syn and syn.request) or (http and http.request) or http_request or request
 	if req then
 		local success, response = pcall(req, { Url = url, Method = "GET" })
-		if success and response then
-			return response.Body or response.body
-		end
+		if success and response then return response.Body or response.body end
 	end
 	return nil
 end
@@ -59,26 +37,15 @@ local function HasFS()
 	return typeof(writefile) == "function" and typeof(readfile) == "function"
 end
 
--- ZIndex / sizes (verified stacking)
 local Z = {
-	Window = 10,
-	Sidebar = 20,
-	Header = 26,
-	Content = 16,
-	Row = 22,
-	Control = 30,
-	Popup = 50,
-	Dropdown = 56,
-	ColorPicker = 62,
-	DialogDim = 80,
-	Dialog = 86,
-	Tooltip = 92,
-	Notify = 96,
-	Watermark = 40,
+	Window = 10, Sidebar = 20, Header = 26, Content = 16, Row = 22, Control = 30,
+	Popup = 50, Dropdown = 56, ColorPicker = 62, DialogDim = 80, Dialog = 86,
+	Tooltip = 92, Notify = 96, Watermark = 40,
 }
 
 local SIZE = {
 	Window = Vector2.new(800, 540),
+	Mobile = Vector2.new(420, 560),
 	Sidebar = 200,
 	Header = 58,
 	Footer = 52,
@@ -88,7 +55,7 @@ local SIZE = {
 	Popup = 228,
 	Dialog = Vector2.new(360, 188),
 	Color = Vector2.new(214, 252),
-	Notify = Vector2.new(280, 64),
+	Notify = Vector2.new(280, 68),
 }
 
 local TWEEN = {
@@ -98,11 +65,9 @@ local TWEEN = {
 	In = TweenInfo.new(0.2, Enum.EasingStyle.Quint, Enum.EasingDirection.In),
 }
 
--- Liquid Glass theme only
 local Theme = {
 	Name = "LiquidGlass",
 	Accent = Color3.fromRGB(154, 212, 255),
-	AccentDeep = Color3.fromRGB(78, 163, 230),
 	Text = Color3.fromRGB(238, 247, 255),
 	Muted = Color3.fromRGB(159, 180, 200),
 	Faint = Color3.fromRGB(109, 132, 153),
@@ -110,16 +75,22 @@ local Theme = {
 	GlassTop = Color3.fromRGB(48, 72, 96),
 	Stroke = Color3.fromRGB(214, 236, 255),
 	Danger = Color3.fromRGB(255, 132, 132),
+	Warn = Color3.fromRGB(255, 196, 120),
+	Success = Color3.fromRGB(140, 230, 180),
 	Track = Color3.fromRGB(10, 16, 24),
 	FillTransparency = 0.38,
 	PanelTransparency = 0.46,
 	StrokeTransparency = 0.78,
-	RowTransparency = 0.88,
 }
 
-FluidGlass.Theme = Theme
-FluidGlass.Z = Z
-FluidGlass.SIZE = SIZE
+NexxWareX.Theme = Theme
+NexxWareX.Z = Z
+NexxWareX.SIZE = SIZE
+
+local function Track(signal)
+	table.insert(NexxWareX.Signals, signal)
+	return signal
+end
 
 local function Tween(obj, info, props)
 	local t = TweenService:Create(obj, info or TWEEN.Fluid, props)
@@ -192,32 +163,32 @@ local function Click(parent, callback)
 		ZIndex = (parent.ZIndex or 1) + 4,
 		Parent = parent,
 	})
-	btn.MouseButton1Click:Connect(callback)
+	Track(btn.MouseButton1Click:Connect(callback))
 	return btn
 end
 
 local function Drag(handle, target)
 	local dragging, start, origin
-	handle.InputBegan:Connect(function(input)
+	Track(handle.InputBegan:Connect(function(input)
 		if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
 			dragging = true
 			start = input.Position
 			origin = target.Position
-			input.Changed:Connect(function()
+			Track(input.Changed:Connect(function()
 				if input.UserInputState == Enum.UserInputState.End then
 					dragging = false
 				end
-			end)
+			end))
 		end
-	end)
-	UserInputService.InputChanged:Connect(function(input)
+	end))
+	Track(UserInputService.InputChanged:Connect(function(input)
 		if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
 			local d = input.Position - start
 			Tween(target, TWEEN.Snap, {
 				Position = UDim2.new(origin.X.Scale, origin.X.Offset + d.X, origin.Y.Scale, origin.Y.Offset + d.Y),
 			})
 		end
-	end)
+	end))
 end
 
 local function Round(n, places)
@@ -230,22 +201,16 @@ local function Merge(defaults, given)
 	local out = {}
 	for k, v in pairs(defaults) do
 		out[k] = given[k]
-		if out[k] == nil then
-			out[k] = v
-		end
+		if out[k] == nil then out[k] = v end
 	end
 	for k, v in pairs(given) do
-		if out[k] == nil then
-			out[k] = v
-		end
+		if out[k] == nil then out[k] = v end
 	end
 	return out
 end
 
--- Icons from NexLib raw
 local IconPacks = { lucide = {}, gravity = {} }
 local IconsReady = false
-
 local ICON_URL = {
 	lucide = "https://raw.githubusercontent.com/Nail120212/NexLib/main/Icons/lucide.lua",
 	gravity = "https://raw.githubusercontent.com/Nail120212/NexLib/main/Icons/gravity.lua",
@@ -253,17 +218,11 @@ local ICON_URL = {
 
 local function LoadPack(name, url)
 	local src = HttpGet(url)
-	if not src then
-		return
-	end
+	if not src then return end
 	local fn = loadstring(src)
-	if not fn then
-		return
-	end
+	if not fn then return end
 	local ok, tbl = pcall(fn)
-	if ok and type(tbl) == "table" then
-		IconPacks[name] = tbl
-	end
+	if ok and type(tbl) == "table" then IconPacks[name] = tbl end
 end
 
 task.spawn(function()
@@ -278,14 +237,10 @@ local function NormalizeIconName(name)
 	return string.lower(name)
 end
 
-function FluidGlass:ResolveIcon(spec)
-	if spec == nil or spec == "" then
-		return nil, "lucide"
-	end
+function NexxWareX:ResolveIcon(spec)
+	if spec == nil or spec == "" then return nil, "lucide" end
 	spec = tostring(spec)
-	if spec:find("rbxasset", 1, true) then
-		return spec, "asset"
-	end
+	if spec:find("rbxasset", 1, true) then return spec, "asset" end
 	local pack, name = spec:match("^([%w]+):(.+)$")
 	if pack then
 		pack = string.lower(pack)
@@ -294,23 +249,15 @@ function FluidGlass:ResolveIcon(spec)
 		pack = "lucide"
 		name = NormalizeIconName(spec)
 	end
-	if pack == "lucide" or pack == "lucid" then
-		pack = "lucide"
-	end
+	if pack == "lucide" or pack == "lucid" then pack = "lucide" end
 	local map = IconPacks[pack]
-	if map and map[name] then
-		return map[name], pack
-	end
-	if IconPacks.lucide[name] then
-		return IconPacks.lucide[name], "lucide"
-	end
+	if map and map[name] then return map[name], pack end
+	if IconPacks.lucide[name] then return IconPacks.lucide[name], "lucide" end
 	return nil, pack
 end
 
-function FluidGlass:SetIcon(imageLabel, spec, color)
-	if not imageLabel then
-		return
-	end
+function NexxWareX:SetIcon(imageLabel, spec, color)
+	if not imageLabel then return end
 	local function apply()
 		local asset = self:ResolveIcon(spec)
 		if asset then
@@ -320,14 +267,10 @@ function FluidGlass:SetIcon(imageLabel, spec, color)
 			imageLabel.ScaleType = Enum.ScaleType.Fit
 		end
 	end
-	if IconsReady then
-		apply()
-	else
+	if IconsReady then apply() else
 		task.spawn(function()
 			for _ = 1, 40 do
-				if IconsReady then
-					break
-				end
+				if IconsReady then break end
 				task.wait(0.05)
 			end
 			apply()
@@ -335,28 +278,64 @@ function FluidGlass:SetIcon(imageLabel, spec, color)
 	end
 end
 
--- Screen
-local existing = GuiParent():FindFirstChild("FluidGlassUI")
-if existing then
-	existing:Destroy()
-end
+local existing = GuiParent():FindFirstChild("NexxWareXUI")
+if existing then existing:Destroy() end
 
 local Screen = New("ScreenGui", {
-	Name = "FluidGlassUI",
+	Name = "NexxWareXUI",
 	IgnoreGuiInset = true,
 	ResetOnSpawn = false,
 	ZIndexBehavior = Enum.ZIndexBehavior.Global,
 	DisplayOrder = 999999,
 	Parent = GuiParent(),
 })
-FluidGlass.Screen = Screen
+NexxWareX.Screen = Screen
 
 local BlurEffect = Instance.new("BlurEffect")
-BlurEffect.Name = "FluidGlassBlur"
+BlurEffect.Name = "NexxWareXBlur"
 BlurEffect.Size = 0
 BlurEffect.Parent = Lighting
 
--- Dialog host
+local TooltipFrame = New("Frame", {
+	Visible = false,
+	BackgroundColor3 = Theme.Glass,
+	BackgroundTransparency = 0.12,
+	Size = UDim2.fromOffset(10, 28),
+	ZIndex = Z.Tooltip,
+	Parent = Screen,
+})
+Corner(TooltipFrame, 8)
+Stroke(TooltipFrame, 0.72)
+local TooltipLabel = New("TextLabel", {
+	BackgroundTransparency = 1,
+	Size = UDim2.fromScale(1, 1),
+	Font = Enum.Font.Gotham,
+	TextSize = 12,
+	TextColor3 = Theme.Text,
+	ZIndex = Z.Tooltip + 1,
+	Parent = TooltipFrame,
+})
+Pad(TooltipLabel, 0, 10, 0, 10)
+
+local function BindTooltip(target, text)
+	if not text or text == "" then return end
+	Track(target.MouseEnter:Connect(function()
+		TooltipLabel.Text = text
+		local bounds = TooltipLabel.TextBounds
+		TooltipFrame.Size = UDim2.fromOffset(math.max(bounds.X + 20, 40), 28)
+		TooltipFrame.Position = UDim2.fromOffset(Mouse.X + 14, Mouse.Y + 18)
+		TooltipFrame.Visible = true
+	end))
+	Track(target.MouseMoved:Connect(function()
+		if TooltipFrame.Visible then
+			TooltipFrame.Position = UDim2.fromOffset(Mouse.X + 14, Mouse.Y + 18)
+		end
+	end))
+	Track(target.MouseLeave:Connect(function()
+		TooltipFrame.Visible = false
+	end))
+end
+
 local function CreateDialogHost()
 	local dim = New("TextButton", {
 		Name = "DialogDim",
@@ -439,7 +418,6 @@ local function CreateDialogHost()
 		Parent = card,
 	})
 	Corner(confirmBtn, 10)
-
 	local pending
 	local function Close(result)
 		Tween(dim, TWEEN.In, { BackgroundTransparency = 1 })
@@ -448,27 +426,15 @@ local function CreateDialogHost()
 		Tween(title, TWEEN.In, { TextTransparency = 1 })
 		Tween(body, TWEEN.In, { TextTransparency = 1 })
 		task.delay(0.2, function()
-			if not pending then
-				dim.Visible = false
-			end
+			if not pending then dim.Visible = false end
 		end)
 		local cb = pending
 		pending = nil
-		if cb then
-			cb(result)
-		end
+		if cb then cb(result) end
 	end
-
-	confirmBtn.MouseButton1Click:Connect(function()
-		Close(true)
-	end)
-	cancelBtn.MouseButton1Click:Connect(function()
-		Close(false)
-	end)
-	dim.MouseButton1Click:Connect(function()
-		Close(false)
-	end)
-
+	Track(confirmBtn.MouseButton1Click:Connect(function() Close(true) end))
+	Track(cancelBtn.MouseButton1Click:Connect(function() Close(false) end))
+	Track(dim.MouseButton1Click:Connect(function() Close(false) end))
 	return function(opts)
 		opts = Merge({
 			Title = "Confirm",
@@ -482,7 +448,6 @@ local function CreateDialogHost()
 		confirmBtn.Text = opts.Confirm
 		cancelBtn.Text = opts.Cancel
 		dim.Visible = true
-		dim.ZIndex = Z.DialogDim
 		card.Position = UDim2.fromScale(0.5, 0.54)
 		Tween(dim, TWEEN.Fluid, { BackgroundTransparency = 0.42 })
 		Tween(card, TWEEN.Pop, { BackgroundTransparency = Theme.FillTransparency, Position = UDim2.fromScale(0.5, 0.5) })
@@ -493,9 +458,8 @@ local function CreateDialogHost()
 end
 
 local OpenDialog = CreateDialogHost()
-FluidGlass.Dialog = OpenDialog
+NexxWareX.Dialog = OpenDialog
 
--- Notifications
 local NotifyHolder = New("Frame", {
 	Name = "Notifies",
 	AnchorPoint = Vector2.new(1, 0),
@@ -512,8 +476,20 @@ New("UIListLayout", {
 	Parent = NotifyHolder,
 })
 
-function FluidGlass:Notify(opts)
-	opts = Merge({ Title = "Fluid Glass", Content = "", Duration = 3.4, Icon = "bell" }, opts)
+function NexxWareX:Notify(opts)
+	opts = Merge({
+		Title = "NexxWareX",
+		Content = "",
+		Duration = 3.4,
+		Icon = "bell",
+		Type = "Info",
+	}, opts)
+	local accent = Theme.Accent
+	local t = string.lower(opts.Type or "info")
+	if t == "success" then accent = Theme.Success; opts.Icon = opts.Icon or "check"
+	elseif t == "warn" or t == "warning" then accent = Theme.Warn; opts.Icon = opts.Icon or "triangle-alert"
+	elseif t == "error" or t == "danger" then accent = Theme.Danger; opts.Icon = opts.Icon or "x"
+	end
 	local card = New("Frame", {
 		Size = UDim2.fromOffset(SIZE.Notify.X, SIZE.Notify.Y),
 		BackgroundColor3 = Theme.Glass,
@@ -524,18 +500,26 @@ function FluidGlass:Notify(opts)
 	Corner(card, 14)
 	Stroke(card, 0.74)
 	GlassGradient(card)
-	local icon = New("ImageLabel", {
-		BackgroundTransparency = 1,
-		Position = UDim2.fromOffset(12, 16),
-		Size = UDim2.fromOffset(28, 28),
+	local bar = New("Frame", {
+		BackgroundColor3 = accent,
+		Size = UDim2.new(0, 3, 1, -12),
+		Position = UDim2.fromOffset(6, 6),
 		ZIndex = Z.Notify + 1,
 		Parent = card,
 	})
-	self:SetIcon(icon, opts.Icon, Theme.Accent)
+	Corner(bar, 2)
+	local icon = New("ImageLabel", {
+		BackgroundTransparency = 1,
+		Position = UDim2.fromOffset(18, 18),
+		Size = UDim2.fromOffset(26, 26),
+		ZIndex = Z.Notify + 1,
+		Parent = card,
+	})
+	self:SetIcon(icon, opts.Icon, accent)
 	New("TextLabel", {
 		BackgroundTransparency = 1,
-		Position = UDim2.fromOffset(48, 10),
-		Size = UDim2.new(1, -60, 0, 20),
+		Position = UDim2.fromOffset(52, 12),
+		Size = UDim2.new(1, -64, 0, 18),
 		Font = Enum.Font.GothamBold,
 		TextSize = 13,
 		TextXAlignment = Enum.TextXAlignment.Left,
@@ -546,8 +530,8 @@ function FluidGlass:Notify(opts)
 	})
 	New("TextLabel", {
 		BackgroundTransparency = 1,
-		Position = UDim2.fromOffset(48, 30),
-		Size = UDim2.new(1, -60, 0, 22),
+		Position = UDim2.fromOffset(52, 32),
+		Size = UDim2.new(1, -64, 0, 22),
 		Font = Enum.Font.Gotham,
 		TextSize = 12,
 		TextXAlignment = Enum.TextXAlignment.Left,
@@ -557,6 +541,16 @@ function FluidGlass:Notify(opts)
 		ZIndex = Z.Notify + 1,
 		Parent = card,
 	})
+	local progress = New("Frame", {
+		BackgroundColor3 = accent,
+		BackgroundTransparency = 0.35,
+		AnchorPoint = Vector2.new(0, 1),
+		Position = UDim2.new(0, 0, 1, 0),
+		Size = UDim2.new(1, 0, 0, 2),
+		ZIndex = Z.Notify + 2,
+		Parent = card,
+	})
+	Tween(progress, TweenInfo.new(opts.Duration, Enum.EasingStyle.Linear), { Size = UDim2.new(0, 0, 0, 2) })
 	task.delay(opts.Duration, function()
 		Tween(card, TWEEN.In, { BackgroundTransparency = 1 })
 		task.wait(0.2)
@@ -565,17 +559,16 @@ function FluidGlass:Notify(opts)
 	return card
 end
 
--- Window
-function FluidGlass:CreateWindow(config)
+function NexxWareX:CreateWindow(config)
 	config = Merge({
-		Title = "Fluid Glass",
+		Title = "NexxWareX",
 		Subtitle = "Liquid Glass",
 		Icon = "layers",
 		Size = UDim2.fromOffset(SIZE.Window.X, SIZE.Window.Y),
 		Keybind = Enum.KeyCode.RightShift,
-		ConfigFolder = "FluidGlass",
-		Website = "",
+		ConfigFolder = "NexxWareX",
 		Blur = true,
+		Mobile = true,
 	}, config)
 
 	local Window = {
@@ -584,12 +577,19 @@ function FluidGlass:CreateWindow(config)
 		Visible = true,
 		Keybind = config.Keybind,
 		ConfigFolder = config.ConfigFolder,
-		Flags = FluidGlass.Flags,
+		Flags = NexxWareX.Flags,
+		Tags = {},
 	}
 
 	if HasFS() and not isfolder(config.ConfigFolder) then
 		pcall(makefolder, config.ConfigFolder)
 	end
+
+	local isMobile = UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled
+	if config.Mobile and isMobile then
+		config.Size = UDim2.fromOffset(SIZE.Mobile.X, SIZE.Mobile.Y)
+	end
+	local sidebarW = (config.Mobile and isMobile) and 72 or SIZE.Sidebar
 
 	local Root = New("Frame", {
 		Name = "Window",
@@ -605,7 +605,7 @@ function FluidGlass:CreateWindow(config)
 	Stroke(Root, Theme.StrokeTransparency, Theme.Stroke, 1.15)
 	GlassGradient(Root)
 	Window.Root = Root
-	FluidGlass.MainWindow = Root
+	NexxWareX.MainWindow = Root
 
 	local specular = New("Frame", {
 		BackgroundColor3 = Color3.new(1, 1, 1),
@@ -627,7 +627,7 @@ function FluidGlass:CreateWindow(config)
 		Name = "Sidebar",
 		BackgroundColor3 = Theme.Glass,
 		BackgroundTransparency = 0.55,
-		Size = UDim2.new(0, SIZE.Sidebar, 1, 0),
+		Size = UDim2.new(0, sidebarW, 1, 0),
 		ZIndex = Z.Sidebar,
 		Parent = Root,
 	})
@@ -656,30 +656,99 @@ function FluidGlass:CreateWindow(config)
 		Parent = Brand,
 	})
 	self:SetIcon(brandIcon, config.Icon, Theme.Accent)
-	New("TextLabel", {
+	local titleLabel = New("TextLabel", {
 		BackgroundTransparency = 1,
-		Position = UDim2.fromOffset(48, 12),
-		Size = UDim2.new(1, -58, 0, 18),
+		Position = UDim2.fromOffset(sidebarW > 100 and 48 or 0, 12),
+		Size = UDim2.new(1, sidebarW > 100 and -58 or 0, 0, 18),
 		Font = Enum.Font.GothamBold,
 		TextSize = 14,
 		TextXAlignment = Enum.TextXAlignment.Left,
 		TextColor3 = Theme.Text,
-		Text = config.Title,
+		Text = sidebarW > 100 and config.Title or "",
 		ZIndex = Z.Sidebar + 3,
 		Parent = Brand,
 	})
 	New("TextLabel", {
 		BackgroundTransparency = 1,
-		Position = UDim2.fromOffset(48, 30),
+		Position = UDim2.fromOffset(sidebarW > 100 and 48 or 0, 30),
 		Size = UDim2.new(1, -58, 0, 16),
 		Font = Enum.Font.Gotham,
 		TextSize = 11,
 		TextXAlignment = Enum.TextXAlignment.Left,
 		TextColor3 = Theme.Faint,
-		Text = config.Subtitle,
+		Text = sidebarW > 100 and config.Subtitle or "",
 		ZIndex = Z.Sidebar + 3,
 		Parent = Brand,
 	})
+
+	local TagHolder = New("Frame", {
+		BackgroundTransparency = 1,
+		Position = UDim2.fromOffset(sidebarW > 100 and 48 or 8, 0),
+		Size = UDim2.new(1, -56, 0, 18),
+		ZIndex = Z.Sidebar + 4,
+		Parent = Brand,
+	})
+	local tagLayout = New("UIListLayout", {
+		FillDirection = Enum.FillDirection.Horizontal,
+		Padding = UDim.new(0, 4),
+		HorizontalAlignment = Enum.HorizontalAlignment.Right,
+		VerticalAlignment = Enum.VerticalAlignment.Center,
+		Parent = TagHolder,
+	})
+
+	function Window:Tag(opts)
+		opts = Merge({
+			Title = "Tag",
+			Icon = nil,
+			Color = Color3.fromHex("#315dff"),
+			Radius = 13,
+		}, opts)
+		local chip = New("Frame", {
+			BackgroundColor3 = opts.Color,
+			BackgroundTransparency = 0.35,
+			Size = UDim2.fromOffset(0, 18),
+			AutomaticSize = Enum.AutomaticSize.X,
+			ZIndex = Z.Sidebar + 5,
+			Parent = TagHolder,
+		})
+		Corner(chip, math.clamp(opts.Radius or 13, 0, 13))
+		Pad(chip, 0, 8, 0, 8)
+		local row = New("Frame", {
+			BackgroundTransparency = 1,
+			Size = UDim2.fromOffset(0, 18),
+			AutomaticSize = Enum.AutomaticSize.X,
+			ZIndex = Z.Sidebar + 6,
+			Parent = chip,
+		})
+		New("UIListLayout", {
+			FillDirection = Enum.FillDirection.Horizontal,
+			Padding = UDim.new(0, 4),
+			VerticalAlignment = Enum.VerticalAlignment.Center,
+			Parent = row,
+		})
+		if opts.Icon then
+			local ic = New("ImageLabel", {
+				BackgroundTransparency = 1,
+				Size = UDim2.fromOffset(12, 12),
+				ZIndex = Z.Sidebar + 7,
+				Parent = row,
+			})
+			NexxWareX:SetIcon(ic, opts.Icon, Color3.new(1, 1, 1))
+		end
+		New("TextLabel", {
+			BackgroundTransparency = 1,
+			Size = UDim2.fromOffset(0, 18),
+			AutomaticSize = Enum.AutomaticSize.X,
+			Font = Enum.Font.GothamBold,
+			TextSize = 10,
+			TextColor3 = Color3.new(1, 1, 1),
+			Text = opts.Title,
+			ZIndex = Z.Sidebar + 7,
+			Parent = row,
+		})
+		table.insert(Window.Tags, chip)
+		return chip
+	end
 
 	local TabList = New("ScrollingFrame", {
 		Name = "Tabs",
@@ -698,15 +767,15 @@ function FluidGlass:CreateWindow(config)
 		SortOrder = Enum.SortOrder.LayoutOrder,
 		Parent = TabList,
 	})
-	tabLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+	Track(tabLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
 		TabList.CanvasSize = UDim2.fromOffset(0, tabLayout.AbsoluteContentSize.Y + 8)
-	end)
+	end))
 
 	local Header = New("Frame", {
 		Name = "Header",
 		BackgroundTransparency = 1,
-		Position = UDim2.fromOffset(SIZE.Sidebar, 0),
-		Size = UDim2.new(1, -SIZE.Sidebar, 0, SIZE.Header),
+		Position = UDim2.fromOffset(sidebarW, 0),
+		Size = UDim2.new(1, -sidebarW, 0, SIZE.Header),
 		ZIndex = Z.Header,
 		Parent = Root,
 	})
@@ -754,16 +823,15 @@ function FluidGlass:CreateWindow(config)
 	local Content = New("Frame", {
 		Name = "Content",
 		BackgroundTransparency = 1,
-		Position = UDim2.fromOffset(SIZE.Sidebar, SIZE.Header),
-		Size = UDim2.new(1, -SIZE.Sidebar, 1, -SIZE.Header),
+		Position = UDim2.fromOffset(sidebarW, SIZE.Header),
+		Size = UDim2.new(1, -sidebarW, 1, -SIZE.Header),
 		ZIndex = Z.Content,
 		ClipsDescendants = true,
 		Parent = Root,
 	})
 
 	local Registry = {}
-
-	SearchBox:GetPropertyChangedSignal("Text"):Connect(function()
+	Track(SearchBox:GetPropertyChangedSignal("Text"):Connect(function()
 		local q = string.lower(SearchBox.Text)
 		for _, item in ipairs(Registry) do
 			if q == "" then
@@ -772,7 +840,7 @@ function FluidGlass:CreateWindow(config)
 				item.Root.Visible = string.find(string.lower(item.Name), q, 1, true) ~= nil
 			end
 		end
-	end)
+	end))
 
 	local function SetBlur(on)
 		if config.Blur and on then
@@ -784,9 +852,7 @@ function FluidGlass:CreateWindow(config)
 	SetBlur(true)
 
 	function Window:Toggle(state)
-		if state == nil then
-			state = not Window.Visible
-		end
+		if state == nil then state = not Window.Visible end
 		Window.Visible = state
 		if state then
 			Root.Visible = true
@@ -799,41 +865,26 @@ function FluidGlass:CreateWindow(config)
 			})
 			SetBlur(false)
 			task.delay(0.2, function()
-				if not Window.Visible then
-					Root.Visible = false
-				end
+				if not Window.Visible then Root.Visible = false end
 			end)
 		end
 	end
 
-	Close.MouseButton1Click:Connect(function()
-		Window:Toggle(false)
-	end)
-
-	UserInputService.InputBegan:Connect(function(input, gp)
-		if gp then
-			return
-		end
-		if input.KeyCode == Window.Keybind then
-			Window:Toggle()
-		end
-	end)
+	Track(Close.MouseButton1Click:Connect(function() Window:Toggle(false) end))
+	Track(UserInputService.InputBegan:Connect(function(input, gp)
+		if gp then return end
+		if input.KeyCode == Window.Keybind then Window:Toggle() end
+	end))
 
 	local function SelectTab(index)
 		Window.Current = index
 		for i, tab in ipairs(Window.Tabs) do
 			local on = i == index
 			tab.Page.Visible = on
-			Tween(tab.Button, TWEEN.Fluid, {
-				BackgroundTransparency = on and 0.55 or 1,
-			})
-			Tween(tab.Label, TWEEN.Fluid, {
-				TextColor3 = on and Theme.Text or Theme.Muted,
-			})
+			Tween(tab.Button, TWEEN.Fluid, { BackgroundTransparency = on and 0.55 or 1 })
+			Tween(tab.Label, TWEEN.Fluid, { TextColor3 = on and Theme.Text or Theme.Muted })
 			if tab.IconImg then
-				Tween(tab.IconImg, TWEEN.Fluid, {
-					ImageColor3 = on and Theme.Accent or Theme.Faint,
-				})
+				Tween(tab.IconImg, TWEEN.Fluid, { ImageColor3 = on and Theme.Accent or Theme.Faint })
 			end
 		end
 	end
@@ -853,31 +904,42 @@ function FluidGlass:CreateWindow(config)
 	end
 
 	function Window:AddTab(tabConfig)
-		tabConfig = Merge({ Name = "Tab", Icon = "circle" }, tabConfig)
-		local tab = { Name = tabConfig.Name }
+		tabConfig = Merge({ Name = "Tab", Icon = "circle", Parent = nil }, tabConfig)
+		local tab = { Name = tabConfig.Name, SubTabs = {} }
+		local parentList = TabList
+		local indent = 0
+		if tabConfig.Parent then
+			parentList = tabConfig.Parent.SubHolder or TabList
+			indent = 8
+			tabConfig.Parent.SubCount = (tabConfig.Parent.SubCount or 0) + 1
+			if tabConfig.Parent.SubHolder then
+				tabConfig.Parent.SubHolder.Visible = true
+				tabConfig.Parent.SubHolder.Size = UDim2.new(1, -4, 0, tabConfig.Parent.SubCount * 36 + 4)
+			end
+		end
 
 		local btn = New("Frame", {
 			BackgroundColor3 = Theme.Accent,
 			BackgroundTransparency = 1,
-			Size = UDim2.new(1, -6, 0, 40),
+			Size = UDim2.new(1, -6 - indent, 0, indent > 0 and 34 or 40),
 			ZIndex = Z.Sidebar + 3,
-			Parent = TabList,
+			Parent = parentList,
 		})
 		Corner(btn, 12)
 		local icon = New("ImageLabel", {
 			BackgroundTransparency = 1,
-			Position = UDim2.fromOffset(10, 10),
-			Size = UDim2.fromOffset(20, 20),
+			Position = UDim2.fromOffset(10, indent > 0 and 7 or 10),
+			Size = UDim2.fromOffset(indent > 0 and 18 or 20, indent > 0 and 18 or 20),
 			ZIndex = Z.Sidebar + 4,
 			Parent = btn,
 		})
-		FluidGlass:SetIcon(icon, tabConfig.Icon, Theme.Faint)
+		NexxWareX:SetIcon(icon, tabConfig.Icon, Theme.Faint)
 		local label = New("TextLabel", {
 			BackgroundTransparency = 1,
-			Position = UDim2.fromOffset(38, 0),
+			Position = UDim2.fromOffset(indent > 0 and 34 or 38, 0),
 			Size = UDim2.new(1, -44, 1, 0),
 			Font = Enum.Font.GothamMedium,
-			TextSize = 13,
+			TextSize = indent > 0 and 12 or 13,
 			TextXAlignment = Enum.TextXAlignment.Left,
 			TextColor3 = Theme.Muted,
 			Text = tabConfig.Name,
@@ -886,11 +948,21 @@ function FluidGlass:CreateWindow(config)
 		})
 		Click(btn, function()
 			for i, t in ipairs(Window.Tabs) do
-				if t == tab then
-					SelectTab(i)
-				end
+				if t == tab then SelectTab(i) end
 			end
 		end)
+
+		local SubHolder = New("Frame", {
+			BackgroundTransparency = 1,
+			Size = UDim2.new(1, -4, 0, 0),
+			Visible = false,
+			ClipsDescendants = true,
+			ZIndex = Z.Sidebar + 2,
+			Parent = TabList,
+		})
+		New("UIListLayout", { Padding = UDim.new(0, 4), Parent = SubHolder })
+		tab.SubHolder = SubHolder
+		tab.SubCount = 0
 
 		local page = New("Frame", {
 			BackgroundTransparency = 1,
@@ -899,34 +971,40 @@ function FluidGlass:CreateWindow(config)
 			ZIndex = Z.Content,
 			Parent = Content,
 		})
+		local singleCol = config.Mobile and isMobile
 		local left = New("ScrollingFrame", {
 			BackgroundTransparency = 1,
 			Position = UDim2.fromOffset(14, 8),
-			Size = UDim2.new(0.5, -18, 1, -16),
+			Size = singleCol and UDim2.new(1, -28, 1, -16) or UDim2.new(0.5, -18, 1, -16),
 			CanvasSize = UDim2.new(),
 			ScrollBarThickness = 2,
 			BorderSizePixel = 0,
 			ZIndex = Z.Content + 1,
 			Parent = page,
 		})
-		local right = New("ScrollingFrame", {
-			BackgroundTransparency = 1,
-			Position = UDim2.new(0.5, 4, 0, 8),
-			Size = UDim2.new(0.5, -18, 1, -16),
-			CanvasSize = UDim2.new(),
-			ScrollBarThickness = 2,
-			BorderSizePixel = 0,
-			ZIndex = Z.Content + 1,
-			Parent = page,
-		})
+		local right = left
+		if not singleCol then
+			right = New("ScrollingFrame", {
+				BackgroundTransparency = 1,
+				Position = UDim2.new(0.5, 4, 0, 8),
+				Size = UDim2.new(0.5, -18, 1, -16),
+				CanvasSize = UDim2.new(),
+				ScrollBarThickness = 2,
+				BorderSizePixel = 0,
+				ZIndex = Z.Content + 1,
+				Parent = page,
+			})
+		end
 		local lLay = New("UIListLayout", { Padding = UDim.new(0, 10), Parent = left })
-		local rLay = New("UIListLayout", { Padding = UDim.new(0, 10), Parent = right })
-		lLay:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+		Track(lLay:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
 			left.CanvasSize = UDim2.fromOffset(0, lLay.AbsoluteContentSize.Y + 12)
-		end)
-		rLay:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-			right.CanvasSize = UDim2.fromOffset(0, rLay.AbsoluteContentSize.Y + 12)
-		end)
+		end))
+		if right ~= left then
+			local rLay = New("UIListLayout", { Padding = UDim.new(0, 10), Parent = right })
+			Track(rLay:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+				right.CanvasSize = UDim2.fromOffset(0, rLay.AbsoluteContentSize.Y + 12)
+			end))
+		end
 
 		tab.Button = btn
 		tab.Label = label
@@ -935,7 +1013,7 @@ function FluidGlass:CreateWindow(config)
 
 		local function MakeSection(secConfig)
 			secConfig = Merge({ Name = "Section", Side = "Left" }, secConfig)
-			local parent = (string.lower(secConfig.Side) == "right") and right or left
+			local parent = (string.lower(secConfig.Side) == "right" and not singleCol) and right or left
 			local wrap = New("Frame", {
 				BackgroundTransparency = 1,
 				Size = UDim2.new(1, 0, 0, 40),
@@ -964,11 +1042,11 @@ function FluidGlass:CreateWindow(config)
 			Corner(body, 14)
 			Stroke(body, 0.84)
 			local list = New("UIListLayout", { SortOrder = Enum.SortOrder.LayoutOrder, Parent = body })
-			list:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+			Track(list:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
 				local h = math.max(list.AbsoluteContentSize.Y, 8)
 				body.Size = UDim2.new(1, 0, 0, h)
 				wrap.Size = UDim2.new(1, 0, 0, h + 24)
-			end)
+			end))
 
 			local Section = {}
 
@@ -996,7 +1074,7 @@ function FluidGlass:CreateWindow(config)
 			end
 
 			function Section:AddParagraph(opts)
-				opts = Merge({ Name = "Note", Content = "" }, opts)
+				opts = Merge({ Name = "Note", Content = "", ToolTip = nil }, opts)
 				local row = New("Frame", {
 					BackgroundTransparency = 1,
 					Size = UDim2.new(1, 0, 0, 58),
@@ -1029,6 +1107,7 @@ function FluidGlass:CreateWindow(config)
 					ZIndex = Z.Row + 2,
 					Parent = row,
 				})
+				if opts.ToolTip then BindTooltip(row, opts.ToolTip) end
 				return row
 			end
 
@@ -1051,13 +1130,10 @@ function FluidGlass:CreateWindow(config)
 
 			function Section:AddToggle(opts)
 				opts = Merge({
-					Name = "Toggle",
-					Default = false,
-					Flag = nil,
-					Callback = function() end,
-					Dialog = nil,
+					Name = "Toggle", Default = false, Flag = nil, Callback = function() end, Dialog = nil, ToolTip = nil,
 				}, opts)
 				local row = Row(opts.Name)
+				if opts.ToolTip then BindTooltip(row, opts.ToolTip) end
 				local track = New("Frame", {
 					AnchorPoint = Vector2.new(1, 0.5),
 					Position = UDim2.new(1, -14, 0.5, 0),
@@ -1078,7 +1154,6 @@ function FluidGlass:CreateWindow(config)
 					Parent = track,
 				})
 				Corner(knob, 9)
-
 				local lib = { Value = opts.Default }
 				local function Paint(v)
 					Tween(track, TWEEN.Fluid, {
@@ -1091,13 +1166,11 @@ function FluidGlass:CreateWindow(config)
 					})
 				end
 				Paint(lib.Value)
-
 				local function Apply(v)
 					lib.Value = v
 					Paint(v)
 					opts.Callback(v)
 				end
-
 				Click(track, function()
 					local nextv = not lib.Value
 					if opts.Dialog then
@@ -1109,42 +1182,25 @@ function FluidGlass:CreateWindow(config)
 								Content = opts.Dialog.Content or "Confirm this change.",
 								Confirm = opts.Dialog.Confirm or "Continue",
 								Cancel = opts.Dialog.Cancel or "Cancel",
-								Callback = function(ok)
-									if ok then
-										Apply(nextv)
-									end
-								end,
+								Callback = function(ok) if ok then Apply(nextv) end end,
 							})
 							return
 						end
 					end
 					Apply(nextv)
 				end)
-
-				function lib:GetValue()
-					return lib.Value
-				end
-				function lib:SetValue(v)
-					Apply(v and true or false)
-				end
-				if opts.Flag then
-					FluidGlass.Flags[opts.Flag] = lib
-				end
+				function lib:GetValue() return lib.Value end
+				function lib:SetValue(v) Apply(v and true or false) end
+				if opts.Flag then NexxWareX.Flags[opts.Flag] = lib end
 				return lib
 			end
 
 			function Section:AddSlider(opts)
 				opts = Merge({
-					Name = "Slider",
-					Min = 0,
-					Max = 100,
-					Default = 50,
-					Rounding = 0,
-					Suffix = "",
-					Flag = nil,
-					Callback = function() end,
+					Name = "Slider", Min = 0, Max = 100, Default = 50, Rounding = 0, Suffix = "", Flag = nil, Callback = function() end, ToolTip = nil,
 				}, opts)
 				local row, title = Row(opts.Name)
+				if opts.ToolTip then BindTooltip(row, opts.ToolTip) end
 				title.Size = UDim2.new(1, -170, 1, 0)
 				local valueLbl = New("TextLabel", {
 					BackgroundTransparency = 1,
@@ -1183,50 +1239,38 @@ function FluidGlass:CreateWindow(config)
 					local a = (opts.Max == opts.Min) and 0 or (v - opts.Min) / (opts.Max - opts.Min)
 					fill.Size = UDim2.fromScale(a, 1)
 					valueLbl.Text = tostring(v) .. (opts.Suffix or "")
-					if fire ~= false then
-						opts.Callback(v)
-					end
+					if fire ~= false then opts.Callback(v) end
 				end
 				Set(opts.Default, false)
 				local holding = false
-				bar.InputBegan:Connect(function(input)
+				Track(bar.InputBegan:Connect(function(input)
 					if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
 						holding = true
 					end
-				end)
-				UserInputService.InputEnded:Connect(function(input)
+				end))
+				Track(UserInputService.InputEnded:Connect(function(input)
 					if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
 						holding = false
 					end
-				end)
-				RunService.RenderStepped:Connect(function()
+				end))
+				Track(RunService.RenderStepped:Connect(function()
 					if holding then
 						local x = math.clamp((Mouse.X - bar.AbsolutePosition.X) / math.max(bar.AbsoluteSize.X, 1), 0, 1)
 						Set(opts.Min + (opts.Max - opts.Min) * x)
 					end
-				end)
-				function lib:GetValue()
-					return lib.Value
-				end
-				function lib:SetValue(v)
-					Set(tonumber(v) or lib.Value)
-				end
-				if opts.Flag then
-					FluidGlass.Flags[opts.Flag] = lib
-				end
+				end))
+				function lib:GetValue() return lib.Value end
+				function lib:SetValue(v) Set(tonumber(v) or lib.Value) end
+				if opts.Flag then NexxWareX.Flags[opts.Flag] = lib end
 				return lib
 			end
 
 			function Section:AddDropdown(opts)
 				opts = Merge({
-					Name = "Dropdown",
-					Values = { "One", "Two" },
-					Default = nil,
-					Multi = false,
-					Flag = nil,
-					Callback = function() end,
+					Name = "Dropdown", Values = { "One", "Two" }, Default = nil, Multi = false, Flag = nil, Callback = function() end, ToolTip = nil,
 				}, opts)
 				local row, title = Row(opts.Name)
+				if opts.ToolTip then BindTooltip(row, opts.ToolTip) end
 				title.Size = UDim2.new(0.42, 0, 1, 0)
 				local chip = New("TextButton", {
 					AutoButtonColor = false,
@@ -1244,7 +1288,6 @@ function FluidGlass:CreateWindow(config)
 				})
 				Corner(chip, 8)
 				Stroke(chip, 0.8)
-
 				local popup = New("Frame", {
 					Visible = false,
 					BackgroundColor3 = Theme.Glass,
@@ -1257,57 +1300,51 @@ function FluidGlass:CreateWindow(config)
 				Stroke(popup, 0.72)
 				local popList = New("UIListLayout", { Padding = UDim.new(0, 2), Parent = popup })
 				Pad(popup, 6, 6, 6, 6)
-
 				local selected = opts.Multi and {} or (opts.Default or opts.Values[1])
 				if opts.Multi and opts.Default then
 					if type(opts.Default) == "table" then
-						for _, v in ipairs(opts.Default) do
-							selected[v] = true
-						end
+						for _, v in ipairs(opts.Default) do selected[v] = true end
 					else
 						selected[opts.Default] = true
 					end
 				end
-
 				local lib = {}
 				local function Label()
 					if opts.Multi then
 						local n = 0
-						for _ in pairs(selected) do
-							n = n + 1
-						end
+						for _ in pairs(selected) do n = n + 1 end
 						chip.Text = n == 0 and "None" or (n .. " selected")
 					else
 						chip.Text = tostring(selected)
 					end
 				end
 				Label()
-
 				local function Rebuild()
 					for _, ch in ipairs(popup:GetChildren()) do
-						if ch:IsA("TextButton") then
-							ch:Destroy()
-						end
+						if ch:IsA("TextButton") then ch:Destroy() end
 					end
 					for _, value in ipairs(opts.Values) do
+						local on = opts.Multi and selected[value] or selected == value
 						local item = New("TextButton", {
 							AutoButtonColor = false,
-							BackgroundTransparency = 1,
+							BackgroundTransparency = on and 0.85 or 1,
+							BackgroundColor3 = Theme.Accent,
 							Size = UDim2.new(1, 0, 0, 26),
 							Font = Enum.Font.Gotham,
 							TextSize = 12,
 							TextColor3 = Theme.Text,
-							Text = tostring(value),
+							Text = (on and "✓ " or "  ") .. tostring(value),
+							TextXAlignment = Enum.TextXAlignment.Left,
 							ZIndex = Z.Dropdown + 1,
 							Parent = popup,
 						})
-						item.MouseButton1Click:Connect(function()
+						Pad(item, 0, 8, 0, 8)
+						Track(item.MouseButton1Click:Connect(function()
 							if opts.Multi then
 								selected[value] = not selected[value]
-								if not selected[value] then
-									selected[value] = nil
-								end
+								if not selected[value] then selected[value] = nil end
 								Label()
+								Rebuild()
 								opts.Callback(selected)
 							else
 								selected = value
@@ -1315,52 +1352,68 @@ function FluidGlass:CreateWindow(config)
 								popup.Visible = false
 								opts.Callback(selected)
 							end
-						end)
+						end))
 					end
 					popup.Size = UDim2.fromOffset(SIZE.Popup, popList.AbsoluteContentSize.Y + 16)
 				end
 				Rebuild()
-
-				chip.MouseButton1Click:Connect(function()
+				Track(chip.MouseButton1Click:Connect(function()
 					Rebuild()
 					local pos = chip.AbsolutePosition
 					local sz = chip.AbsoluteSize
 					popup.Position = UDim2.fromOffset(pos.X + sz.X - SIZE.Popup, pos.Y + sz.Y + 6)
 					popup.Visible = not popup.Visible
-				end)
-
-				function lib:GetValue()
-					return selected
-				end
-				function lib:SetValue(v)
-					selected = v
-					Label()
-					opts.Callback(selected)
-				end
-				function lib:Refresh(values)
-					opts.Values = values
-					Rebuild()
-				end
-				if opts.Flag then
-					FluidGlass.Flags[opts.Flag] = lib
-				end
+				end))
+				Track(UserInputService.InputBegan:Connect(function(input)
+					if input.UserInputType == Enum.UserInputType.MouseButton1 and popup.Visible then
+						local p = popup.AbsolutePosition
+						local s = popup.AbsoluteSize
+						local mx, my = Mouse.X, Mouse.Y
+						if mx < p.X or mx > p.X + s.X or my < p.Y or my > p.Y + s.Y then
+							local cp = chip.AbsolutePosition
+							local cs = chip.AbsoluteSize
+							if mx < cp.X or mx > cp.X + cs.X or my < cp.Y or my > cp.Y + cs.Y then
+								popup.Visible = false
+							end
+						end
+					end
+				end))
+				function lib:GetValue() return selected end
+				function lib:SetValue(v) selected = v; Label(); opts.Callback(selected) end
+				function lib:Refresh(values) opts.Values = values; Rebuild() end
+				if opts.Flag then NexxWareX.Flags[opts.Flag] = lib end
 				return lib
 			end
 
 			function Section:AddKeybind(opts)
 				opts = Merge({
-					Name = "Keybind",
-					Default = Enum.KeyCode.E,
-					Flag = nil,
-					Callback = function() end,
+					Name = "Keybind", Default = Enum.KeyCode.E, Flag = nil, Callback = function() end,
+					Mode = "Toggle", ToolTip = nil,
 				}, opts)
 				local row, title = Row(opts.Name)
-				title.Size = UDim2.new(1, -110, 1, 0)
+				if opts.ToolTip then BindTooltip(row, opts.ToolTip) end
+				title.Size = UDim2.new(1, -150, 1, 0)
+				local modeChip = New("TextButton", {
+					AutoButtonColor = false,
+					AnchorPoint = Vector2.new(1, 0.5),
+					Position = UDim2.new(1, -100, 0.5, 0),
+					Size = UDim2.fromOffset(52, 22),
+					BackgroundColor3 = Theme.Glass,
+					BackgroundTransparency = 0.25,
+					Font = Enum.Font.GothamBold,
+					TextSize = 10,
+					TextColor3 = Theme.Muted,
+					Text = opts.Mode,
+					ZIndex = Z.Control,
+					Parent = row,
+				})
+				Corner(modeChip, 6)
+				Stroke(modeChip, 0.85)
 				local chip = New("TextButton", {
 					AutoButtonColor = false,
 					AnchorPoint = Vector2.new(1, 0.5),
 					Position = UDim2.new(1, -12, 0.5, 0),
-					Size = UDim2.fromOffset(86, 26),
+					Size = UDim2.fromOffset(80, 26),
 					BackgroundColor3 = Theme.Glass,
 					BackgroundTransparency = 0.25,
 					Font = Enum.Font.GothamBold,
@@ -1371,61 +1424,84 @@ function FluidGlass:CreateWindow(config)
 				})
 				Corner(chip, 8)
 				Stroke(chip, 0.8)
-				local lib = { Value = opts.Default, Listening = false }
+				local modes = { "Toggle", "Hold", "Always" }
+				local modeIdx = 1
+				for i, m in ipairs(modes) do
+					if string.lower(m) == string.lower(opts.Mode) then modeIdx = i end
+				end
+				local lib = { Value = opts.Default, Mode = modes[modeIdx], Listening = false, Active = false }
 				local function NameOf(k)
-					if typeof(k) == "EnumItem" then
-						return k.Name
-					end
+					if typeof(k) == "EnumItem" then return k.Name end
 					return tostring(k)
 				end
 				chip.Text = NameOf(lib.Value)
-				chip.MouseButton1Click:Connect(function()
+				Track(modeChip.MouseButton1Click:Connect(function()
+					modeIdx = modeIdx % #modes + 1
+					lib.Mode = modes[modeIdx]
+					modeChip.Text = lib.Mode
+					opts.Callback(lib.Value, false, lib.Mode)
+				end))
+				Track(chip.MouseButton1Click:Connect(function()
 					lib.Listening = true
 					chip.Text = "..."
-				end)
-				UserInputService.InputBegan:Connect(function(input, gp)
+				end))
+				Track(UserInputService.InputBegan:Connect(function(input, gp)
 					if lib.Listening then
 						if input.UserInputType == Enum.UserInputType.Keyboard then
 							lib.Value = input.KeyCode
 							lib.Listening = false
 							chip.Text = NameOf(lib.Value)
-							opts.Callback(lib.Value)
+							opts.Callback(lib.Value, false, lib.Mode)
 						end
 					elseif not gp and input.KeyCode == lib.Value then
-						opts.Callback(lib.Value, true)
+						if lib.Mode == "Toggle" then
+							lib.Active = not lib.Active
+							opts.Callback(lib.Value, lib.Active, lib.Mode)
+						elseif lib.Mode == "Hold" then
+							lib.Active = true
+							opts.Callback(lib.Value, true, lib.Mode)
+						elseif lib.Mode == "Always" then
+							opts.Callback(lib.Value, true, lib.Mode)
+						end
 					end
-				end)
+				end))
+				Track(UserInputService.InputEnded:Connect(function(input)
+					if lib.Mode == "Hold" and input.KeyCode == lib.Value then
+						lib.Active = false
+						opts.Callback(lib.Value, false, lib.Mode)
+					end
+				end))
 				function lib:GetValue()
-					return typeof(lib.Value) == "EnumItem" and lib.Value.Name or lib.Value
+					return {
+						Key = typeof(lib.Value) == "EnumItem" and lib.Value.Name or lib.Value,
+						Mode = lib.Mode,
+					}
 				end
 				function lib:SetValue(v)
-					if type(v) == "string" then
-						pcall(function()
-							lib.Value = Enum.KeyCode[v]
-						end)
+					if type(v) == "table" then
+						if v.Key then
+							if type(v.Key) == "string" then pcall(function() lib.Value = Enum.KeyCode[v.Key] end)
+							else lib.Value = v.Key end
+						end
+						if v.Mode then lib.Mode = v.Mode; modeChip.Text = v.Mode end
+					elseif type(v) == "string" then
+						pcall(function() lib.Value = Enum.KeyCode[v] end)
 					else
 						lib.Value = v
 					end
 					chip.Text = NameOf(lib.Value)
 				end
-				if opts.Flag then
-					FluidGlass.Flags[opts.Flag] = lib
-				end
+				if opts.Flag then NexxWareX.Flags[opts.Flag] = lib end
 				return lib
 			end
 
 			function Section:AddColorPicker(opts)
-				opts = Merge({
-					Name = "Color",
-					Default = Theme.Accent,
-					Flag = nil,
-					Callback = function() end,
-				}, opts)
+				opts = Merge({ Name = "Color", Default = Theme.Accent, Flag = nil, Callback = function() end, ToolTip = nil }, opts)
 				local row, title = Row(opts.Name)
+				if opts.ToolTip then BindTooltip(row, opts.ToolTip) end
 				title.Size = UDim2.new(1, -52, 1, 0)
 				local swatch = New("TextButton", {
-					AutoButtonColor = false,
-					Text = "",
+					AutoButtonColor = false, Text = "",
 					AnchorPoint = Vector2.new(1, 0.5),
 					Position = UDim2.new(1, -14, 0.5, 0),
 					Size = UDim2.fromOffset(28, 20),
@@ -1435,7 +1511,6 @@ function FluidGlass:CreateWindow(config)
 				})
 				Corner(swatch, 6)
 				Stroke(swatch, 0.7)
-
 				local picker = New("Frame", {
 					Visible = false,
 					BackgroundColor3 = Theme.Glass,
@@ -1447,7 +1522,6 @@ function FluidGlass:CreateWindow(config)
 				Corner(picker, 14)
 				Stroke(picker, 0.7)
 				GlassGradient(picker)
-
 				local sv = New("ImageButton", {
 					AutoButtonColor = false,
 					Position = UDim2.fromOffset(12, 12),
@@ -1457,34 +1531,17 @@ function FluidGlass:CreateWindow(config)
 					Parent = picker,
 				})
 				Corner(sv, 8)
-				local white = New("Frame", {
-					BackgroundColor3 = Color3.new(1, 1, 1),
-					Size = UDim2.fromScale(1, 1),
-					ZIndex = Z.ColorPicker + 2,
-					Parent = sv,
-				})
+				local white = New("Frame", { BackgroundColor3 = Color3.new(1, 1, 1), Size = UDim2.fromScale(1, 1), ZIndex = Z.ColorPicker + 2, Parent = sv })
 				Corner(white, 8)
 				local wg = Instance.new("UIGradient")
-				wg.Transparency = NumberSequence.new({
-					NumberSequenceKeypoint.new(0, 0),
-					NumberSequenceKeypoint.new(1, 1),
-				})
+				wg.Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0), NumberSequenceKeypoint.new(1, 1) })
 				wg.Parent = white
-				local black = New("Frame", {
-					BackgroundColor3 = Color3.new(0, 0, 0),
-					Size = UDim2.fromScale(1, 1),
-					ZIndex = Z.ColorPicker + 3,
-					Parent = sv,
-				})
+				local black = New("Frame", { BackgroundColor3 = Color3.new(0, 0, 0), Size = UDim2.fromScale(1, 1), ZIndex = Z.ColorPicker + 3, Parent = sv })
 				Corner(black, 8)
 				local bg = Instance.new("UIGradient")
 				bg.Rotation = 90
-				bg.Transparency = NumberSequence.new({
-					NumberSequenceKeypoint.new(0, 1),
-					NumberSequenceKeypoint.new(1, 0),
-				})
+				bg.Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(1, 0) })
 				bg.Parent = black
-
 				local hueBar = New("Frame", {
 					Position = UDim2.fromOffset(12, 180),
 					Size = UDim2.fromOffset(190, 12),
@@ -1504,7 +1561,6 @@ function FluidGlass:CreateWindow(config)
 					ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 0, 0)),
 				})
 				hg.Parent = hueBar
-
 				local hex = New("TextLabel", {
 					BackgroundTransparency = 1,
 					Position = UDim2.fromOffset(12, 204),
@@ -1516,7 +1572,6 @@ function FluidGlass:CreateWindow(config)
 					ZIndex = Z.ColorPicker + 1,
 					Parent = picker,
 				})
-
 				local h, s, v = opts.Default:ToHSV()
 				local lib = { Value = opts.Default }
 				local function Apply()
@@ -1527,7 +1582,6 @@ function FluidGlass:CreateWindow(config)
 					opts.Callback(lib.Value)
 				end
 				Apply()
-
 				local function SampleSV()
 					local p = sv.AbsolutePosition
 					local z = sv.AbsoluteSize
@@ -1541,62 +1595,43 @@ function FluidGlass:CreateWindow(config)
 					h = math.clamp((Mouse.X - p.X) / math.max(z.X, 1), 0, 1)
 					Apply()
 				end
-				sv.MouseButton1Down:Connect(function()
+				Track(sv.MouseButton1Down:Connect(function()
 					local conn
 					SampleSV()
 					conn = RunService.RenderStepped:Connect(function()
-						if UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton1) then
-							SampleSV()
-						else
-							conn:Disconnect()
-						end
+						if UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton1) then SampleSV()
+						else conn:Disconnect() end
 					end)
-				end)
-				hueBar.InputBegan:Connect(function(input)
+				end))
+				Track(hueBar.InputBegan:Connect(function(input)
 					if input.UserInputType == Enum.UserInputType.MouseButton1 then
 						local conn
 						SampleHue()
 						conn = RunService.RenderStepped:Connect(function()
-							if UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton1) then
-								SampleHue()
-							else
-								conn:Disconnect()
-							end
+							if UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton1) then SampleHue()
+							else conn:Disconnect() end
 						end)
 					end
-				end)
-
-				swatch.MouseButton1Click:Connect(function()
+				end))
+				Track(swatch.MouseButton1Click:Connect(function()
 					local pos = swatch.AbsolutePosition
 					picker.Position = UDim2.fromOffset(pos.X - SIZE.Color.X + 28, pos.Y + 28)
 					picker.Visible = not picker.Visible
-				end)
-
-				function lib:GetValue()
-					return lib.Value:ToHex()
-				end
+				end))
+				function lib:GetValue() return lib.Value:ToHex() end
 				function lib:SetValue(c)
-					if type(c) == "string" then
-						c = Color3.fromHex((c:gsub("#", "")))
-					end
+					if type(c) == "string" then c = Color3.fromHex((c:gsub("#", ""))) end
 					h, s, v = c:ToHSV()
 					Apply()
 				end
-				if opts.Flag then
-					FluidGlass.Flags[opts.Flag] = lib
-				end
+				if opts.Flag then NexxWareX.Flags[opts.Flag] = lib end
 				return lib
 			end
 
 			function Section:AddTextInput(opts)
-				opts = Merge({
-					Name = "Input",
-					Default = "",
-					Placeholder = "",
-					Flag = nil,
-					Callback = function() end,
-				}, opts)
+				opts = Merge({ Name = "Input", Default = "", Placeholder = "", Flag = nil, Callback = function() end, ToolTip = nil }, opts)
 				local row, title = Row(opts.Name)
+				if opts.ToolTip then BindTooltip(row, opts.ToolTip) end
 				title.Size = UDim2.new(0.4, 0, 1, 0)
 				local box = New("TextBox", {
 					AnchorPoint = Vector2.new(1, 0.5),
@@ -1618,31 +1653,22 @@ function FluidGlass:CreateWindow(config)
 				Stroke(box, 0.8)
 				Pad(box, 0, 8, 0, 8)
 				local lib = { Value = opts.Default }
-				box.FocusLost:Connect(function()
+				Track(box.FocusLost:Connect(function()
 					lib.Value = box.Text
 					opts.Callback(lib.Value)
-				end)
-				function lib:GetValue()
-					return lib.Value
-				end
+				end))
+				function lib:GetValue() return lib.Value end
 				function lib:SetValue(v)
 					lib.Value = tostring(v)
 					box.Text = lib.Value
 					opts.Callback(lib.Value)
 				end
-				if opts.Flag then
-					FluidGlass.Flags[opts.Flag] = lib
-				end
+				if opts.Flag then NexxWareX.Flags[opts.Flag] = lib end
 				return lib
 			end
 
 			function Section:AddButton(opts)
-				opts = Merge({
-					Name = "Button",
-					Icon = "chevron-right",
-					Callback = function() end,
-					Dialog = nil,
-				}, opts)
+				opts = Merge({ Name = "Button", Icon = "chevron-right", Callback = function() end, Dialog = nil, ToolTip = nil }, opts)
 				local row = New("Frame", {
 					BackgroundTransparency = 1,
 					Size = UDim2.new(1, 0, 0, 42),
@@ -1669,7 +1695,7 @@ function FluidGlass:CreateWindow(config)
 					ZIndex = Z.Control + 1,
 					Parent = btn,
 				})
-				FluidGlass:SetIcon(ic, opts.Icon, Theme.Accent)
+				NexxWareX:SetIcon(ic, opts.Icon, Theme.Accent)
 				New("TextLabel", {
 					BackgroundTransparency = 1,
 					Position = UDim2.fromOffset(34, 0),
@@ -1682,24 +1708,164 @@ function FluidGlass:CreateWindow(config)
 					ZIndex = Z.Control + 1,
 					Parent = btn,
 				})
-				btn.MouseButton1Click:Connect(function()
+				if opts.ToolTip then BindTooltip(btn, opts.ToolTip) end
+				Track(btn.MouseButton1Click:Connect(function()
 					if opts.Dialog then
 						OpenDialog({
 							Title = opts.Dialog.Title or opts.Name,
 							Content = opts.Dialog.Content or "Confirm this action.",
 							Confirm = opts.Dialog.Confirm or "Confirm",
 							Cancel = opts.Dialog.Cancel or "Cancel",
-							Callback = function(ok)
-								if ok then
-									opts.Callback()
-								end
-							end,
+							Callback = function(ok) if ok then opts.Callback() end end,
 						})
 					else
 						opts.Callback()
 					end
-				end)
+				end))
 				return btn
+			end
+
+			function Section:AddMultiButton(opts)
+				opts = Merge({
+					Buttons = {
+						{ Title = "A", Callback = function() end },
+						{ Title = "B", Callback = function() end },
+						{ Title = "C", Callback = function() end },
+					},
+				}, opts)
+				local buttons = opts.Buttons
+				local row = New("Frame", {
+					BackgroundTransparency = 1,
+					Size = UDim2.new(1, 0, 0, 78),
+					ZIndex = Z.Row + 1,
+					Parent = body,
+				})
+				table.insert(Registry, { Name = "MultiButton", Root = row })
+				local function makeBtn(cfg, pos, size)
+					local b = New("TextButton", {
+						AutoButtonColor = false,
+						Position = pos,
+						Size = size,
+						BackgroundColor3 = Theme.Glass,
+						BackgroundTransparency = 0.2,
+						Font = Enum.Font.GothamMedium,
+						TextSize = 12,
+						TextColor3 = Theme.Text,
+						Text = cfg.Title or cfg.Name or "Button",
+						ZIndex = Z.Control,
+						Parent = row,
+					})
+					Corner(b, 10)
+					Stroke(b, 0.78)
+					Track(b.MouseButton1Click:Connect(function()
+						if cfg.Dialog then
+							OpenDialog({
+								Title = cfg.Dialog.Title or (cfg.Title or "Confirm"),
+								Content = cfg.Dialog.Content or "Confirm this action.",
+								Confirm = cfg.Dialog.Confirm or "Confirm",
+								Cancel = cfg.Dialog.Cancel or "Cancel",
+								Callback = function(ok) if ok and cfg.Callback then cfg.Callback() end end,
+							})
+						elseif cfg.Callback then
+							cfg.Callback()
+						end
+					end))
+					return b
+				end
+				if buttons[1] then makeBtn(buttons[1], UDim2.fromOffset(10, 6), UDim2.new(0.5, -14, 0, 30)) end
+				if buttons[2] then makeBtn(buttons[2], UDim2.new(0.5, 2, 0, 6), UDim2.new(0.5, -12, 0, 30)) end
+				if buttons[3] then makeBtn(buttons[3], UDim2.fromOffset(10, 42), UDim2.new(1, -20, 0, 30)) end
+				return row
+			end
+
+			function Section:AddCode(opts)
+				return self:AddCodeBox(opts)
+			end
+
+			function Section:AddCodeBox(opts)
+				opts = Merge({
+					Title = "Code",
+					Code = 'print("Hello")',
+					OnCopy = nil,
+				}, opts)
+				local lines = 1
+				for _ in string.gmatch(opts.Code, "\n") do lines = lines + 1 end
+				local h = math.clamp(28 + lines * 14, 72, 180)
+				local row = New("Frame", {
+					BackgroundTransparency = 1,
+					Size = UDim2.new(1, 0, 0, h + 8),
+					ZIndex = Z.Row + 1,
+					Parent = body,
+				})
+				table.insert(Registry, { Name = opts.Title, Root = row })
+				local card = New("Frame", {
+					Position = UDim2.fromOffset(10, 4),
+					Size = UDim2.new(1, -20, 0, h),
+					BackgroundColor3 = Theme.Track,
+					BackgroundTransparency = 0.15,
+					ZIndex = Z.Control,
+					Parent = row,
+				})
+				Corner(card, 10)
+				Stroke(card, 0.8)
+				New("TextLabel", {
+					BackgroundTransparency = 1,
+					Position = UDim2.fromOffset(10, 6),
+					Size = UDim2.new(1, -70, 0, 16),
+					Font = Enum.Font.GothamBold,
+					TextSize = 11,
+					TextXAlignment = Enum.TextXAlignment.Left,
+					TextColor3 = Theme.Faint,
+					Text = opts.Title,
+					ZIndex = Z.Control + 1,
+					Parent = card,
+				})
+				local copyBtn = New("TextButton", {
+					AutoButtonColor = false,
+					AnchorPoint = Vector2.new(1, 0),
+					Position = UDim2.new(1, -8, 0, 4),
+					Size = UDim2.fromOffset(52, 20),
+					BackgroundColor3 = Theme.Glass,
+					BackgroundTransparency = 0.25,
+					Font = Enum.Font.GothamBold,
+					TextSize = 10,
+					TextColor3 = Theme.Accent,
+					Text = "Copy",
+					ZIndex = Z.Control + 2,
+					Parent = card,
+				})
+				Corner(copyBtn, 6)
+				local codeLbl = New("TextLabel", {
+					BackgroundTransparency = 1,
+					Position = UDim2.fromOffset(10, 26),
+					Size = UDim2.new(1, -20, 1, -32),
+					Font = Enum.Font.Code,
+					TextSize = 12,
+					TextXAlignment = Enum.TextXAlignment.Left,
+					TextYAlignment = Enum.TextYAlignment.Top,
+					TextColor3 = Theme.Text,
+					Text = opts.Code,
+					TextWrapped = true,
+					ZIndex = Z.Control + 1,
+					Parent = card,
+				})
+				local lib = { Title = opts.Title, Code = opts.Code }
+				Track(copyBtn.MouseButton1Click:Connect(function()
+					if setclipboard then setclipboard(lib.Code) end
+					NexxWareX:Notify({ Title = "Copied", Content = lib.Title, Type = "Success", Icon = "check" })
+					if opts.OnCopy then opts.OnCopy() end
+				end))
+				function lib:SetCode(c)
+					lib.Code = c
+					codeLbl.Text = c
+				end
+				function lib:OnCopy(fn)
+					opts.OnCopy = fn
+				end
+				function lib:Destroy()
+					row:Destroy()
+				end
+				return lib
 			end
 
 			return Section
@@ -1709,41 +1875,36 @@ function FluidGlass:CreateWindow(config)
 			return MakeSection(sec)
 		end
 
-		table.insert(Window.Tabs, tab)
-		if #Window.Tabs == 1 then
-			SelectTab(1)
+		function tab:AddSubTab(cfg)
+			cfg = Merge({ Name = "Sub", Icon = "circle" }, cfg)
+			cfg.Parent = tab
+			return Window:AddTab(cfg)
 		end
+
+		table.insert(Window.Tabs, tab)
+		if #Window.Tabs == 1 then SelectTab(1) end
 		return tab
 	end
 
-	-- Config: save / load / delete / export / import
 	local function Collect()
 		local data = {}
-		for flag, obj in pairs(FluidGlass.Flags) do
-			if obj and obj.GetValue then
-				data[flag] = obj:GetValue()
-			end
+		for flag, obj in pairs(NexxWareX.Flags) do
+			if obj and obj.GetValue then data[flag] = obj:GetValue() end
 		end
 		return data
 	end
 
 	local function ApplyFlags(data)
-		if type(data) ~= "table" then
-			return
-		end
+		if type(data) ~= "table" then return end
 		for flag, value in pairs(data) do
-			local obj = FluidGlass.Flags[flag]
-			if obj and obj.SetValue then
-				pcall(obj.SetValue, obj, value)
-			end
+			local obj = NexxWareX.Flags[flag]
+			if obj and obj.SetValue then pcall(obj.SetValue, obj, value) end
 		end
 	end
 
 	local function Encode(tbl)
 		return HttpService:Base64Encode(HttpService:JSONEncode({
-			v = 2,
-			lib = "FluidGlass",
-			flags = tbl,
+			v = 2, lib = "NexxWareX", flags = tbl,
 		}))
 	end
 
@@ -1752,42 +1913,49 @@ function FluidGlass:CreateWindow(config)
 		local ok, json = pcall(function()
 			return HttpService:JSONDecode(HttpService:Base64Decode(str))
 		end)
-		if ok and type(json) == "table" then
-			return json.flags or json
-		end
+		if ok and type(json) == "table" then return json.flags or json end
 		local ok2, raw = pcall(HttpService.JSONDecode, HttpService, str)
-		if ok2 and type(raw) == "table" then
-			return raw.flags or raw
-		end
+		if ok2 and type(raw) == "table" then return raw.flags or raw end
 		return nil
+	end
+
+	function Window:ListConfigs()
+		local list = {}
+		if not HasFS() then return list end
+		if not isfolder(config.ConfigFolder) then return list end
+		for _, path in ipairs(listfiles(config.ConfigFolder)) do
+			local name = string.match(path, "([^/\\]+)%.fg$") or string.match(path, "([^/\\]+)$")
+			if name then table.insert(list, name) end
+		end
+		return list
 	end
 
 	function Window:SaveConfig(name)
 		name = name ~= "" and name or "Default"
 		if not HasFS() then
-			FluidGlass:Notify({ Title = "Config", Content = "Filesystem unavailable", Icon = "folder" })
+			NexxWareX:Notify({ Title = "Config", Content = "Filesystem unavailable", Type = "Error" })
 			return
 		end
 		writefile(config.ConfigFolder .. "/" .. name .. ".fg", Encode(Collect()))
-		FluidGlass:Notify({ Title = "Saved", Content = name, Icon = "check" })
+		NexxWareX:Notify({ Title = "Saved", Content = name, Type = "Success", Icon = "check" })
 	end
 
 	function Window:LoadConfig(name)
 		name = name ~= "" and name or "Default"
 		local path = config.ConfigFolder .. "/" .. name .. ".fg"
 		if not HasFS() or not isfile(path) then
-			FluidGlass:Notify({ Title = "Config", Content = "Not found: " .. name, Icon = "x" })
+			NexxWareX:Notify({ Title = "Config", Content = "Not found: " .. name, Type = "Warn" })
 			return
 		end
 		ApplyFlags(Decode(readfile(path)))
-		FluidGlass:Notify({ Title = "Loaded", Content = name, Icon = "folder" })
+		NexxWareX:Notify({ Title = "Loaded", Content = name, Type = "Success", Icon = "folder" })
 	end
 
 	function Window:DeleteConfig(name)
 		local path = config.ConfigFolder .. "/" .. name .. ".fg"
 		if HasFS() and isfile(path) then
 			delfile(path)
-			FluidGlass:Notify({ Title = "Deleted", Content = name, Icon = "trash-2" })
+			NexxWareX:Notify({ Title = "Deleted", Content = name, Type = "Warn", Icon = "trash-2" })
 		end
 	end
 
@@ -1795,26 +1963,89 @@ function FluidGlass:CreateWindow(config)
 		local payload = Encode(Collect())
 		if setclipboard then
 			setclipboard(payload)
-			FluidGlass:Notify({ Title = "Exported", Content = "Config copied to clipboard", Icon = "upload" })
-		else
-			FluidGlass:Notify({ Title = "Export", Content = payload:sub(1, 48) .. "...", Icon = "upload" })
+			NexxWareX:Notify({ Title = "Exported", Content = "Config copied", Type = "Success", Icon = "upload" })
 		end
 		return payload
 	end
 
 	function Window:ImportConfig(payload)
 		if not payload or payload == "" then
-			if getclipboard then
-				payload = getclipboard()
-			end
+			if getclipboard then payload = getclipboard() end
 		end
 		local flags = Decode(payload)
 		if not flags then
-			FluidGlass:Notify({ Title = "Import failed", Content = "Invalid payload", Icon = "x" })
+			NexxWareX:Notify({ Title = "Import failed", Content = "Invalid payload", Type = "Error" })
 			return
 		end
 		ApplyFlags(flags)
-		FluidGlass:Notify({ Title = "Imported", Content = "Flags applied", Icon = "download" })
+		NexxWareX:Notify({ Title = "Imported", Content = "Flags applied", Type = "Success", Icon = "download" })
+	end
+
+	function Window:Watermark()
+		if NexxWareX.__Watermark then return NexxWareX.__Watermark end
+		local wm = {}
+		local frame = New("Frame", {
+			AnchorPoint = Vector2.new(1, 0),
+			Position = UDim2.new(1, -12, 0, 12),
+			Size = UDim2.fromOffset(160, 28),
+			BackgroundColor3 = Theme.Glass,
+			BackgroundTransparency = 0.25,
+			ZIndex = Z.Watermark,
+			Parent = Screen,
+		})
+		Corner(frame, 14)
+		Stroke(frame, 0.78)
+		local layout = New("UIListLayout", {
+			FillDirection = Enum.FillDirection.Horizontal,
+			HorizontalAlignment = Enum.HorizontalAlignment.Right,
+			Padding = UDim.new(0, 6),
+			Parent = frame,
+		})
+		Pad(frame, 0, 10, 0, 10)
+		Track(layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+			frame.Size = UDim2.fromOffset(layout.AbsoluteContentSize.X + 20, 28)
+		end))
+		function wm:SetRender(v)
+			frame.Visible = v and true or false
+		end
+		function wm:AddBlock(icon, text)
+			local block = New("Frame", {
+				BackgroundTransparency = 1,
+				Size = UDim2.fromOffset(40, 28),
+				ZIndex = Z.Watermark + 1,
+				Parent = frame,
+			})
+			local ic = New("ImageLabel", {
+				BackgroundTransparency = 1,
+				Position = UDim2.fromOffset(0, 6),
+				Size = UDim2.fromOffset(16, 16),
+				ZIndex = Z.Watermark + 2,
+				Parent = block,
+			})
+			NexxWareX:SetIcon(ic, icon, Theme.Accent)
+			local lbl = New("TextLabel", {
+				BackgroundTransparency = 1,
+				Position = UDim2.fromOffset(20, 0),
+				Size = UDim2.fromOffset(20, 28),
+				AutomaticSize = Enum.AutomaticSize.X,
+				Font = Enum.Font.GothamBold,
+				TextSize = 12,
+				TextColor3 = Theme.Muted,
+				Text = text,
+				ZIndex = Z.Watermark + 2,
+				Parent = block,
+			})
+			local api = {}
+			function api:SetText(t)
+				lbl.Text = t
+				block.Size = UDim2.fromOffset(lbl.TextBounds.X + 24, 28)
+			end
+			function api:SetVisible(v) block.Visible = v end
+			api:SetText(text)
+			return api
+		end
+		NexxWareX.__Watermark = wm
+		return wm
 	end
 
 	function Window:AddLibrarySettings()
@@ -1823,18 +2054,16 @@ function FluidGlass:CreateWindow(config)
 		local ui = tab:AddSection({ Name = "Interface", Side = "Left" })
 		local look = tab:AddSection({ Name = "Appearance", Side = "Right" })
 		local cfg = tab:AddSection({ Name = "Configs", Side = "Right" })
-
 		ui:AddKeybind({
 			Name = "Menu Key",
-			Flag = "fg.menuKey",
+			Flag = "nx.menuKey",
 			Default = Window.Keybind,
-			Callback = function(k)
-				Window.Keybind = k
-			end,
+			Mode = "Toggle",
+			Callback = function(k) Window.Keybind = k end,
 		})
 		ui:AddToggle({
 			Name = "Menu Blur",
-			Flag = "fg.blur",
+			Flag = "nx.blur",
 			Default = true,
 			Callback = function(v)
 				config.Blur = v
@@ -1843,25 +2072,26 @@ function FluidGlass:CreateWindow(config)
 		})
 		ui:AddSlider({
 			Name = "Opacity",
-			Flag = "fg.opacity",
-			Min = 20,
-			Max = 80,
-			Default = 38,
-			Suffix = "%",
+			Flag = "nx.opacity",
+			Min = 20, Max = 80, Default = 38, Suffix = "%",
 			Callback = function(v)
 				Theme.FillTransparency = v / 100
-				if Window.Visible then
-					Root.BackgroundTransparency = Theme.FillTransparency
-				end
+				if Window.Visible then Root.BackgroundTransparency = Theme.FillTransparency end
+			end,
+		})
+		ui:AddToggle({
+			Name = "Watermark",
+			Flag = "nx.wm",
+			Default = false,
+			Callback = function(v)
+				Window:Watermark():SetRender(v)
 			end,
 		})
 		look:AddColorPicker({
 			Name = "Accent",
-			Flag = "fg.accent",
+			Flag = "nx.accent",
 			Default = Theme.Accent,
-			Callback = function(c)
-				Theme.Accent = c
-			end,
+			Callback = function(c) Theme.Accent = c end,
 		})
 		look:AddButton({
 			Name = "Reset Position",
@@ -1870,33 +2100,36 @@ function FluidGlass:CreateWindow(config)
 				Tween(Root, TWEEN.Pop, { Position = UDim2.fromScale(0.5, 0.5) })
 			end,
 		})
-
 		local nameBox = cfg:AddTextInput({
 			Name = "Config Name",
-			Flag = "fg.cfgName",
+			Flag = "nx.cfgName",
 			Default = "Default",
 			Placeholder = "Default",
 		})
-		cfg:AddButton({
-			Name = "Save Config",
-			Icon = "save",
-			Callback = function()
-				Window:SaveConfig(nameBox:GetValue())
+		cfg:AddDropdown({
+			Name = "Saved",
+			Flag = "nx.cfgList",
+			Values = Window:ListConfigs(),
+			Default = "Default",
+			Callback = function(v)
+				if type(v) == "string" then nameBox:SetValue(v) end
 			end,
 		})
-		cfg:AddButton({
-			Name = "Load Config",
-			Icon = "folder",
-			Callback = function()
-				Window:LoadConfig(nameBox:GetValue())
-			end,
+		cfg:AddMultiButton({
+			Buttons = {
+				{ Title = "Save", Callback = function() Window:SaveConfig(nameBox:GetValue()) end },
+				{ Title = "Load", Callback = function() Window:LoadConfig(nameBox:GetValue()) end },
+				{ Title = "Refresh list", Callback = function()
+					local drop = NexxWareX.Flags["nx.cfgList"]
+					if drop and drop.Refresh then drop:Refresh(Window:ListConfigs()) end
+					NexxWareX:Notify({ Title = "Configs", Content = "List refreshed", Type = "Info" })
+				end },
+			},
 		})
 		cfg:AddButton({
 			Name = "Export Config",
 			Icon = "upload",
-			Callback = function()
-				Window:ExportConfig()
-			end,
+			Callback = function() Window:ExportConfig() end,
 		})
 		cfg:AddButton({
 			Name = "Import Config",
@@ -1906,9 +2139,7 @@ function FluidGlass:CreateWindow(config)
 				Content = "Clipboard payload will overwrite current flags.",
 				Confirm = "Import",
 			},
-			Callback = function()
-				Window:ImportConfig()
-			end,
+			Callback = function() Window:ImportConfig() end,
 		})
 		cfg:AddButton({
 			Name = "Delete Config",
@@ -1918,9 +2149,7 @@ function FluidGlass:CreateWindow(config)
 				Content = "This file will be removed from disk.",
 				Confirm = "Delete",
 			},
-			Callback = function()
-				Window:DeleteConfig(nameBox:GetValue())
-			end,
+			Callback = function() Window:DeleteConfig(nameBox:GetValue()) end,
 		})
 		return tab
 	end
@@ -1929,11 +2158,13 @@ function FluidGlass:CreateWindow(config)
 	return Window
 end
 
-function FluidGlass:Unload()
-	pcall(function()
-		BlurEffect:Destroy()
-	end)
+function NexxWareX:Unload()
+	for _, s in ipairs(self.Signals) do
+		pcall(function() s:Disconnect() end)
+	end
+	table.clear(self.Signals)
+	pcall(function() BlurEffect:Destroy() end)
 	Screen:Destroy()
 end
 
-return FluidGlass
+return NexxWareX

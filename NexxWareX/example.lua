@@ -1,32 +1,26 @@
---[[
-	Fluid Glass — example
-	Place library.lua next to this file, then run.
-
-	Icons:
-	  "crosshair"      → Lucide (default)
-	  "Lucide:eye"     → Lucide pack
-	  "gravity:gear"   → Gravity pack
-]]
-
-local Library
-do
-	local ok, src = pcall(readfile, "library.lua")
-	if ok and src then
-		Library = loadstring(src)()
-	else
-		-- fallback: same folder via HttpGet if you host it
-		error("https://raw.githubusercontent.com/Nail120212/NexLib/refs/heads/main/NexxWareX/library.lua")
-	end
-end
+local Library = loadstring(readfile("library.lua"))()
 
 local Window = Library:CreateWindow({
-	Title = "Fluid Glass",
+	Title = "NexxWareX",
 	Subtitle = "Liquid Glass",
 	Icon = "layers",
 	Size = UDim2.fromOffset(800, 540),
 	Keybind = Enum.KeyCode.RightShift,
-	ConfigFolder = "FluidGlass",
+	ConfigFolder = "NexxWareX",
 	Blur = true,
+	Mobile = true,
+})
+
+Window:Tag({
+	Title = "v2.1",
+	Icon = "github",
+	Color = Color3.fromHex("#30ff6a"),
+	Radius = 13,
+})
+
+Window:Tag({
+	Title = "BETA",
+	Color = Color3.fromHex("#315dff"),
 })
 
 Window:AddTabLabel("Combat")
@@ -43,6 +37,7 @@ Aim:AddToggle({
 	Name = "Enabled",
 	Flag = "combat.aim",
 	Default = false,
+	ToolTip = "Master aimbot switch",
 	Callback = function(v)
 		print("aimbot", v)
 	end,
@@ -70,8 +65,8 @@ Aim:AddSlider({
 	Min = 1,
 	Max = 180,
 	Default = 72,
-	Rounding = 0,
 	Suffix = "°",
+	ToolTip = "Aim FOV radius",
 	Callback = function(v)
 		print("fov", v)
 	end,
@@ -91,25 +86,41 @@ Aim:AddKeybind({
 	Name = "Aim bind",
 	Flag = "combat.bind",
 	Default = Enum.KeyCode.E,
-	Callback = function(key)
-		print("bind", key)
+	Mode = "Hold",
+	Callback = function(key, active, mode)
+		print("bind", key, active, mode)
 	end,
 })
 
-Aim:AddButton({
-	Name = "Reset aimbot",
-	Icon = "rotate-ccw",
-	Dialog = {
-		Title = "Reset aimbot?",
-		Content = "Restores FOV, target, and binds to defaults.",
-		Confirm = "Reset",
+Aim:AddMultiButton({
+	Buttons = {
+		{
+			Title = "Reset",
+			Callback = function()
+				if Library.Flags["combat.fov"] then
+					Library.Flags["combat.fov"]:SetValue(72)
+				end
+				Library:Notify({ Title = "Aimbot", Content = "Reset", Type = "Success" })
+			end,
+		},
+		{
+			Title = "Panic",
+			Dialog = {
+				Title = "Panic unload?",
+				Content = "Destroys the entire UI.",
+				Confirm = "Unload",
+			},
+			Callback = function()
+				Library:Unload()
+			end,
+		},
+		{
+			Title = "Apply preset",
+			Callback = function()
+				Library:Notify({ Title = "Preset", Content = "Applied", Type = "Info" })
+			end,
+		},
 	},
-	Callback = function()
-		if Library.Flags["combat.fov"] then
-			Library.Flags["combat.fov"]:SetValue(72)
-		end
-		Library:Notify({ Title = "Aimbot", Content = "Reset to defaults", Icon = "check" })
-	end,
 })
 
 Visual:AddToggle({
@@ -125,9 +136,6 @@ Visual:AddColorPicker({
 	Name = "ESP color",
 	Flag = "vis.color",
 	Default = Color3.fromRGB(154, 212, 255),
-	Callback = function(c)
-		print("color", c)
-	end,
 })
 
 Visual:AddDropdown({
@@ -138,9 +146,30 @@ Visual:AddDropdown({
 	Default = { "Box", "Name" },
 })
 
-Visual:AddParagraph({
-	Name = "Icons",
-	Content = "Use Lucide:name, gravity:name, or name (Lucide default).",
+Visual:AddCodeBox({
+	Title = "example.luau",
+	Code = [[local Players = game:GetService("Players")
+print(Players.LocalPlayer.Name)]],
+})
+
+local Silent = Combat:AddSubTab({
+	Name = "Silent",
+	Icon = "Lucide:eye",
+})
+
+local SilentSec = Silent:AddSection({ Name = "Silent aim", Side = "Left" })
+SilentSec:AddToggle({
+	Name = "Enabled",
+	Flag = "silent.on",
+	Default = false,
+})
+SilentSec:AddSlider({
+	Name = "Hit chance",
+	Flag = "silent.chance",
+	Min = 0,
+	Max = 100,
+	Default = 80,
+	Suffix = "%",
 })
 
 Window:AddTabLabel("World")
@@ -183,34 +212,42 @@ Misc:AddButton({
 		if setclipboard then
 			setclipboard("https://discord.gg/example")
 		end
-		Library:Notify({ Title = "Copied", Content = "Invite on clipboard", Icon = "check" })
+		Library:Notify({ Title = "Copied", Content = "Invite on clipboard", Type = "Success" })
 	end,
 })
 
 Misc:AddButton({
-	Name = "Unload library",
+	Name = "Test error",
 	Icon = "x",
-	Dialog = {
-		Title = "Unload Fluid Glass?",
-		Content = "Destroys the UI and disconnects blur.",
-		Confirm = "Unload",
-	},
 	Callback = function()
-		Library:Unload()
+		Library:Notify({ Title = "Error", Content = "Something failed", Type = "Error" })
 	end,
 })
 
-Misc:AddDivider()
-Misc:AddParagraph({
-	Name = "ZIndex map",
-	Content = "Window 10 · Sidebar 20 · Header 26 · Popup 50 · Dialog 86 · Notify 96",
+Misc:AddButton({
+	Name = "Test warn",
+	Icon = "triangle-alert",
+	Callback = function()
+		Library:Notify({ Title = "Warning", Content = "Be careful", Type = "Warn" })
+	end,
 })
 
--- Settings: Save / Load / Export / Import / Delete
+Misc:AddParagraph({
+	Name = "Icons",
+	Content = "Lucide:name · gravity:name · name (Lucide default)",
+	ToolTip = "Icon pack syntax",
+})
+
 Window:AddLibrarySettings()
 
+local wm = Window:Watermark()
+wm:SetRender(true)
+wm:AddBlock("layers", "NexxWareX")
+wm:AddBlock("gauge", "60 FPS")
+
 Library:Notify({
-	Title = "Fluid Glass",
+	Title = "NexxWareX",
 	Content = "RightShift toggles the menu",
+	Type = "Info",
 	Icon = "layers",
 })
