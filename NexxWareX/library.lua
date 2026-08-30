@@ -67,20 +67,24 @@ local TWEEN = {
 
 local Theme = {
 	Name = "LiquidGlass",
-	Accent = Color3.fromRGB(154, 212, 255),
-	Text = Color3.fromRGB(238, 247, 255),
-	Muted = Color3.fromRGB(159, 180, 200),
-	Faint = Color3.fromRGB(109, 132, 153),
-	Glass = Color3.fromRGB(16, 28, 40),
-	GlassTop = Color3.fromRGB(48, 72, 96),
-	Stroke = Color3.fromRGB(214, 236, 255),
-	Danger = Color3.fromRGB(255, 132, 132),
-	Warn = Color3.fromRGB(255, 196, 120),
-	Success = Color3.fromRGB(140, 230, 180),
-	Track = Color3.fromRGB(10, 16, 24),
-	FillTransparency = 0.38,
-	PanelTransparency = 0.46,
-	StrokeTransparency = 0.78,
+	Accent = Color3.fromRGB(170, 220, 255),
+	Text = Color3.fromRGB(245, 250, 255),
+	Muted = Color3.fromRGB(190, 210, 230),
+	Faint = Color3.fromRGB(150, 175, 200),
+	Glass = Color3.fromRGB(255, 255, 255),
+	GlassTop = Color3.fromRGB(255, 255, 255),
+	GlassTint = Color3.fromRGB(180, 210, 240),
+	Stroke = Color3.fromRGB(255, 255, 255),
+	Danger = Color3.fromRGB(255, 140, 150),
+	Warn = Color3.fromRGB(255, 200, 130),
+	Success = Color3.fromRGB(140, 235, 190),
+	Track = Color3.fromRGB(255, 255, 255),
+	FillTransparency = 0.88,
+	PanelTransparency = 0.92,
+	StrokeTransparency = 0.72,
+	SidebarTransparency = 0.90,
+	RowTransparency = 0.94,
+	ControlTransparency = 0.85,
 }
 
 NexxWareX.Theme = Theme
@@ -107,7 +111,7 @@ end
 
 local function Stroke(parent, transparency, color, thickness)
 	local s = Instance.new("UIStroke")
-	s.Color = color or Theme.Stroke
+	s.Color = color or Color3.fromRGB(255, 255, 255)
 	s.Transparency = transparency or Theme.StrokeTransparency
 	s.Thickness = thickness or 1
 	s.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
@@ -117,15 +121,16 @@ end
 
 local function GlassGradient(parent)
 	local g = Instance.new("UIGradient")
-	g.Rotation = 90
+	g.Rotation = 105
 	g.Color = ColorSequence.new({
-		ColorSequenceKeypoint.new(0, Theme.GlassTop),
-		ColorSequenceKeypoint.new(0.42, Theme.Glass),
-		ColorSequenceKeypoint.new(1, Color3.fromRGB(10, 16, 24)),
+		ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 255, 255)),
+		ColorSequenceKeypoint.new(0.35, Color3.fromRGB(220, 235, 255)),
+		ColorSequenceKeypoint.new(1, Color3.fromRGB(160, 190, 230)),
 	})
 	g.Transparency = NumberSequence.new({
-		NumberSequenceKeypoint.new(0, 0.08),
-		NumberSequenceKeypoint.new(1, 0.22),
+		NumberSequenceKeypoint.new(0, 0.35),
+		NumberSequenceKeypoint.new(0.5, 0.55),
+		NumberSequenceKeypoint.new(1, 0.7),
 	})
 	g.Parent = parent
 	return g
@@ -307,8 +312,8 @@ AcrylicFX.Parent = Lighting
 
 local TooltipFrame = New("Frame", {
 	Visible = false,
-	BackgroundColor3 = Theme.Glass,
-	BackgroundTransparency = 0.12,
+	BackgroundColor3 = Color3.fromRGB(255, 255, 255),
+	BackgroundTransparency = 0.78,
 	Size = UDim2.fromOffset(10, 28),
 	ZIndex = Z.Tooltip,
 	Parent = Screen,
@@ -401,7 +406,7 @@ local function CreateDialogHost()
 		AnchorPoint = Vector2.new(1, 1),
 		Position = UDim2.new(1, -128, 1, -16),
 		Size = UDim2.fromOffset(100, 34),
-		BackgroundTransparency = 0.55,
+		BackgroundTransparency = 0.82,
 		BackgroundColor3 = Theme.Glass,
 		Font = Enum.Font.GothamMedium,
 		TextSize = 13,
@@ -418,7 +423,7 @@ local function CreateDialogHost()
 		Position = UDim2.new(1, -16, 1, -16),
 		Size = UDim2.fromOffset(104, 34),
 		BackgroundColor3 = Theme.Accent,
-		BackgroundTransparency = 0.15,
+		BackgroundTransparency = 0.35,
 		Font = Enum.Font.GothamBold,
 		TextSize = 13,
 		TextColor3 = Color3.fromRGB(8, 16, 24),
@@ -458,7 +463,7 @@ local function CreateDialogHost()
 		cancelBtn.Text = opts.Cancel
 		dim.Visible = true
 		card.Position = UDim2.fromScale(0.5, 0.54)
-		Tween(dim, TWEEN.Fluid, { BackgroundTransparency = 0.42 })
+		Tween(dim, TWEEN.Fluid, { BackgroundTransparency = 0.55 })
 		Tween(card, TWEEN.Pop, { BackgroundTransparency = Theme.FillTransparency, Position = UDim2.fromScale(0.5, 0.5) })
 		Tween(cardStroke, TWEEN.Fluid, { Transparency = 0.72 })
 		Tween(title, TWEEN.Fluid, { TextTransparency = 0 })
@@ -508,13 +513,13 @@ function NexxWareX:Notify(opts)
 	end
 	local card = New("Frame", {
 		Size = UDim2.fromOffset(SIZE.Notify.X, SIZE.Notify.Y),
-		BackgroundColor3 = Theme.Glass,
-		BackgroundTransparency = 0.28,
+		BackgroundColor3 = Color3.fromRGB(255, 255, 255),
+		BackgroundTransparency = 0.82,
 		ZIndex = Z.Notify,
 		Parent = NotifyHolder,
 	})
 	Corner(card, 14)
-	Stroke(card, 0.74)
+	Stroke(card, 0.7)
 	GlassGradient(card)
 	local bar = New("Frame", {
 		BackgroundColor3 = accent,
@@ -626,22 +631,23 @@ function NexxWareX:CreateWindow(config)
 		Parent = Screen,
 	})
 	Corner(Root, 20)
-	Stroke(Root, Theme.StrokeTransparency, Theme.Stroke, 1.15)
+	Stroke(Root, 0.65, Color3.fromRGB(255, 255, 255), 1.25)
 	GlassGradient(Root)
 	Window.Root = Root
 	NexxWareX.MainWindow = Root
 
 	local specular = New("Frame", {
 		BackgroundColor3 = Color3.new(1, 1, 1),
-		BackgroundTransparency = 0.82,
-		Size = UDim2.new(1, 0, 0, 70),
+		BackgroundTransparency = 0.55,
+		Size = UDim2.new(1, 0, 0, 90),
 		ZIndex = Z.Window + 1,
 		Parent = Root,
 	})
 	local specGrad = Instance.new("UIGradient")
 	specGrad.Rotation = 90
 	specGrad.Transparency = NumberSequence.new({
-		NumberSequenceKeypoint.new(0, 0.55),
+		NumberSequenceKeypoint.new(0, 0.4),
+		NumberSequenceKeypoint.new(0.55, 0.85),
 		NumberSequenceKeypoint.new(1, 1),
 	})
 	specGrad.Parent = specular
@@ -650,15 +656,15 @@ function NexxWareX:CreateWindow(config)
 	local Sidebar = New("Frame", {
 		Name = "Sidebar",
 		BackgroundColor3 = Theme.Glass,
-		BackgroundTransparency = 0.55,
+		BackgroundTransparency = Theme.SidebarTransparency or 0.90,
 		Size = UDim2.new(0, sidebarW, 1, 0),
 		ZIndex = Z.Sidebar,
 		Parent = Root,
 	})
 	Corner(Sidebar, 20)
 	New("Frame", {
-		BackgroundColor3 = Theme.Stroke,
-		BackgroundTransparency = 0.88,
+		BackgroundColor3 = Color3.fromRGB(255, 255, 255),
+		BackgroundTransparency = 0.85,
 		Position = UDim2.new(1, -1, 0, 16),
 		Size = UDim2.new(0, 1, 1, -32),
 		BorderSizePixel = 0,
@@ -808,7 +814,7 @@ function NexxWareX:CreateWindow(config)
 
 	local SearchBox = New("TextBox", {
 		BackgroundColor3 = Theme.Glass,
-		BackgroundTransparency = 0.35,
+		BackgroundTransparency = 0.82,
 		Position = UDim2.fromOffset(16, 12),
 		Size = UDim2.new(1, -80, 0, 34),
 		Font = Enum.Font.Gotham,
@@ -885,7 +891,7 @@ function NexxWareX:CreateWindow(config)
 
 	local function SetBlur(on)
 		if config.Blur and on then
-			Tween(BlurEffect, TWEEN.Fluid, { Size = config.Acrylic and 24 or 16 })
+			Tween(BlurEffect, TWEEN.Fluid, { Size = config.Acrylic and 28 or 18 })
 			AcrylicFX.Enabled = config.Acrylic and true or false
 		else
 			Tween(BlurEffect, TWEEN.Fluid, { Size = 0 })
@@ -924,7 +930,7 @@ function NexxWareX:CreateWindow(config)
 		for i, tab in ipairs(Window.Tabs) do
 			local on = i == index
 			tab.Page.Visible = on
-			Tween(tab.Button, TWEEN.Fluid, { BackgroundTransparency = on and 0.55 or 1 })
+			Tween(tab.Button, TWEEN.Fluid, { BackgroundTransparency = on and 0.82 or 1 })
 			Tween(tab.Label, TWEEN.Fluid, { TextColor3 = on and Theme.Text or Theme.Muted })
 			if tab.IconImg then
 				Tween(tab.IconImg, TWEEN.Fluid, { ImageColor3 = on and Theme.Accent or Theme.Faint })
@@ -1200,7 +1206,7 @@ function NexxWareX:CreateWindow(config)
 						local b = New("TextButton", {
 							AutoButtonColor = false,
 							BackgroundColor3 = Theme.Glass,
-							BackgroundTransparency = 0.2,
+							BackgroundTransparency = 0.82,
 							Size = UDim2.fromOffset(0, 26),
 							AutomaticSize = Enum.AutomaticSize.X,
 							Font = Enum.Font.GothamMedium,
@@ -1259,18 +1265,18 @@ function NexxWareX:CreateWindow(config)
 					AnchorPoint = Vector2.new(1, 0.5),
 					Position = UDim2.new(1, -14, 0.5, 0),
 					Size = UDim2.fromOffset(SIZE.Toggle.X, SIZE.Toggle.Y),
-					BackgroundColor3 = Theme.Track,
-					BackgroundTransparency = 0.2,
+					BackgroundColor3 = Color3.fromRGB(255, 255, 255),
+					BackgroundTransparency = 0.78,
 					ZIndex = Z.Control,
 					Parent = row,
 				})
 				Corner(track, 12)
-				Stroke(track, 0.8)
+				Stroke(track, 0.7)
 				local knob = New("Frame", {
 					AnchorPoint = Vector2.new(0, 0.5),
 					Position = UDim2.new(0, 3, 0.5, 0),
 					Size = UDim2.fromOffset(18, 18),
-					BackgroundColor3 = Theme.Muted,
+					BackgroundColor3 = Color3.fromRGB(255, 255, 255),
 					ZIndex = Z.Control + 1,
 					Parent = track,
 				})
@@ -1278,12 +1284,12 @@ function NexxWareX:CreateWindow(config)
 				local lib = { Value = opts.Default }
 				local function Paint(v)
 					Tween(track, TWEEN.Fluid, {
-						BackgroundColor3 = v and Theme.Accent or Theme.Track,
-						BackgroundTransparency = v and 0.12 or 0.2,
+						BackgroundColor3 = v and Theme.Accent or Color3.fromRGB(255, 255, 255),
+						BackgroundTransparency = v and 0.25 or 0.78,
 					})
 					Tween(knob, TWEEN.Fluid, {
 						Position = v and UDim2.new(1, -21, 0.5, 0) or UDim2.new(0, 3, 0.5, 0),
-						BackgroundColor3 = v and Color3.new(1, 1, 1) or Theme.Muted,
+						BackgroundColor3 = Color3.new(1, 1, 1),
 					})
 				end
 				Paint(lib.Value)
@@ -1361,8 +1367,8 @@ function NexxWareX:CreateWindow(config)
 					AnchorPoint = Vector2.new(1, 0.5),
 					Position = UDim2.new(1, -14, 0.5, 8),
 					Size = UDim2.fromOffset(SIZE.Slider, 6),
-					BackgroundColor3 = Theme.Track,
-					BackgroundTransparency = 0.15,
+					BackgroundColor3 = Color3.fromRGB(255, 255, 255),
+					BackgroundTransparency = 0.8,
 					ZIndex = Z.Control,
 					Parent = row,
 				})
@@ -1425,7 +1431,7 @@ function NexxWareX:CreateWindow(config)
 					Position = UDim2.new(1, -12, 0.5, 0),
 					Size = UDim2.fromOffset(132, 26),
 					BackgroundColor3 = Theme.Glass,
-					BackgroundTransparency = 0.25,
+					BackgroundTransparency = 0.82,
 					Font = Enum.Font.Gotham,
 					TextSize = 12,
 					TextColor3 = Theme.Text,
@@ -1437,14 +1443,14 @@ function NexxWareX:CreateWindow(config)
 				Stroke(chip, 0.8)
 				local popup = New("Frame", {
 					Visible = false,
-					BackgroundColor3 = Theme.Glass,
-					BackgroundTransparency = 0.12,
+					BackgroundColor3 = Color3.fromRGB(255, 255, 255),
+					BackgroundTransparency = 0.78,
 					Size = UDim2.fromOffset(SIZE.Popup, 8),
 					ZIndex = Z.Dropdown,
 					Parent = Screen,
 				})
 				Corner(popup, 12)
-				Stroke(popup, 0.72)
+				Stroke(popup, 0.65)
 				local popList = New("UIListLayout", { Padding = UDim.new(0, 2), Parent = popup })
 				Pad(popup, 6, 6, 6, 6)
 				local selected = opts.Multi and {} or (opts.Default or opts.Values[1])
@@ -1550,7 +1556,7 @@ function NexxWareX:CreateWindow(config)
 					Position = UDim2.new(1, -100, 0.5, 0),
 					Size = UDim2.fromOffset(52, 22),
 					BackgroundColor3 = Theme.Glass,
-					BackgroundTransparency = 0.25,
+					BackgroundTransparency = 0.82,
 					Font = Enum.Font.GothamBold,
 					TextSize = 10,
 					TextColor3 = Theme.Muted,
@@ -1566,7 +1572,7 @@ function NexxWareX:CreateWindow(config)
 					Position = UDim2.new(1, -12, 0.5, 0),
 					Size = UDim2.fromOffset(80, 26),
 					BackgroundColor3 = Theme.Glass,
-					BackgroundTransparency = 0.25,
+					BackgroundTransparency = 0.82,
 					Font = Enum.Font.GothamBold,
 					TextSize = 11,
 					TextColor3 = Theme.Text,
@@ -1574,7 +1580,7 @@ function NexxWareX:CreateWindow(config)
 					Parent = row,
 				})
 				Corner(chip, 8)
-				Stroke(chip, 0.8)
+				Stroke(chip, 0.75)
 				local modes = { "Toggle", "Hold", "Always" }
 				local modeIdx = 1
 				for i, m in ipairs(modes) do
@@ -1668,14 +1674,14 @@ function NexxWareX:CreateWindow(config)
 				Stroke(swatch, 0.7)
 				local picker = New("Frame", {
 					Visible = false,
-					BackgroundColor3 = Theme.Glass,
-					BackgroundTransparency = 0.1,
+					BackgroundColor3 = Color3.fromRGB(255, 255, 255),
+					BackgroundTransparency = 0.78,
 					Size = UDim2.fromOffset(SIZE.Color.X, SIZE.Color.Y),
 					ZIndex = Z.ColorPicker,
 					Parent = Screen,
 				})
 				Corner(picker, 14)
-				Stroke(picker, 0.7)
+				Stroke(picker, 0.65)
 				GlassGradient(picker)
 				local sv = New("ImageButton", {
 					AutoButtonColor = false,
@@ -1732,7 +1738,7 @@ function NexxWareX:CreateWindow(config)
 					Position = UDim2.fromOffset(48, 206),
 					Size = UDim2.fromOffset(154, 24),
 					BackgroundColor3 = Theme.Glass,
-					BackgroundTransparency = 0.25,
+					BackgroundTransparency = 0.82,
 					Font = Enum.Font.Code,
 					TextSize = 12,
 					TextColor3 = Theme.Text,
@@ -1827,7 +1833,7 @@ function NexxWareX:CreateWindow(config)
 					Position = UDim2.new(1, -12, 0.5, 0),
 					Size = UDim2.fromOffset(128, 26),
 					BackgroundColor3 = Theme.Glass,
-					BackgroundTransparency = 0.25,
+					BackgroundTransparency = 0.82,
 					Font = Enum.Font.Gotham,
 					TextSize = 12,
 					TextColor3 = Theme.Text,
@@ -1874,13 +1880,13 @@ function NexxWareX:CreateWindow(config)
 					Position = UDim2.fromOffset(10, 6),
 					Size = UDim2.new(1, -20, 0, 30),
 					BackgroundColor3 = Theme.Glass,
-					BackgroundTransparency = 0.2,
+					BackgroundTransparency = 0.82,
 					Text = "",
 					ZIndex = Z.Control,
 					Parent = row,
 				})
 				Corner(btn, 10)
-				Stroke(btn, 0.78)
+				Stroke(btn, 0.72)
 				local ic = New("ImageLabel", {
 					BackgroundTransparency = 1,
 					Position = UDim2.fromOffset(10, 6),
@@ -1951,7 +1957,7 @@ function NexxWareX:CreateWindow(config)
 						Position = pos,
 						Size = size,
 						BackgroundColor3 = Theme.Glass,
-						BackgroundTransparency = 0.2,
+						BackgroundTransparency = 0.82,
 						Font = Enum.Font.GothamMedium,
 						TextSize = 12,
 						TextColor3 = Theme.Text,
@@ -2005,13 +2011,13 @@ function NexxWareX:CreateWindow(config)
 				local card = New("Frame", {
 					Position = UDim2.fromOffset(10, 4),
 					Size = UDim2.new(1, -20, 0, h),
-					BackgroundColor3 = Theme.Track,
-					BackgroundTransparency = 0.15,
+					BackgroundColor3 = Color3.fromRGB(255, 255, 255),
+					BackgroundTransparency = 0.88,
 					ZIndex = Z.Control,
 					Parent = row,
 				})
 				Corner(card, 10)
-				Stroke(card, 0.8)
+				Stroke(card, 0.75)
 				New("TextLabel", {
 					BackgroundTransparency = 1,
 					Position = UDim2.fromOffset(10, 6),
@@ -2030,7 +2036,7 @@ function NexxWareX:CreateWindow(config)
 					Position = UDim2.new(1, -8, 0, 4),
 					Size = UDim2.fromOffset(52, 20),
 					BackgroundColor3 = Theme.Glass,
-					BackgroundTransparency = 0.25,
+					BackgroundTransparency = 0.82,
 					Font = Enum.Font.GothamBold,
 					TextSize = 10,
 					TextColor3 = Theme.Accent,
@@ -2192,13 +2198,13 @@ function NexxWareX:CreateWindow(config)
 			AnchorPoint = Vector2.new(1, 0),
 			Position = UDim2.new(1, -12, 0, 12),
 			Size = UDim2.fromOffset(160, 28),
-			BackgroundColor3 = Theme.Glass,
-			BackgroundTransparency = 0.25,
+			BackgroundColor3 = Color3.fromRGB(255, 255, 255),
+			BackgroundTransparency = 0.82,
 			ZIndex = Z.Watermark,
 			Parent = Screen,
 		})
 		Corner(frame, 14)
-		Stroke(frame, 0.78)
+		Stroke(frame, 0.7)
 		local layout = New("UIListLayout", {
 			FillDirection = Enum.FillDirection.Horizontal,
 			HorizontalAlignment = Enum.HorizontalAlignment.Right,
@@ -2286,7 +2292,7 @@ function NexxWareX:CreateWindow(config)
 		ui:AddSlider({
 			Name = "Opacity",
 			Flag = "nx.opacity",
-			Min = 20, Max = 80, Default = 38, Suffix = "%",
+			Min = 50, Max = 95, Default = 88, Suffix = "%",
 			Callback = function(v)
 				Theme.FillTransparency = v / 100
 				if Window.Visible then Root.BackgroundTransparency = Theme.FillTransparency end
