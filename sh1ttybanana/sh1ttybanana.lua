@@ -228,149 +228,83 @@ end
 Library.Signal = Signal
 
 Library.Themes = {
-    Dark = {
-        Main = Color3.fromRGB(11, 11, 14),
-        Sidebar = Color3.fromRGB(255, 255, 255),
-        Card = Color3.fromRGB(255, 255, 255),
-        Row = Color3.fromRGB(255, 255, 255),
-        Inset = Color3.fromRGB(22, 22, 27),
-        Elevated = Color3.fromRGB(16, 16, 20),
-        Accent = Color3.fromRGB(179, 0, 255),
-        AccentText = Color3.fromRGB(255, 255, 255),
-        Text = Color3.fromRGB(255, 255, 255),
-        TextDim = Color3.fromRGB(138, 138, 150),
-        TabText = Color3.fromRGB(255, 255, 255),
-        TextDisabled = Color3.fromRGB(138, 138, 150),
-        Stroke = Color3.fromRGB(120, 120, 138),
-        StrokeSoft = Color3.fromRGB(120, 120, 138),
-        Sheen = Color3.fromRGB(255, 255, 255),
-        Shadow = Color3.fromRGB(0, 0, 0),
-        Success = Color3.fromRGB(80, 225, 140),
-        Warn = Color3.fromRGB(255, 200, 90),
-        Error = Color3.fromRGB(255, 88, 88),
-        Info = Color3.fromRGB(120, 180, 255),
-        WindowAlpha = 0.07,
-        SidebarAlpha = 0.97,
-        CardAlpha = 0.97,
-        RowAlpha = 0.95,
-        RowHoverAlpha = 0.9,
-        InsetAlpha = 0,
-        ElevatedAlpha = 0,
-        StrokeAlpha = 0.92,
-        StrokeSoftAlpha = 0.93,
-        SheenAlpha = 1,
-        Radius = 14,
-        Blur = 0,
-        Glass = false
-    },
-    Black = {
-        Main = Color3.fromRGB(0, 0, 0),
-        Sidebar = Color3.fromRGB(255, 255, 255),
-        Card = Color3.fromRGB(255, 255, 255),
-        Row = Color3.fromRGB(255, 255, 255),
-        Inset = Color3.fromRGB(8, 8, 8),
-        Elevated = Color3.fromRGB(4, 4, 4),
-        Accent = Color3.fromRGB(179, 0, 255),
-        AccentText = Color3.fromRGB(255, 255, 255),
-        Text = Color3.fromRGB(255, 255, 255),
-        TextDim = Color3.fromRGB(150, 150, 150),
-        TextDisabled = Color3.fromRGB(150, 150, 150),
-        Stroke = Color3.fromRGB(90, 90, 90),
-        StrokeSoft = Color3.fromRGB(90, 90, 90),
-        Sheen = Color3.fromRGB(255, 255, 255),
-        Shadow = Color3.fromRGB(0, 0, 0),
-        Success = Color3.fromRGB(80, 225, 140),
-        Warn = Color3.fromRGB(255, 200, 90),
-        Error = Color3.fromRGB(255, 88, 88),
-        Info = Color3.fromRGB(120, 180, 255),
-        WindowAlpha = 0.07,
-        SidebarAlpha = 0.975,
-        CardAlpha = 0.975,
-        RowAlpha = 0.965,
-        RowHoverAlpha = 0.92,
-        InsetAlpha = 0,
-        ElevatedAlpha = 0,
-        StrokeAlpha = 0.92,
-        StrokeSoftAlpha = 0.93,
-        SheenAlpha = 1,
-        Radius = 14,
-        Blur = 0,
-        Glass = false
-    },
-    Light = {
-        Main = Color3.fromRGB(243, 243, 248),
-        Sidebar = Color3.fromRGB(0, 0, 0),
-        Card = Color3.fromRGB(0, 0, 0),
-        Row = Color3.fromRGB(0, 0, 0),
-        Inset = Color3.fromRGB(226, 226, 236),
-        Elevated = Color3.fromRGB(255, 255, 255),
-        Accent = Color3.fromRGB(179, 0, 255),
-        AccentText = Color3.fromRGB(255, 255, 255),
-        Text = Color3.fromRGB(18, 18, 24),
-        TextDim = Color3.fromRGB(108, 108, 122),
-        TextDisabled = Color3.fromRGB(108, 108, 122),
-        Stroke = Color3.fromRGB(158, 158, 176),
-        StrokeSoft = Color3.fromRGB(158, 158, 176),
-        Sheen = Color3.fromRGB(255, 255, 255),
-        Shadow = Color3.fromRGB(38, 38, 60),
-        Success = Color3.fromRGB(22, 163, 74),
-        Warn = Color3.fromRGB(202, 138, 4),
-        Error = Color3.fromRGB(220, 38, 38),
-        Info = Color3.fromRGB(37, 99, 235),
-        WindowAlpha = 0.07,
-        SidebarAlpha = 0.95,
-        CardAlpha = 0.95,
-        RowAlpha = 0.93,
-        RowHoverAlpha = 0.87,
-        InsetAlpha = 0,
-        ElevatedAlpha = 0,
-        StrokeAlpha = 0.88,
-        StrokeSoftAlpha = 0.9,
-        SheenAlpha = 1,
-        Radius = 14,
-        Blur = 0,
-        Glass = false
-    },
     ["Liquid Glass"] = {
-        Main = Color3.fromRGB(14, 14, 22),
+        Main = Color3.fromRGB(16, 16, 24),
         Sidebar = Color3.fromRGB(255, 255, 255),
         Card = Color3.fromRGB(255, 255, 255),
         Row = Color3.fromRGB(255, 255, 255),
-        Inset = Color3.fromRGB(10, 10, 18),
-        Elevated = Color3.fromRGB(16, 16, 26),
+        Inset = Color3.fromRGB(12, 12, 20),
+        Elevated = Color3.fromRGB(18, 18, 28),
         Accent = Color3.fromRGB(198, 108, 255),
         AccentText = Color3.fromRGB(255, 255, 255),
-        Text = Color3.fromRGB(255, 255, 255),
-        TextDim = Color3.fromRGB(190, 192, 210),
-        TabText = Color3.fromRGB(230, 230, 255),
-        TextDisabled = Color3.fromRGB(160, 162, 184),
+        Text = Color3.fromRGB(245, 245, 250),
+        TextDim = Color3.fromRGB(180, 182, 200),
+        TabText = Color3.fromRGB(235, 235, 245),
+        TextDisabled = Color3.fromRGB(140, 142, 160),
+        Neutral = Color3.fromRGB(200, 200, 210),
         Stroke = Color3.fromRGB(190, 190, 220),
-        StrokeSoft = Color3.fromRGB(190, 190, 220),
+        StrokeSoft = Color3.fromRGB(170, 170, 200),
         Sheen = Color3.fromRGB(255, 255, 255),
-        Shadow = Color3.fromRGB(0, 0, 10),
+        Shadow = Color3.fromRGB(0, 0, 12),
         Success = Color3.fromRGB(126, 245, 172),
         Warn = Color3.fromRGB(255, 224, 130),
         Error = Color3.fromRGB(255, 138, 138),
         Info = Color3.fromRGB(150, 200, 255),
-        WindowAlpha = 0.3,
-        SidebarAlpha = 0.94,
-        CardAlpha = 0.94,
-        RowAlpha = 0.92,
-        RowHoverAlpha = 0.86,
-        InsetAlpha = 0.35,
-        ElevatedAlpha = 0.15,
-        StrokeAlpha = 0.8,
-        StrokeSoftAlpha = 0.86,
-        SheenAlpha = 0.88,
+        WindowAlpha = 0.28,
+        SidebarAlpha = 0.92,
+        CardAlpha = 0.92,
+        RowAlpha = 0.88,
+        RowHoverAlpha = 0.82,
+        InsetAlpha = 0.4,
+        ElevatedAlpha = 0.18,
+        StrokeAlpha = 0.75,
+        StrokeSoftAlpha = 0.82,
+        SheenAlpha = 0.86,
         Radius = 14,
-        Blur = 14,
+        Blur = 16,
+        Glass = true
+    },
+    ["Fluid Glass Black"] = {
+        Main = Color3.fromRGB(0, 0, 0),
+        Sidebar = Color3.fromRGB(255, 255, 255),
+        Card = Color3.fromRGB(255, 255, 255),
+        Row = Color3.fromRGB(255, 255, 255),
+        Inset = Color3.fromRGB(8, 8, 10),
+        Elevated = Color3.fromRGB(6, 6, 8),
+        Accent = Color3.fromRGB(180, 100, 255),
+        AccentText = Color3.fromRGB(255, 255, 255),
+        Text = Color3.fromRGB(248, 248, 252),
+        TextDim = Color3.fromRGB(170, 170, 185),
+        TabText = Color3.fromRGB(230, 230, 240),
+        TextDisabled = Color3.fromRGB(120, 120, 135),
+        Neutral = Color3.fromRGB(190, 190, 200),
+        Stroke = Color3.fromRGB(120, 120, 140),
+        StrokeSoft = Color3.fromRGB(90, 90, 110),
+        Sheen = Color3.fromRGB(255, 255, 255),
+        Shadow = Color3.fromRGB(0, 0, 0),
+        Success = Color3.fromRGB(100, 230, 150),
+        Warn = Color3.fromRGB(255, 210, 100),
+        Error = Color3.fromRGB(255, 100, 100),
+        Info = Color3.fromRGB(130, 180, 255),
+        WindowAlpha = 0.22,
+        SidebarAlpha = 0.9,
+        CardAlpha = 0.9,
+        RowAlpha = 0.86,
+        RowHoverAlpha = 0.78,
+        InsetAlpha = 0.45,
+        ElevatedAlpha = 0.12,
+        StrokeAlpha = 0.7,
+        StrokeSoftAlpha = 0.8,
+        SheenAlpha = 0.9,
+        Radius = 14,
+        Blur = 18,
         Glass = true
     }
 }
 
-Library.ThemeOrder = { "Dark", "Liquid Glass" }
-Library.CurrentTheme = "Dark"
-Library.Theme = Library.Themes.Dark
+Library.ThemeOrder = { "Liquid Glass", "Fluid Glass Black" }
+Library.CurrentTheme = "Liquid Glass"
+Library.Theme = Library.Themes["Liquid Glass"]
 Library.ThemeObjects = {}
 Library.OnThemeChanged = Signal.new()
 
@@ -416,7 +350,8 @@ function Library:AddTheme(Name, Tokens)
     if type(Name) ~= "string" or type(Tokens) ~= "table" then
         return
     end
-    Library.Themes[Name] = Merge(Library.Themes.Dark, Tokens)
+    local Base = Library.Themes["Liquid Glass"] or Library.Themes[Library.ThemeOrder[1]]
+    Library.Themes[Name] = Merge(Base, Tokens)
     if not table.find(Library.ThemeOrder, Name) then
         table.insert(Library.ThemeOrder, Name)
     end
@@ -1260,13 +1195,16 @@ local function MakeRow(Section, Kind, Title, Description, MinHeight, RightWidth)
         BorderSizePixel = 0,
         Size = UDim2.new(1, 0, 0, Height),
         LayoutOrder = Section.Count + 1,
-        ClipsDescendants = true
+        ClipsDescendants = false
     })
     Section.Count = Section.Count + 1
-    Library:Corner(Row, 7)
+    Library:Corner(Row, Library.Theme.Glass and 10 or 7)
     Library:Themed(Row, "BackgroundColor3", "Row")
     Library:Themed(Row, "BackgroundTransparency", "RowAlpha")
     local Line = Library:Stroke(Row, "StrokeSoft", 1)
+    if Library.Theme.Glass then
+        Line.Transparency = Library.Theme.StrokeSoftAlpha or 0.85
+    end
 
     New("UIPadding", {
         Parent = Row,
@@ -1603,7 +1541,7 @@ function Library:NewWindow(UserConfig)
         Logo = "rbxassetid://89646749075297",
         Icon = nil,
         Color = Color3.fromRGB(179, 0, 255),
-        Theme = "Dark",
+        Theme = "Liquid Glass",
         Size = UDim2.fromOffset(700, 500),
         AutoScale = true,
         AutoPosition = "Center",
@@ -4074,6 +4012,7 @@ function Components.Button(Section, Config)
     local Arrow = IconLabel(Row, Library.Icons.Right, 16, "Accent")
     Arrow.AnchorPoint = Vector2.new(1, 0.5)
     Arrow.Position = UDim2.new(1, -14, 0.5, 0)
+    Arrow.ZIndex = 6
     Library:Themed(Arrow, "ImageColor3", "Accent")
 
     local Click = New("TextButton", {
@@ -4082,7 +4021,7 @@ function Components.Button(Section, Config)
         Size = UDim2.fromScale(1, 1),
         Text = "",
         AutoButtonColor = false,
-        ZIndex = 5
+        ZIndex = 7
     })
 
     local Handlers = {}
@@ -5583,8 +5522,9 @@ function Components.Codeblock(Section, Config)
         Copy = true
     }, Config)
 
-    local Body = Config.Text or Config.Code
-    local Row, TitleLabel, _, _, Stack, Measure = MakeRow(Section, "Codeblock", Config.Title, "", 56, 0)
+    local Body = tostring(Config.Text or Config.Code or "")
+    local Row, TitleLabel, _, _, Stack, Measure = MakeRow(Section, "Codeblock", Config.Title, "", 72, 0)
+    Row.ClipsDescendants = false
 
     local Block = New("Frame", {
         Parent = Stack,
@@ -5592,18 +5532,19 @@ function Components.Codeblock(Section, Config)
         Size = UDim2.new(1, 0, 0, 0),
         AutomaticSize = Enum.AutomaticSize.Y,
         LayoutOrder = 3,
-        ClipsDescendants = false
+        ClipsDescendants = false,
+        ZIndex = 4
     })
-    Library:Corner(Block, 8)
+    Library:Corner(Block, Library.Theme.Radius and math.min(Library.Theme.Radius, 10) or 10)
     Library:Themed(Block, "BackgroundColor3", "Inset")
     Library:Themed(Block, "BackgroundTransparency", "InsetAlpha")
     Library:Stroke(Block, "StrokeSoft", 1)
     New("UIPadding", {
         Parent = Block,
-        PaddingTop = UDim.new(0, 8),
-        PaddingBottom = UDim.new(0, 8),
-        PaddingLeft = UDim.new(0, 10),
-        PaddingRight = UDim.new(0, 34)
+        PaddingTop = UDim.new(0, 10),
+        PaddingBottom = UDim.new(0, 10),
+        PaddingLeft = UDim.new(0, 12),
+        PaddingRight = UDim.new(0, 36)
     })
 
     local Code = New("TextLabel", {
@@ -5616,15 +5557,13 @@ function Components.Codeblock(Section, Config)
         TextSize = Library.TextSize(12, 1),
         TextWrapped = true,
         TextXAlignment = Enum.TextXAlignment.Left,
-        TextYAlignment = Enum.TextYAlignment.Top
+        TextYAlignment = Enum.TextYAlignment.Top,
+        RichText = false,
+        ZIndex = 5
     })
-    Library:Themed(Code, "TextColor3", "TextDim")
-    if Measure then
-        task.defer(Measure)
-        task.delay(0.08, Measure)
-        Code:GetPropertyChangedSignal("AbsoluteSize"):Connect(function()
-            task.defer(Measure)
-        end)
+    Library:Themed(Code, "TextColor3", "Neutral")
+    if not Library.Theme.Neutral then
+        Library:Themed(Code, "TextColor3", "TextDim")
     end
 
     if Config.Copy then
@@ -5632,26 +5571,40 @@ function Components.Codeblock(Section, Config)
             Parent = Block,
             AnchorPoint = Vector2.new(1, 0),
             BackgroundTransparency = 1,
-            Position = UDim2.new(1, 26, 0, 0),
-            Size = UDim2.fromOffset(22, 22),
+            Position = UDim2.new(1, 28, 0, 0),
+            Size = UDim2.fromOffset(28, 28),
             Text = "",
-            AutoButtonColor = false
+            AutoButtonColor = false,
+            ZIndex = 8
         })
-        local CopyIcon = IconLabel(CopyButton, Library.Icons.Copy, 14, "TextDisabled")
+        local CopyIcon = IconLabel(CopyButton, Library.Icons.Copy, 15, "TextDim")
         CopyIcon.AnchorPoint = Vector2.new(0.5, 0.5)
         CopyIcon.Position = UDim2.fromScale(0.5, 0.5)
+        CopyIcon.ZIndex = 9
         CopyButton.MouseButton1Click:Connect(function()
             if Env.setclipboard then
                 pcall(Env.setclipboard, Code.Text)
             end
             Library:SetIcon(CopyIcon, Library.Icons.Check, Library.Theme.Success)
             task.delay(1.2, function()
-                Library:SetIcon(CopyIcon, Library.Icons.Copy, Library.Theme.TextDisabled)
+                Library:SetIcon(CopyIcon, Library.Icons.Copy, Library.Theme.TextDim)
             end)
         end)
     end
 
-    local Handlers = {}
+    if Measure then
+        task.defer(Measure)
+        task.delay(0.05, Measure)
+        task.delay(0.2, Measure)
+        Code:GetPropertyChangedSignal("TextBounds"):Connect(function()
+            task.defer(Measure)
+        end)
+        Code:GetPropertyChangedSignal("AbsoluteSize"):Connect(function()
+            task.defer(Measure)
+        end)
+    end
+
+local Handlers = {}
     function Handlers.Get()
         return Code.Text
     end
@@ -8914,8 +8867,13 @@ function WM.TogglePlayerCard(W, State)
             Card.Parent = W.Content
             Card.AnchorPoint = Vector2.new(0, 0)
             Card.Position = UDim2.fromOffset(0, 0)
-            Card.Size = UDim2.fromScale(1, 1)
+            Card.Size = UDim2.new(1, 0, 1, 0)
             Card.ZIndex = 50
+            for _, D in ipairs(Card:GetDescendants()) do
+                if D:IsA("GuiObject") then
+                    D.ZIndex = math.max(D.ZIndex or 1, 51)
+                end
+            end
             Card.Visible = true
             Library:Pop(Card, 0.28, 0.96)
             if W.Pages then
@@ -9720,8 +9678,13 @@ function WM.ToggleAI(W, State)
             Panel.Parent = W.Content
             Panel.AnchorPoint = Vector2.new(0, 0)
             Panel.Position = UDim2.fromOffset(0, 0)
-            Panel.Size = UDim2.fromScale(1, 1)
+            Panel.Size = UDim2.new(1, 0, 1, 0)
             Panel.ZIndex = 50
+            for _, D in ipairs(Panel:GetDescendants()) do
+                if D:IsA("GuiObject") and (D.ZIndex or 0) < 50 then
+                    D.ZIndex = math.max(D.ZIndex or 1, 51)
+                end
+            end
             Panel.Visible = true
             Library:Pop(Panel, 0.28, 0.96)
             if W.Pages then
@@ -9743,6 +9706,7 @@ function WM.ToggleAI(W, State)
     end
     if State then
         Panel.Visible = true
+        Panel.Size = UDim2.new(0, math.min(320, (W.Main and W.Main.AbsoluteSize.X or 400) * 0.42), 1, -(Top or 54))
         Panel.Position = UDim2.new(1, Width, 0, Top)
         Library:Tween(Panel, NORMAL, { Position = UDim2.new(1, 0, 0, Top) })
     else

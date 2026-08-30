@@ -1,626 +1,297 @@
-local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/Nail120212/NexLib/refs/heads/main/sh1ttybanana/sh1ttybanana.lua"))()
+--[[
+  NexxWare SB V0.1 — full component example
+  Icons: bare name = lucide | lucide:name | gravity:name
+]]
 
-Library:AddTheme("Sunset", {
-    Main = Color3.fromRGB(20, 12, 16),
-    Accent = Color3.fromRGB(255, 106, 61),
-    Card = Color3.fromRGB(28, 18, 22),
-    Text = Color3.fromRGB(255, 244, 240),
-    Stroke = Color3.fromRGB(255, 160, 120),
-})
+local Library = loadstring(game:HttpGet("YOUR_LIBRARY_URL_OR_PATH"))()
+-- or: local Library = loadfile("sh1ttybanana.lua")()
 
 local Window = Library:NewWindow({
-    Title = "sh1ttybanana",
-    Description = "full featured",
-    Logo = "rbxassetid://89646749075297",
-    Color = Color3.fromRGB(179, 0, 255),
-    Theme = "Dark",
-    SafeArea = false,
-    DockPanels = true,
-    ReduceMotion = false,
-    NotifyMax = 4,
-    NotifyDND = false,
-    StrictMode = false,
-    -- Advanced theme tokens (optional). Example:
-    -- AdvancedTheme = {
-    --     Accent = Color3.fromRGB(198, 108, 255),
-    --     TabText = Color3.fromRGB(255, 255, 255),
-    --     Text = Color3.fromRGB(255, 255, 255),
-    --     RowAlpha = 0.92,
-    -- },
-    Size = UDim2.fromOffset(700, 500),
-    AutoScale = true,
-    AutoPosition = "Center",
-    Blur = true,
+    Title = "NexxWare",
+    Description = "SB full demo",
     Version = "V0.1 Alpha",
-    Tag = "beta",
-    FolderName = "sh1ttybanana",
-    ConfigName = "default",
-    AutoSave = true,
-    AutoLoad = true,
-    ToggleKey = Enum.KeyCode.RightShift,
-    PaletteKey = Enum.KeyCode.K,
-    ShowPlayerCard = true,
-    ShowAI = true,
-    ShowPalette = true,
-    ShowTheme = true,
-    ShowConfig = true,
-    ShowKeybinds = true,
-    ShowChangelog = false,
-    ShowWatermark = true,
+    Theme = "Liquid Glass", -- or "Fluid Glass Black"
+    Size = UDim2.fromOffset(720, 520),
     WatermarkText = "NexxWare SB V0.1",
-    Compact = false,
-    Sound = false,
-    Particles = true,
-    GroqApiKey = nil,
-    GroqPrompt = "You are a helpful assistant inside a Roblox script menu called sh1ttybanana.",
-    GroqModel = "openai/gpt-oss-120b",
+    ShowWatermark = true,
+    ShowAI = true,
+    ShowPlayerCard = true,
+    DockPanels = true,
+    ShowChangelog = false,
+    SafeArea = false,
+    NotifyMax = 4,
     PanicKey = Enum.KeyCode.End,
-    -- Built-in key UI by default. To use your own:
-    -- KeySystem = { Enabled = true, Custom = function(api)
-    --   -- build UI on api.Gui, then api.Resolve(true, key) or api.Resolve(false)
-    --   -- api.IsValid(key), api.SaveKey(key), api.Theme, api.Library, api.New
-    -- end },
     KeySystem = {
-        Enabled = true,
-        Title = "sh1ttybanana",
+        Enabled = false, -- set true + Keys / Custom to test gate
+        Title = "NexxWare",
         Note = "Verify Key to enjoy",
-        Keys = { "FREE-KEY-1234", "TESTKEY" },
+        Keys = { "FREE-KEY-1234" },
         GetKeyLink = "https://discord.gg/example",
-        SaveKey = true,
         Changelog = {
-            { Version = "V0.1 Alpha", Date = os.date("%b %d, %Y"), Notes = {
-                "Patriot-style key system",
-                "RangeSlider, ToggleGroup, FilePicker",
-                "ConfirmToggle, Hotbar",
-                "Panic key + roles + unload cleanup",
-                "Tab lock remember 10 minutes",
-            }},
-            { Version = "v2.1.0", Date = "Aug 2026", Notes = { "Mobile layout", "AI key field", "Search highlight" } },
+            { Version = "V0.1", Date = "2026", Notes = { "Liquid Glass", "Fluid Glass Black", "All components" } },
         },
     },
-})
-
-local MainGroup = Window:Section({ Title = "Main", Opened = true })
-local GeneralTab = MainGroup:Tab({ Title = "General", Icon = "layout-dashboard" })
-local CombatTab = MainGroup:Tab({ Title = "Combat", Icon = "gravity:ban" }) -- gravity: or lucide: or bare name
-local VisualTab = MainGroup:Tab({ Title = "Visual", Icon = "eye" })
-
-local WorldGroup = Window:Section({ Title = "World", Opened = true })
-local WorldTab = WorldGroup:Tab({ Title = "World", Icon = "globe" })
-local MiscTab = WorldGroup:Tab({ Title = "Misc", Icon = "box" })
-
-local SystemGroup = Window:Section({ Title = "System", Opened = true })
-local SettingsTab = SystemGroup:Tab({ Title = "Settings", Icon = "settings" })
-local DevTab = SystemGroup:Tab({
-    Title = "Dev",
-    Icon = "terminal",
-    Lock = { Password = "1234", Title = "Developer Only", RememberMinutes = 10 },
-})
-
-local MovSec = GeneralTab:AddSection("Movement")
-local InfoSec = GeneralTab:AddSection("Info")
-
-MovSec:AddSlider({
-    Title = "Walk Speed",
-    Flag = "WalkSpeed",
-    Min = 16, Max = 500, Increment = 1, Default = 16,
-    Callback = function(v)
-        print("WalkSpeed:", v)
-    end,
-})
-
-MovSec:AddSlider({
-    Title = "Jump Power",
-    Flag = "JumpPower",
-    Min = 7, Max = 500, Increment = 1, Default = 50,
-    Callback = function(v)
-        print("100 power")
-    end,
-})
-
-MovSec:AddToggle({
-    Title = "Noclip",
-    Flag = "Noclip",
-    Default = false,
-    Callback = function(s)
-        print("Noclip:", s)
-    end,
-})
-
-MovSec:AddToggle({
-    Title = "Fly",
-    Flag = "Fly",
-    Default = false,
-    Callback = function(s)
-        print("Fly:", s)
-    end,
-})
-
-MovSec:AddKeybind({
-    Title = "Fly Keybind",
-    Flag = "FlyKey",
-    Default = Enum.KeyCode.F,
-    Mode = "Toggle",
-    Callback = function(k)
-        print("Key:", k)
-    end,
-})
-
-MovSec:AddSeparator({ Title = "Danger Zone" })
-
-MovSec:AddButton({
-    Title = "Reset Character",
-    Callback = function()
-        Window:Dialog({
-            Title = "Reset Character",
-            Content = "This will respawn your character. Continue?",
-            Buttons = {
-                { Title = "Cancel" },
-                { Title = "Reset", Accent = true, Callback = function()
-                    print("Reset Character")
-                end },
-            },
-        })
-    end,
-})
-
-MovSec:AddInput({
-    Title = "Nickname",
-    Description = "Shown in chat commands",
-    Flag = "Nickname",
-    Placeholder = "Enter a nickname",
-    MaxLength = 20,
-    Clear = true,
-    OnEnter = function(text)
-        print("Nickname set:", text)
-    end,
-    Callback = function(text)
-        print("Nickname changed:", text)
-    end,
-})
-
-local SessionProg = InfoSec:AddProgress({ Title = "Session Time", Default = 0, Suffix = "%" })
-task.spawn(function()
-    local t = 0
-    while task.wait(1) do
-        t = math.min(t + 1, 100)
-        SessionProg:Set(t)
-    end
-end)
-
-InfoSec:AddTable({
-    Title = "Game Info",
-    Columns = { "Key", "Value" },
-    Rows = {
-        { "Place ID", "0000000000" },
-        { "Username", "Player" },
-        { "User ID", "0" },
+    AdvancedTheme = {
+        -- Neutral = Color3.fromRGB(200, 200, 210),
+        -- TabText = Color3.fromRGB(235, 235, 245),
+        -- Accent = Color3.fromRGB(198, 108, 255),
     },
 })
 
-InfoSec:AddParagraph({
-    Title = "About this tab",
-    Content = "Movement and character tools live here.",
-})
+-- ═══════════════════════════════════════
+-- BUTTONS
+-- ═══════════════════════════════════════
+local ButtonsTab = Window:Tab({ Title = "Buttons", Icon = "mouse-pointer-click" })
 
-local AimSec = CombatTab:AddSection("Aimbot")
-local SilentSec = CombatTab:AddSection("Silent Aim")
-
-AimSec:AddToggle({
-    Title = "Aimbot",
-    Flag = "Aimbot",
-    Default = false,
-    Callback = function(s)
-        print("Aimbot:", s)
-    end,
-})
-
-AimSec:AddSlider({
-    Title = "FOV",
-    Flag = "AimFOV",
-    Min = 10, Max = 800, Increment = 1, Default = 120,
-    Callback = function(v)
-        print("FOV:", v)
-    end,
-})
-
-AimSec:AddDropdown({
-    Title = "Target Part",
-    Flag = "TargetPart",
-    Options = { "Head", "HumanoidRootPart", "Torso" },
-    Default = "Head",
-    Callback = function(v)
-        print("Target:", v)
-    end,
-})
-
-AimSec:AddColorpicker({
-    Title = "FOV Circle Color",
-    Flag = "FOVColor",
-    Default = Color3.fromRGB(255, 0, 80),
-    Callback = function(c)
-        print("Color:", c)
-    end,
-})
-
-AimSec:AddKeybind({
-    Title = "Hold to Aim",
-    Flag = "AimKey",
-    Default = Enum.KeyCode.Q,
-    Mode = "Hold",
+local NormalSec = ButtonsTab:AddSection("Normal Button")
+NormalSec:AddButton({
+    Title = "Primary action",
+    Description = "Cooldown 1s example",
+    Cooldown = 1,
     Callback = function()
-        print("Aiming")
-    end,
-    OnRelease = function()
-        print("Stopped aiming")
+        Window:Notify({ Title = "Button", Content = "clicked", Type = "Success" })
     end,
 })
-
-AimSec:AddMultiButton({
-    Title = "Quick Actions",
-    Buttons = {
-        { Title = "Reset FOV", Callback = function() print("Reset FOV") end },
-        { Title = "Reset Target", Callback = function() print("Reset Target") end },
-    },
-})
-
-SilentSec:AddToggle({
-    Title = "Silent Aim",
-    Flag = "SilentAim",
-    Default = false,
-    Callback = function(s)
-        print("Silent:", s)
-    end,
-})
-
-SilentSec:AddSlider({
-    Title = "Prediction",
-    Flag = "Prediction",
-    Min = 0, Max = 100, Increment = 1, Default = 10,
-    Callback = function(v)
-        print("Pred:", v)
-    end,
-})
-
-SilentSec:AddCodeblock({
-    Title = "Silent Aim Notes",
-    Code = "-- fires without rotating your camera",
-    Copy = true,
-})
-
-local ESPSec = VisualTab:AddSection("ESP")
-
-ESPSec:AddToggle({
-    Title = "Player ESP",
-    Flag = "PlayerESP",
-    Default = false,
-    Callback = function(s)
-        print("ESP:", s)
-    end,
-})
-
-ESPSec:AddToggle({
-    Title = "Box ESP",
-    Flag = "BoxESP",
-    Default = false,
-    Callback = function(s)
-        print("BoxESP:", s)
-    end,
-})
-
-ESPSec:AddColorpickerRGB({
-    Title = "ESP Color",
-    Flag = "ESPColor",
-    Default = Color3.fromRGB(255, 60, 60),
-    Callback = function(c)
-        print("ESPCol:", c)
-    end,
-})
-
-ESPSec:AddSlider({
-    Title = "ESP Range",
-    Flag = "ESPRange",
-    Min = 50, Max = 2000, Increment = 50, Default = 500,
-    Callback = function(v)
-        print("Range:", v)
-    end,
-})
-
-local AdvVisual = VisualTab:AddTabSection({ Title = "Advanced Visuals", Opened = false })
-
-AdvVisual:AddToggle({
-    Title = "Remove Fog",
-    Flag = "RemoveFog",
-    Default = false,
-    Callback = function(s)
-        print("RemoveFog:", s)
-    end,
-})
-
-AdvVisual:AddSlider({
-    Title = "Camera FOV",
-    Flag = "CamFOV",
-    Min = 60, Max = 120, Increment = 1, Default = 70,
-    Callback = function(v)
-        print("CamFOV:", v)
-    end,
-})
-
-AdvVisual:AddGrid({
-    Title = "Weapon Slots",
-    Columns = 3,
-    Height = 62,
-    Items = {
-        { Title = "Pistol", Icon = "crosshair", Callback = function() print("Pistol") end },
-        { Title = "Rifle", Icon = "crosshair", Callback = function() print("Rifle") end },
-        { Title = "Sniper", Icon = "crosshair", Callback = function() print("Sniper") end },
-        { Title = "SMG", Icon = "crosshair", Callback = function() print("SMG") end },
-        { Title = "Shotgun", Icon = "crosshair", Callback = function() print("Shotgun") end },
-        { Title = "Knife", Icon = "crosshair", Callback = function() print("Knife") end },
-    },
-})
-
-local DemoPart = Instance.new("Part")
-DemoPart.Shape = Enum.PartType.Ball
-DemoPart.Size = Vector3.new(4, 4, 4)
-DemoPart.Color = Color3.fromRGB(179, 0, 255)
-DemoPart.Material = Enum.Material.Neon
-
-AdvVisual:AddImage({ Title = "Map Preview", Image = "rbxassetid://6894586021", Height = 100 })
-
-AdvVisual:AddViewport({
-    Title = "Item Preview",
-    Description = "Drag to rotate",
-    Object = DemoPart,
-    Height = 160,
-    Interactive = true,
-})
-
-AdvVisual:AddToggle({
-    Title = "Restricted Feature",
-    Description = "Requires elevated access",
-    Locked = true,
-    Default = false,
-    Callback = function() end,
-})
-
-local WorldSec = WorldTab:AddSection("World")
-local TpSec = WorldTab:AddSection("Teleport")
-
-WorldSec:AddSlider({
-    Title = "Global Speed",
-    Flag = "GlobalSpeed",
-    Min = 0, Max = 100, Increment = 1, Default = 16,
-    Callback = function(v)
-        print("GlobalSpeed:", v)
-    end,
-})
-
-TpSec:AddInput({
-    Title = "Teleport to Player",
-    Placeholder = "Username",
-    Clear = true,
-    OnEnter = function(name)
-        print("Teleport to:", name)
-    end,
-})
-
-TpSec:AddButton({
-    Title = "Teleport to Spawn",
-    Callback = function()
-        print("Teleport to Spawn")
-    end,
-})
-
-local AntiSec = MiscTab:AddSection({ Title = "Anti", Lock = { Title = "Beta only" } })
-local LogSec = MiscTab:AddSection("Logger")
-
-AntiSec:AddToggle({
-    Title = "Anti AFK",
-    Flag = "AntiAFK",
-    Default = true,
-    Callback = function(s)
-        print("AntiAFK:", s)
-    end,
-})
-
-AntiSec:AddToggle({
-    Title = "Anti Void",
-    Flag = "AntiVoid",
-    Default = false,
-    Callback = function(s)
-        print("AntiVoid:", s)
-    end,
-})
-
-LogSec:AddToggle({
-    Title = "Remote Spy",
-    Flag = "RemoteSpy",
-    Default = false,
-    Callback = function(s)
-        print("RemoteSpy:", s)
-    end,
-})
-
-local UISec = SettingsTab:AddSection("UI")
-local ConfigSec = SettingsTab:AddSection("Config")
-
-UISec:AddButton({ Title = "Open Theme Panel", Callback = function() Window:ThemePanel() end })
-UISec:AddButton({ Title = "Open Command Palette", Callback = function() Window:Palette() end })
-UISec:AddButton({ Title = "Open Keybind Manager", Callback = function() Window:KeybindPanel() end })
-UISec:AddSlider({
-    Title = "Window Transparency",
-    Min = 0, Max = 50, Increment = 1, Default = 3, Suffix = "%",
-    Callback = function(v)
-        Window:SetTransparency(v / 100)
-    end,
-})
-UISec:AddKeybind({
-    Title = "Toggle AI Assistant",
-    Default = Enum.KeyCode.RightAlt,
-    Callback = function()
-        Window:ToggleAI()
-    end,
-})
-UISec:AddKeybind({
-    Title = "Toggle Player Card",
-    Default = Enum.KeyCode.RightControl,
-    Callback = function()
-        Window:TogglePlayerCard()
-    end,
-})
-
-ConfigSec:AddButton({ Title = "Open Config Manager", Callback = function() Window:ConfigPanel() end })
-ConfigSec:AddButton({
-    Title = "Save Current Config",
-    Callback = function()
-        Window:SaveConfig()
-        Window:Notify({
-            Title = "Saved",
-            Content = "Config saved to file.",
-            Type = "Success",
-            Buttons = { { Text = "Open Manager", Callback = function() Window:ConfigPanel() end } },
-        })
-    end,
-})
-ConfigSec:AddButton({
-    Title = "Load Legit Profile",
-    Callback = function()
-        if Window:LoadConfig("Legit") then
-            Window:Notify({ Title = "Loaded", Content = "Legit profile loaded.", Type = "Info" })
-        else
-            Window:Notify({ Title = "Not Found", Content = "No Legit profile saved yet.", Type = "Warn" })
-        end
-    end,
-})
-
-local DemoSec = DevTab:AddSection("New Elements Demo")
-local CodeSec = DevTab:AddSection("Codeblock")
-
-local HpBar = DemoSec:AddProgress({ Title = "Player Health", Default = 100, Suffix = "%" })
-task.spawn(function()
-    local h = 100
-    while task.wait(0.5) do
-        h = h > 0 and h - 1 or 100
-        HpBar:Set(h)
-    end
-end)
-
-DemoSec:AddSpace(6)
-DemoSec:AddTag({ Title = "Status", Value = "Stable" })
-DemoSec:AddDivider()
-
-DemoSec:AddMultiButton({
-    Title = "Debug Actions",
-    Buttons = {
-        { Title = "Print Tabs", Callback = function() print(table.concat(Window:GetTabs(), ", ")) end },
-        { Title = "Open Card", Callback = function() Window:TogglePlayerCard(true) end },
-        { Title = "Show Changelog", Callback = function()
-            Window:Changelog({
-                Entries = {
-                    { Version = "v2.1.0", Notes = {
-                        "Mobile drawer sidebar (no size lock)",
-                        "Configurable topbar icons",
-                        "AI panel drag + API key textbox",
-                        "Default themes: Dark, Liquid Glass",
-                        "Tighter mobile spacing",
-                    }},
-                    { Version = "v2.0.0", Notes = {
-                        "Rebuilt component API",
-                        "Added Liquid Glass theme",
-                        "Added config profiles",
-                    }},
-                    { Version = "v1.0.0", Notes = { "Initial release" } },
-                },
-            })
-        end },
-    },
-})
-
-local LockedInput = CodeSec:AddInput({
-    Title = "Admin Command",
-    Locked = true,
-    Placeholder = "Locked until unlocked programmatically",
-})
-
-CodeSec:AddCodeblock({
-    Title = "Example Code",
-    Code = 'print("example")',
-    Copy = true,
-})
-
-local ToolsSection = DevTab:AddTabSection({ Title = "More Tools", Opened = false })
-
-ToolsSection:AddButton({
-    Title = "Jump to Combat Tab",
-    Callback = function()
-        Window:SelectTab("Combat")
-    end,
-})
-
-ToolsSection:AddButton({
-    Title = "Unlock Admin Command",
-    Callback = function()
-        LockedInput:SetLocked(false)
-        Window:Notify({ Title = "Unlocked", Content = "Admin Command is now editable.", Type = "Success" })
-    end,
-})
-
-ToolsSection:AddButton({
-    Title = "Prompt Example",
-    Callback = function()
-        Window:Prompt({
-            Title = "Enter a value",
-            Placeholder = "Type something",
-            Confirm = "Submit",
-            Callback = function(text)
-                print("Prompted:", text)
-            end,
-        })
-    end,
-})
-
-ToolsSection:AddButton({
-    Title = "Add a Key at Runtime",
-    Callback = function()
-        Window:AddKey("RUNTIME-KEY-9999")
-        Window:Notify({ Title = "Key System", Content = "Added RUNTIME-KEY-9999 as a valid key.", Type = "Info" })
-    end,
-})
-
-ToolsSection:AddButton({
-    Title = "About",
+NormalSec:AddButton({
+    Title = "About modal",
     Callback = function()
         Window:About()
     end,
 })
-ToolsSection:AddButton({
-    Title = "Run SelfTest",
+
+local MultiSec = ButtonsTab:AddSection("Multibutton")
+MultiSec:AddMultiButton({
+    Title = "Quick actions",
+    Buttons = {
+        { Title = "A", Callback = function() print("A") end },
+        { Title = "B", Accent = true, Callback = function() print("B") end },
+        { Title = "C", Callback = function() print("C") end },
+    },
+})
+MultiSec:AddHotbar({
+    Title = "Icon hotbar",
+    Items = {
+        { Icon = "lucide:sparkles", Tip = "Sparkle", Callback = function() print("sparkle") end },
+        { Icon = "gravity:ban", Tip = "Ban (gravity)", Callback = function() print("ban") end },
+        { Icon = "refresh-cw", Tip = "Refresh", Callback = function() print("refresh") end },
+    },
+})
+
+-- ═══════════════════════════════════════
+-- INPUTS
+-- ═══════════════════════════════════════
+local InputsTab = Window:Tab({ Title = "Inputs", Icon = "keyboard" })
+
+local ToggleSec = InputsTab:AddSection("Toggles")
+ToggleSec:AddToggle({
+    Title = "Enable feature",
+    Description = "Standard toggle",
+    Flag = "FeatOn",
+    Default = false,
+    Callback = function(v) print("toggle", v) end,
+})
+ToggleSec:AddConfirmToggle({
+    Title = "Dangerous flag",
+    Description = "Confirms before ON",
+    ConfirmOn = true,
+    ConfirmTitle = "Enable?",
+    ConfirmContent = "This is destructive.",
+    Flag = "Danger",
+    Callback = function(v) print("confirm", v) end,
+})
+ToggleSec:AddToggleGroup({
+    Title = "Mode",
+    Options = { "Legit", "Rage", "Silent" },
+    Default = "Legit",
+    Flag = "Mode",
+    Callback = function(v) print("mode", v) end,
+})
+
+local SliderSec = InputsTab:AddSection("Sliders")
+SliderSec:AddSlider({
+    Title = "WalkSpeed",
+    Min = 0, Max = 100, Default = 16, Increment = 1,
+    Flag = "WalkSpeed",
+    Callback = function(v) print("speed", v) end,
+})
+SliderSec:AddRangeSlider({
+    Title = "FOV band",
+    Min = 10, Max = 500, Default = { 70, 120 }, Increment = 5,
+    Flag = "FovBand",
+    Callback = function(v) print("range", v[1], v[2]) end,
+})
+SliderSec:AddProgress({ Title = "Load", Default = 0.42, Flag = "LoadPct" })
+
+local FieldSec = InputsTab:AddSection("Fields")
+FieldSec:AddInput({
+    Title = "Nickname",
+    Placeholder = "Enter name",
+    Flag = "Nick",
+    Callback = function(t) print("nick", t) end,
+})
+FieldSec:AddKeybind({
+    Title = "Panic bind",
+    Default = Enum.KeyCode.End,
+    Flag = "PanicBind",
+    Callback = function() print("key") end,
+})
+FieldSec:AddDropdown({
+    Title = "Weapon",
+    Options = { "Pistol", "Rifle", "Sniper", "SMG", "Shotgun" },
+    Default = "Rifle",
+    Search = true,
+    Flag = "Weapon",
+    Callback = function(v) print("weapon", v) end,
+})
+FieldSec:AddPlayerSelector({
+    Title = "Target",
+    Flag = "Target",
+    Callback = function(name) print("target", name) end,
+})
+
+-- ═══════════════════════════════════════
+-- COLORS / MEDIA
+-- ═══════════════════════════════════════
+local VisualTab = Window:Tab({ Title = "Visual", Icon = "eye" })
+
+local ColorSec = VisualTab:AddSection("Colors")
+ColorSec:AddColorpicker({
+    Title = "Accent pick",
+    Default = Color3.fromRGB(198, 108, 255),
+    Flag = "AccentPick",
+    Callback = function(c) print("color", c) end,
+})
+ColorSec:AddColorpickerRGB({
+    Title = "ESP Color",
+    Default = Color3.fromRGB(255, 80, 120),
+    Flag = "EspColor",
+    Callback = function(c) print("rgb", c) end,
+})
+
+local MediaSec = VisualTab:AddSection("Media")
+MediaSec:AddImage({
+    Title = "Banner",
+    Image = "rbxassetid://89646749075297",
+    Height = 100,
+})
+MediaSec:AddViewport({
+    Title = "Item Preview",
+    Description = "Drag to rotate",
+    Height = 140,
+})
+MediaSec:AddGrid({
+    Title = "Weapon Slots",
+    Columns = 3,
+    Height = 64,
+    Items = {
+        { Title = "Pistol", Icon = "lucide:crosshair", Callback = function() print("pistol") end },
+        { Title = "Rifle", Icon = "gravity:ban", Callback = function() print("rifle") end },
+        { Title = "Sniper", Icon = "lucide:focus", Callback = function() print("sniper") end },
+        { Title = "SMG", Icon = "lucide:zap", Callback = function() print("smg") end },
+        { Title = "Shotgun", Icon = "lucide:flame", Callback = function() print("shotgun") end },
+        { Title = "Knife", Icon = "lucide:sword", Callback = function() print("knife") end },
+    },
+})
+
+-- ═══════════════════════════════════════
+-- DATA / TEXT
+-- ═══════════════════════════════════════
+local DataTab = Window:Tab({ Title = "Data", Icon = "table" })
+
+local TableSec = DataTab:AddSection("Table & tags")
+TableSec:AddTable({
+    Title = "Game Info",
+    Columns = { "Key", "Value" },
+    Rows = {
+        { "PlaceId", tostring(game.PlaceId) },
+        { "User", game.Players.LocalPlayer.Name },
+        { "Theme", "Liquid Glass" },
+    },
+})
+TableSec:AddTag({
+    Title = "Channel",
+    Name = "Beta",
+    Icon = "lucide:sparkles",
+    Color = Color3.fromRGB(255, 180, 60),
+})
+TableSec:AddLabel({ Title = "Plain label", Icon = "lucide:info" })
+TableSec:AddParagraph({
+    Title = "About this tab",
+    Content = "Tables, tags, labels, paragraphs, and code live here.",
+})
+
+local CodeSec = DataTab:AddSection("Codeblock")
+CodeSec:AddCodeblock({
+    Title = "Example",
+    Code = 'print("NexxWare SB V0.1")\nlocal x = 1 + 2\nreturn x',
+    Copy = true,
+})
+CodeSec:AddLogConsole({
+    Title = "Console",
+    Height = 110,
+})
+CodeSec:AddFilePicker({
+    Title = "Configs",
+    Extension = ".json",
+    Callback = function(n) print("file", n) end,
+})
+
+-- ═══════════════════════════════════════
+-- ICONS DEMO
+-- ═══════════════════════════════════════
+local IconsTab = Window:Tab({ Title = "Icons", Icon = "lucide:sparkles" })
+local LucideSec = IconsTab:AddSection("Lucide (default)")
+LucideSec:AddButton({ Title = "lucide:home", Icon = "lucide:home", Callback = function() end })
+LucideSec:AddButton({ Title = "bare name → lucide", Icon = "settings", Callback = function() end })
+local GravSec = IconsTab:AddSection("Gravity")
+GravSec:AddButton({ Title = "gravity:ban", Icon = "gravity:ban", Callback = function() end })
+GravSec:AddButton({ Title = "gravity:alarm", Icon = "gravity:alarm", Callback = function() end })
+GravSec:AddHotbar({
+    Title = "Mix",
+    Items = {
+        { Icon = "lucide:star", Tip = "Lucide star" },
+        { Icon = "gravity:archive", Tip = "Gravity archive" },
+        { Icon = "bot", Tip = "Bare lucide bot" },
+    },
+})
+
+-- ═══════════════════════════════════════
+-- SYSTEM
+-- ═══════════════════════════════════════
+local SystemTab = Window:Tab({ Title = "System", Icon = "settings" })
+local SysSec = SystemTab:AddSection("Tools")
+SysSec:AddButton({
+    Title = "SelfTest",
+    Callback = function() Window:SelfTest() end,
+})
+SysSec:AddButton({
+    Title = "Panic",
+    Callback = function() Window:Panic(true) end,
+})
+SysSec:AddButton({
+    Title = "Theme → Fluid Glass Black",
+    Callback = function() Window:SetTheme("Fluid Glass Black") end,
+})
+SysSec:AddButton({
+    Title = "Theme → Liquid Glass",
+    Callback = function() Window:SetTheme("Liquid Glass") end,
+})
+SysSec:AddSeparator({ Title = "Layout" })
+SysSec:AddButton({
+    Title = "Notify test",
     Callback = function()
-        Window:SelfTest()
+        Window:Notify({ Title = "NexxWare", Content = "Hello from SB V0.1", Type = "Info" })
     end,
 })
 
-ToolsSection:AddButton({
-    Title = "Clear Groq Key",
-    Callback = function()
-        Window:ClearGroqKey()
-        Window:Notify({ Title = "Groq", Content = "API key cleared", Type = "Info" })
-    end,
+local DevTab = Window:Tab({
+    Title = "Dev",
+    Icon = "terminal",
+    Lock = { Password = "1234", Title = "Dev only", RememberMinutes = 10 },
+})
+DevTab:AddSection("Locked area"):AddParagraph({
+    Title = "Unlocked",
+    Content = "Password 1234 · remembers 10 minutes",
 })
 
-ToolsSection:AddButton({
-    Title = "Check a Key",
-    Callback = function()
-        print("Is 'TESTKEY' valid?", Window:CheckKey("TESTKEY"))
-    end,
-})
-
-task.delay(1, function()
-    Window:Notify({
-        Title = "Welcome!",
-        Content = "sh1ttybanana v2.1.2 loaded. Dev tab password: 1234 (remembers 10 min)",
-        Type = "Success",
-        Duration = 6,
-    })
-end)
+print("NexxWare SB V0.1 example loaded")
