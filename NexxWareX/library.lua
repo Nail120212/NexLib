@@ -1,5 +1,5 @@
 local NexxWareX = {
-	Version = "2.2.0",
+	Version = "1.0 Alpha",
 	Flags = {},
 	Windows = {},
 	Signals = {},

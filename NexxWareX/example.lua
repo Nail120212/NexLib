@@ -14,7 +14,7 @@ local Window = Library:CreateWindow({
 })
 
 Window:Tag({
-	Title = "v2.2",
+	Title = "1.0 Alpha",
 	Icon = "github",
 	Color = Color3.fromHex("#30ff6a"),
 })
