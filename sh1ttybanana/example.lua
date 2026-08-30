@@ -1,9 +1,10 @@
 --[[
-  NexxWare SB V0.1 — full component example
-  Icons: bare name = lucide | lucide:name | gravity:name
+  NexxWare SB V0.1 — full example
+  author: nexxzel
+  base: kingrua
 ]]
 
-local Library = loadstring(game:HttpGet("YOUR_LIBRARY_URL_OR_PATH"))()
+local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/Nail120212/NexLib/refs/heads/main/sh1ttybanana/sh1ttybanana.lua"))()
 -- or: local Library = loadfile("sh1ttybanana.lua")()
 
 local Window = Library:NewWindow({
