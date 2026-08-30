@@ -15,7 +15,7 @@ do
 		Library = loadstring(src)()
 	else
 		-- fallback: same folder via HttpGet if you host it
-		error("Put library.lua next to example.lua (or load it yourself)")
+		error("https://raw.githubusercontent.com/Nail120212/NexLib/refs/heads/main/NexxWareX/library.lua")
 	end
 end
 
