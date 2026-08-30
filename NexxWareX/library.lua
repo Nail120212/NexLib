@@ -1,5 +1,5 @@
 local NexxWareX = {
-	Version = "2.1.0",
+	Version = "2.2.0",
 	Flags = {},
 	Windows = {},
 	Signals = {},
@@ -59,10 +59,10 @@ local SIZE = {
 }
 
 local TWEEN = {
-	Fluid = TweenInfo.new(0.32, Enum.EasingStyle.Quint, Enum.EasingDirection.Out),
-	Snap = TweenInfo.new(0.14, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
-	Pop = TweenInfo.new(0.42, Enum.EasingStyle.Back, Enum.EasingDirection.Out),
-	In = TweenInfo.new(0.2, Enum.EasingStyle.Quint, Enum.EasingDirection.In),
+	Fluid = TweenInfo.new(0.16, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+	Snap = TweenInfo.new(0.08, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+	Pop = TweenInfo.new(0.18, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+	In = TweenInfo.new(0.12, Enum.EasingStyle.Quad, Enum.EasingDirection.In),
 }
 
 local Theme = {
@@ -296,6 +296,15 @@ BlurEffect.Name = "NexxWareXBlur"
 BlurEffect.Size = 0
 BlurEffect.Parent = Lighting
 
+local AcrylicFX = Instance.new("DepthOfFieldEffect")
+AcrylicFX.Name = "NexxWareXAcrylic"
+AcrylicFX.Enabled = false
+AcrylicFX.FarIntensity = 0.35
+AcrylicFX.NearIntensity = 0.55
+AcrylicFX.FocusDistance = 0.05
+AcrylicFX.InFocusRadius = 0.1
+AcrylicFX.Parent = Lighting
+
 local TooltipFrame = New("Frame", {
 	Visible = false,
 	BackgroundColor3 = Theme.Glass,
@@ -476,6 +485,9 @@ New("UIListLayout", {
 	Parent = NotifyHolder,
 })
 
+NexxWareX.__NotifyCards = NexxWareX.__NotifyCards or {}
+NexxWareX.NotifyLimit = 5
+
 function NexxWareX:Notify(opts)
 	opts = Merge({
 		Title = "NexxWareX",
@@ -484,6 +496,10 @@ function NexxWareX:Notify(opts)
 		Icon = "bell",
 		Type = "Info",
 	}, opts)
+	while #NexxWareX.__NotifyCards >= (NexxWareX.NotifyLimit or 5) do
+		local old = table.remove(NexxWareX.__NotifyCards, 1)
+		if old and old.Parent then old:Destroy() end
+	end
 	local accent = Theme.Accent
 	local t = string.lower(opts.Type or "info")
 	if t == "success" then accent = Theme.Success; opts.Icon = opts.Icon or "check"
@@ -551,10 +567,16 @@ function NexxWareX:Notify(opts)
 		Parent = card,
 	})
 	Tween(progress, TweenInfo.new(opts.Duration, Enum.EasingStyle.Linear), { Size = UDim2.new(0, 0, 0, 2) })
+	table.insert(NexxWareX.__NotifyCards, card)
 	task.delay(opts.Duration, function()
-		Tween(card, TWEEN.In, { BackgroundTransparency = 1 })
-		task.wait(0.2)
-		card:Destroy()
+		for i, c in ipairs(NexxWareX.__NotifyCards) do
+			if c == card then table.remove(NexxWareX.__NotifyCards, i) break end
+		end
+		if card and card.Parent then
+			Tween(card, TWEEN.In, { BackgroundTransparency = 1 })
+			task.wait(0.12)
+			card:Destroy()
+		end
 	end)
 	return card
 end
@@ -568,7 +590,9 @@ function NexxWareX:CreateWindow(config)
 		Keybind = Enum.KeyCode.RightShift,
 		ConfigFolder = "NexxWareX",
 		Blur = true,
+		Acrylic = true,
 		Mobile = true,
+		AutoLoad = "Default",
 	}, config)
 
 	local Window = {
@@ -837,16 +861,35 @@ function NexxWareX:CreateWindow(config)
 			if q == "" then
 				item.Root.Visible = true
 			else
-				item.Root.Visible = string.find(string.lower(item.Name), q, 1, true) ~= nil
+				local hit = string.find(string.lower(item.Name), q, 1, true) ~= nil
+				if item.Section then
+					hit = hit or string.find(string.lower(item.Section), q, 1, true) ~= nil
+				end
+				item.Root.Visible = hit
+			end
+		end
+		for _, tab in ipairs(Window.Tabs) do
+			if q == "" then
+				tab.Button.Visible = true
+				if tab.SubHolder then tab.SubHolder.Visible = (tab.SubCount or 0) > 0 end
+			else
+				local nameHit = string.find(string.lower(tab.Name), q, 1, true) ~= nil
+				local childHit = false
+				for _, item in ipairs(Registry) do
+					if item.Tab == tab.Name and item.Root.Visible then childHit = true break end
+				end
+				tab.Button.Visible = nameHit or childHit
 			end
 		end
 	end))
 
 	local function SetBlur(on)
 		if config.Blur and on then
-			Tween(BlurEffect, TWEEN.Fluid, { Size = 18 })
+			Tween(BlurEffect, TWEEN.Fluid, { Size = config.Acrylic and 24 or 16 })
+			AcrylicFX.Enabled = config.Acrylic and true or false
 		else
 			Tween(BlurEffect, TWEEN.Fluid, { Size = 0 })
+			AcrylicFX.Enabled = false
 		end
 	end
 	SetBlur(true)
@@ -1057,7 +1100,6 @@ function NexxWareX:CreateWindow(config)
 					ZIndex = Z.Row + 1,
 					Parent = body,
 				})
-				table.insert(Registry, { Name = name, Root = row })
 				local title = New("TextLabel", {
 					BackgroundTransparency = 1,
 					Position = UDim2.fromOffset(12, 0),
@@ -1070,19 +1112,53 @@ function NexxWareX:CreateWindow(config)
 					ZIndex = Z.Row + 2,
 					Parent = row,
 				})
-				return row, title
+				local lockOverlay = New("Frame", {
+					Name = "Lock",
+					BackgroundColor3 = Theme.Glass,
+					BackgroundTransparency = 1,
+					Size = UDim2.fromScale(1, 1),
+					Visible = false,
+					ZIndex = Z.Control + 20,
+					Parent = row,
+				})
+				local entry = { Name = name, Root = row, Title = title, Section = secConfig.Name, Tab = tab.Name, Locked = false }
+				table.insert(Registry, entry)
+				local api = {}
+				function api:Lock(msg)
+					entry.Locked = true
+					lockOverlay.Visible = true
+					lockOverlay.BackgroundTransparency = 0.55
+					row.Active = false
+				end
+				function api:Unlock()
+					entry.Locked = false
+					lockOverlay.Visible = false
+					row.Active = true
+				end
+				function api:SetTitle(t)
+					title.Text = t
+					entry.Name = t
+				end
+				function api:Destroy()
+					for i, e in ipairs(Registry) do
+						if e == entry then table.remove(Registry, i) break end
+					end
+					row:Destroy()
+				end
+				return row, title, api, entry
 			end
 
 			function Section:AddParagraph(opts)
-				opts = Merge({ Name = "Note", Content = "", ToolTip = nil }, opts)
+				opts = Merge({ Name = "Note", Content = "", ToolTip = nil, Buttons = nil }, opts)
+				local btnCount = opts.Buttons and #opts.Buttons or 0
+				local h = 58 + (btnCount > 0 and 34 or 0)
 				local row = New("Frame", {
 					BackgroundTransparency = 1,
-					Size = UDim2.new(1, 0, 0, 58),
+					Size = UDim2.new(1, 0, 0, h),
 					ZIndex = Z.Row + 1,
 					Parent = body,
 				})
-				table.insert(Registry, { Name = opts.Name, Root = row })
-				New("TextLabel", {
+				local titleLbl = New("TextLabel", {
 					BackgroundTransparency = 1,
 					Position = UDim2.fromOffset(12, 8),
 					Size = UDim2.new(1, -24, 0, 16),
@@ -1094,7 +1170,7 @@ function NexxWareX:CreateWindow(config)
 					ZIndex = Z.Row + 2,
 					Parent = row,
 				})
-				New("TextLabel", {
+				local bodyLbl = New("TextLabel", {
 					BackgroundTransparency = 1,
 					Position = UDim2.fromOffset(12, 26),
 					Size = UDim2.new(1, -24, 0, 26),
@@ -1107,8 +1183,53 @@ function NexxWareX:CreateWindow(config)
 					ZIndex = Z.Row + 2,
 					Parent = row,
 				})
+				if btnCount > 0 then
+					local holder = New("Frame", {
+						BackgroundTransparency = 1,
+						Position = UDim2.fromOffset(10, 52),
+						Size = UDim2.new(1, -20, 0, 26),
+						ZIndex = Z.Control,
+						Parent = row,
+					})
+					local lay = New("UIListLayout", {
+						FillDirection = Enum.FillDirection.Horizontal,
+						Padding = UDim.new(0, 6),
+						Parent = holder,
+					})
+					for _, bcfg in ipairs(opts.Buttons) do
+						local b = New("TextButton", {
+							AutoButtonColor = false,
+							BackgroundColor3 = Theme.Glass,
+							BackgroundTransparency = 0.2,
+							Size = UDim2.fromOffset(0, 26),
+							AutomaticSize = Enum.AutomaticSize.X,
+							Font = Enum.Font.GothamMedium,
+							TextSize = 11,
+							TextColor3 = Theme.Text,
+							Text = "  " .. (bcfg.Title or bcfg.Name or "Action") .. "  ",
+							ZIndex = Z.Control + 1,
+							Parent = holder,
+						})
+						Corner(b, 8)
+						Stroke(b, 0.8)
+						Track(b.MouseButton1Click:Connect(function()
+							if bcfg.Callback then bcfg.Callback() end
+						end))
+					end
+				end
+				local entry = { Name = opts.Name, Root = row, Section = secConfig.Name, Tab = tab.Name }
+				table.insert(Registry, entry)
 				if opts.ToolTip then BindTooltip(row, opts.ToolTip) end
-				return row
+				local lib = {}
+				function lib:SetTitle(t) titleLbl.Text = t; entry.Name = t end
+				function lib:SetDesc(d) bodyLbl.Text = d end
+				function lib:Destroy()
+					for i, e in ipairs(Registry) do if e == entry then table.remove(Registry, i) break end end
+					row:Destroy()
+				end
+				function lib:Lock() row.Visible = true; for _, d in ipairs(row:GetDescendants()) do if d:IsA("GuiButton") then d.Active = false end end end
+				function lib:Unlock() for _, d in ipairs(row:GetDescendants()) do if d:IsA("GuiButton") then d.Active = true end end end
+				return lib
 			end
 
 			function Section:AddDivider()
@@ -1172,6 +1293,7 @@ function NexxWareX:CreateWindow(config)
 					opts.Callback(v)
 				end
 				Click(track, function()
+					if lib.__locked then return end
 					local nextv = not lib.Value
 					if opts.Dialog then
 						local when = string.lower(opts.Dialog.When or "on")
@@ -1191,6 +1313,27 @@ function NexxWareX:CreateWindow(config)
 				end)
 				function lib:GetValue() return lib.Value end
 				function lib:SetValue(v) Apply(v and true or false) end
+				function lib:SetTitle(t)
+					local titleLbl = row:FindFirstChildWhichIsA("TextLabel")
+					if titleLbl then titleLbl.Text = t end
+				end
+				function lib:Lock()
+					lib.__locked = true
+					for _, d in ipairs(row:GetDescendants()) do
+						if d:IsA("GuiButton") then d.Active = false end
+					end
+					row.BackgroundTransparency = 0.9
+				end
+				function lib:Unlock()
+					lib.__locked = false
+					for _, d in ipairs(row:GetDescendants()) do
+						if d:IsA("GuiButton") then d.Active = true end
+					end
+				end
+				function lib:Destroy()
+					if opts.Flag then NexxWareX.Flags[opts.Flag] = nil end
+					row:Destroy()
+				end
 				if opts.Flag then NexxWareX.Flags[opts.Flag] = lib end
 				return lib
 			end
@@ -1261,6 +1404,10 @@ function NexxWareX:CreateWindow(config)
 				end))
 				function lib:GetValue() return lib.Value end
 				function lib:SetValue(v) Set(tonumber(v) or lib.Value) end
+				function lib:SetTitle(t) if title then title.Text = t end end
+				function lib:Lock() lib.__locked = true; holding = false; for _, d in ipairs(row:GetDescendants()) do if d:IsA("GuiObject") then end end end
+				function lib:Unlock() lib.__locked = false end
+				function lib:Destroy() if opts.Flag then NexxWareX.Flags[opts.Flag] = nil end; row:Destroy() end
 				if opts.Flag then NexxWareX.Flags[opts.Flag] = lib end
 				return lib
 			end
@@ -1381,6 +1528,10 @@ function NexxWareX:CreateWindow(config)
 				function lib:GetValue() return selected end
 				function lib:SetValue(v) selected = v; Label(); opts.Callback(selected) end
 				function lib:Refresh(values) opts.Values = values; Rebuild() end
+				function lib:SetTitle(t) if title then title.Text = t end end
+				function lib:Lock() lib.__locked = true; chip.Active = false end
+				function lib:Unlock() lib.__locked = false; chip.Active = true end
+				function lib:Destroy() if opts.Flag then NexxWareX.Flags[opts.Flag] = nil end; popup:Destroy(); row:Destroy() end
 				if opts.Flag then NexxWareX.Flags[opts.Flag] = lib end
 				return lib
 			end
@@ -1491,6 +1642,10 @@ function NexxWareX:CreateWindow(config)
 					end
 					chip.Text = NameOf(lib.Value)
 				end
+				function lib:SetTitle(t) if title then title.Text = t end end
+				function lib:Lock() lib.__locked = true; chip.Active = false; modeChip.Active = false end
+				function lib:Unlock() lib.__locked = false; chip.Active = true; modeChip.Active = true end
+				function lib:Destroy() if opts.Flag then NexxWareX.Flags[opts.Flag] = nil end; row:Destroy() end
 				if opts.Flag then NexxWareX.Flags[opts.Flag] = lib end
 				return lib
 			end
@@ -1564,24 +1719,54 @@ function NexxWareX:CreateWindow(config)
 				local hex = New("TextLabel", {
 					BackgroundTransparency = 1,
 					Position = UDim2.fromOffset(12, 204),
-					Size = UDim2.new(1, -24, 0, 28),
+					Size = UDim2.fromOffset(70, 28),
 					Font = Enum.Font.GothamBold,
-					TextSize = 13,
-					TextColor3 = Theme.Text,
+					TextSize = 12,
+					TextColor3 = Theme.Faint,
 					TextXAlignment = Enum.TextXAlignment.Left,
+					Text = "Hex",
 					ZIndex = Z.ColorPicker + 1,
 					Parent = picker,
 				})
+				local hexBox = New("TextBox", {
+					Position = UDim2.fromOffset(48, 206),
+					Size = UDim2.fromOffset(154, 24),
+					BackgroundColor3 = Theme.Glass,
+					BackgroundTransparency = 0.25,
+					Font = Enum.Font.Code,
+					TextSize = 12,
+					TextColor3 = Theme.Text,
+					ClearTextOnFocus = false,
+					ZIndex = Z.ColorPicker + 2,
+					Parent = picker,
+				})
+				Corner(hexBox, 6)
+				Stroke(hexBox, 0.8)
+				Pad(hexBox, 0, 6, 0, 6)
 				local h, s, v = opts.Default:ToHSV()
 				local lib = { Value = opts.Default }
 				local function Apply()
 					lib.Value = Color3.fromHSV(h, s, v)
 					sv.BackgroundColor3 = Color3.fromHSV(h, 1, 1)
 					swatch.BackgroundColor3 = lib.Value
-					hex.Text = "#" .. lib.Value:ToHex()
+					hexBox.Text = "#" .. lib.Value:ToHex()
 					opts.Callback(lib.Value)
 				end
 				Apply()
+				Track(hexBox.FocusLost:Connect(function()
+					local raw = hexBox.Text:gsub("#", ""):gsub("%s", "")
+					if #raw == 6 then
+						local ok, col = pcall(function() return Color3.fromHex(raw) end)
+						if ok and typeof(col) == "Color3" then
+							h, s, v = col:ToHSV()
+							Apply()
+						else
+							hexBox.Text = "#" .. lib.Value:ToHex()
+						end
+					else
+						hexBox.Text = "#" .. lib.Value:ToHex()
+					end
+				end))
 				local function SampleSV()
 					local p = sv.AbsolutePosition
 					local z = sv.AbsoluteSize
@@ -1624,6 +1809,10 @@ function NexxWareX:CreateWindow(config)
 					h, s, v = c:ToHSV()
 					Apply()
 				end
+				function lib:SetTitle(t) if title then title.Text = t end end
+				function lib:Lock() lib.__locked = true end
+				function lib:Unlock() lib.__locked = false end
+				function lib:Destroy() if opts.Flag then NexxWareX.Flags[opts.Flag] = nil end; row:Destroy(); picker:Destroy() end
 				if opts.Flag then NexxWareX.Flags[opts.Flag] = lib end
 				return lib
 			end
@@ -1663,6 +1852,10 @@ function NexxWareX:CreateWindow(config)
 					box.Text = lib.Value
 					opts.Callback(lib.Value)
 				end
+				function lib:SetTitle(t) if title then title.Text = t end end
+				function lib:Lock() lib.__locked = true; box.TextEditable = false end
+				function lib:Unlock() lib.__locked = false; box.TextEditable = true end
+				function lib:Destroy() if opts.Flag then NexxWareX.Flags[opts.Flag] = nil end; row:Destroy() end
 				if opts.Flag then NexxWareX.Flags[opts.Flag] = lib end
 				return lib
 			end
@@ -1710,6 +1903,7 @@ function NexxWareX:CreateWindow(config)
 				})
 				if opts.ToolTip then BindTooltip(btn, opts.ToolTip) end
 				Track(btn.MouseButton1Click:Connect(function()
+					if lib.__locked then return end
 					if opts.Dialog then
 						OpenDialog({
 							Title = opts.Dialog.Title or opts.Name,
@@ -1722,7 +1916,17 @@ function NexxWareX:CreateWindow(config)
 						opts.Callback()
 					end
 				end))
-				return btn
+				local lib = {}
+				function lib:SetTitle(t)
+					opts.Name = t
+					for _, c in ipairs(btn:GetChildren()) do
+						if c:IsA("TextLabel") then c.Text = t end
+					end
+				end
+				function lib:Lock() lib.__locked = true; btn.Active = false end
+				function lib:Unlock() lib.__locked = false; btn.Active = true end
+				function lib:Destroy() row:Destroy() end
+				return lib
 			end
 
 			function Section:AddMultiButton(opts)
@@ -2070,6 +2274,15 @@ function NexxWareX:CreateWindow(config)
 				SetBlur(Window.Visible and v)
 			end,
 		})
+		ui:AddToggle({
+			Name = "Acrylic",
+			Flag = "nx.acrylic",
+			Default = true,
+			Callback = function(v)
+				config.Acrylic = v
+				SetBlur(Window.Visible and config.Blur)
+			end,
+		})
 		ui:AddSlider({
 			Name = "Opacity",
 			Flag = "nx.opacity",
@@ -2154,6 +2367,18 @@ function NexxWareX:CreateWindow(config)
 		return tab
 	end
 
+	if config.AutoLoad and config.AutoLoad ~= false then
+		local name = type(config.AutoLoad) == "string" and config.AutoLoad or "Default"
+		task.defer(function()
+			local path = config.ConfigFolder .. "/" .. name .. ".fg"
+			if HasFS() and isfile(path) then
+				pcall(function()
+					ApplyFlags(Decode(readfile(path)))
+				end)
+			end
+		end)
+	end
+
 	table.insert(self.Windows, Window)
 	return Window
 end
@@ -2164,6 +2389,11 @@ function NexxWareX:Unload()
 	end
 	table.clear(self.Signals)
 	pcall(function() BlurEffect:Destroy() end)
+	pcall(function() AcrylicFX:Destroy() end)
+	if NexxWareX.__NotifyCards then
+		for _, c in ipairs(NexxWareX.__NotifyCards) do pcall(function() c:Destroy() end) end
+		table.clear(NexxWareX.__NotifyCards)
+	end
 	Screen:Destroy()
 end
 
