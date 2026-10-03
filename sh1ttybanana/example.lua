@@ -9,7 +9,7 @@ local Library
 if isfile and readfile and isfile("sh1ttybanana.lua") then
     Library = loadstring(readfile("sh1ttybanana.lua"))()
 else
-    Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/YOUR_USER/YOUR_REPO/main/sh1ttybanana.lua"))()
+    Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/Nail120212/NexLib/refs/heads/main/sh1ttybanana/sh1ttybanana.lua"))()
 end
 
 local Window = Library:NewWindow({
