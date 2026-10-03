@@ -1,5 +1,5 @@
 local Library = {}
-Library.Version = "0.2.0-glass"
+Library.Version = "0.3.0-glass"
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
@@ -242,7 +242,7 @@ Library.Themes = {
         TabText = Color3.fromRGB(226, 231, 250),
         TextDisabled = Color3.fromRGB(128, 136, 164),
         Neutral = Color3.fromRGB(200, 205, 225),
-        Stroke = Color3.fromRGB(238, 242, 255),
+        Stroke = Color3.fromRGB(225, 232, 255),
         StrokeSoft = Color3.fromRGB(185, 195, 240),
         Sheen = Color3.fromRGB(255, 255, 255),
         Shadow = Color3.fromRGB(0, 0, 10),
@@ -251,16 +251,16 @@ Library.Themes = {
         Warn = Color3.fromRGB(255, 218, 120),
         Error = Color3.fromRGB(255, 120, 130),
         Info = Color3.fromRGB(120, 180, 255),
-        WindowAlpha = 0.2,
+        WindowAlpha = 0,
         SidebarAlpha = 0.955,
         CardAlpha = 0.95,
         RowAlpha = 0.93,
         RowHoverAlpha = 0.88,
-        InsetAlpha = 0.45,
-        ElevatedAlpha = 0.02,
+        InsetAlpha = 0.35,
+        ElevatedAlpha = 0,
         StrokeAlpha = 0.84,
         StrokeSoftAlpha = 0.9,
-        SheenAlpha = 0.9,
+        SheenAlpha = 0.92,
         ButtonAlpha = 0.88,
         ButtonHoverAlpha = 0.8,
         AccentFillAlpha = 0.1,
@@ -269,7 +269,7 @@ Library.Themes = {
         TabActiveAlpha = 0.84,
         TabHoverAlpha = 0.93,
         Radius = 18,
-        Blur = 20,
+        Blur = 0,
         Glass = true
     }
 }
@@ -738,23 +738,61 @@ end
 function Library:GlassEdge(Object, Thickness, Base)
     local Line = New("UIStroke", {
         Parent = Object,
-        Thickness = Thickness or 1.2,
-        Transparency = Base or 0.2,
+        Thickness = Thickness or 1.1,
+        Transparency = Base or 0.3,
         ApplyStrokeMode = Enum.ApplyStrokeMode.Border
     })
     Library:Themed(Line, "Color", "Stroke")
+    -- specular edge: brightest along the top, falling away down the sides
     New("UIGradient", {
         Parent = Line,
-        Rotation = 45,
+        Rotation = 80,
         Transparency = NumberSequence.new({
-            NumberSequenceKeypoint.new(0, 0),
-            NumberSequenceKeypoint.new(0.2, 0.55),
-            NumberSequenceKeypoint.new(0.5, 0.93),
-            NumberSequenceKeypoint.new(0.8, 0.55),
-            NumberSequenceKeypoint.new(1, 0.05)
+            NumberSequenceKeypoint.new(0, 0.05),
+            NumberSequenceKeypoint.new(0.22, 0.6),
+            NumberSequenceKeypoint.new(0.55, 0.95),
+            NumberSequenceKeypoint.new(0.85, 0.72),
+            NumberSequenceKeypoint.new(1, 0.4)
         })
     })
     return Line
+end
+
+-- soft top-lit highlight laid over a surface (skipped automatically when the
+-- surface lays out its own children, so it can never push content around)
+function Library:Gloss(Object, Alpha)
+    local Layer = New("Frame", {
+        Parent = Object,
+        Name = "Gloss",
+        BackgroundColor3 = Color3.fromRGB(255, 255, 255),
+        BackgroundTransparency = Alpha or 0.93,
+        BorderSizePixel = 0,
+        Size = UDim2.fromScale(1, 1),
+        ZIndex = Object.ZIndex
+    })
+    New("UIGradient", {
+        Parent = Layer,
+        Rotation = 90,
+        Transparency = NumberSequence.new({
+            NumberSequenceKeypoint.new(0, 0),
+            NumberSequenceKeypoint.new(0.45, 0.75),
+            NumberSequenceKeypoint.new(1, 1)
+        })
+    })
+    task.defer(function()
+        if not Layer.Parent then
+            return
+        end
+        if Object:FindFirstChildWhichIsA("UIListLayout") or Object:FindFirstChildWhichIsA("UIGridLayout") or Object:FindFirstChildWhichIsA("UIPageLayout") then
+            Layer:Destroy()
+            return
+        end
+        local Corner = Object:FindFirstChildOfClass("UICorner")
+        if Corner then
+            New("UICorner", { Parent = Layer, CornerRadius = Corner.CornerRadius })
+        end
+    end)
+    return Layer
 end
 
 function Library:Padding(Object, Top, Bottom, Left, Right)
@@ -1305,6 +1343,7 @@ local function MakeRow(Section, Kind, Title, Description, MinHeight, RightWidth)
     Library:Corner(Row, UDim.new(0, 14))
     Library:Themed(Row, "BackgroundColor3", "Row")
     Library:Themed(Row, "BackgroundTransparency", "RowAlpha")
+    Library:Gloss(Row, 0.95)
     local Line = Library:Stroke(Row, "StrokeSoft", 1)
     if Library.Theme.Glass then
         Line.Transparency = Library.Theme.StrokeSoftAlpha or 0.85
@@ -1334,10 +1373,7 @@ local function MakeRow(Section, Kind, Title, Description, MinHeight, RightWidth)
     })
 
     local function Measure()
-        local ContentY = StackLayout.AbsoluteContentSize.Y
-        if ContentY < 1 then
-            ContentY = Stack.AbsoluteSize.Y
-        end
+        local ContentY = math.max(StackLayout.AbsoluteContentSize.Y, Stack.AbsoluteSize.Y)
         local Pad = Compact and 16 or 20
         local Wanted = math.max(Height, math.ceil(ContentY + Pad))
         if Row.Size.Y.Offset ~= Wanted then
@@ -1349,6 +1385,7 @@ local function MakeRow(Section, Kind, Title, Description, MinHeight, RightWidth)
     task.defer(Measure)
     task.delay(0.05, Measure)
     task.delay(0.2, Measure)
+    task.delay(0.6, Measure)
 
     local TitleLabel = New("TextLabel", {
         Parent = Stack,
@@ -1651,7 +1688,7 @@ function Library:NewWindow(UserConfig)
         AutoScale = true,
         AutoPosition = "Center",
         Transparency = nil,
-        Blur = true,
+        Blur = false,
         Version = "V0.1 Alpha",
         Tag = "beta",
         FolderName = "sh1ttybanana",
@@ -2193,6 +2230,7 @@ function Library:NewWindow(UserConfig)
             Library:Corner(Field, UDim.new(0, 14))
             Library:Themed(Field, "BackgroundColor3", "Inset")
             Library:Themed(Field, "BackgroundTransparency", "InsetAlpha")
+            Library:Gloss(Field, 0.96)
             local FieldLine = Library:Stroke(Field, "StrokeSoft", 1)
 
             local Box = New("TextBox", {
@@ -2425,7 +2463,7 @@ function Library:NewWindow(UserConfig)
     Library:Themed(W.Main, "BackgroundTransparency", "WindowAlpha")
 
     -- glass rim: bright on the top-left edge, fading across the window
-    Library:GlassEdge(W.Main, 1.6, 0.1)
+    Library:GlassEdge(W.Main, 1.4, 0.15)
     Library:Gradient(W.Main, {
         Color3.fromRGB(255, 255, 255),
         Color3.fromRGB(176, 184, 220)
@@ -2440,14 +2478,14 @@ function Library:NewWindow(UserConfig)
         ZIndex = 1
     })
     local function Orb(ScaleX, ScaleY, Height, Key)
-        for Layer = 1, 5 do
+        for Layer = 1, 6 do
             local Disc = New("Frame", {
                 Parent = W.Ambient,
                 AnchorPoint = Vector2.new(0.5, 0.5),
                 BorderSizePixel = 0,
                 Position = UDim2.fromScale(ScaleX, ScaleY),
-                Size = UDim2.fromScale(0, Height * (1 - (Layer - 1) * 0.18)),
-                BackgroundTransparency = 0.975,
+                Size = UDim2.fromScale(0, Height * (1 - (Layer - 1) * 0.15)),
+                BackgroundTransparency = 0.965,
                 ZIndex = 1
             })
             New("UIAspectRatioConstraint", {
@@ -2461,6 +2499,7 @@ function Library:NewWindow(UserConfig)
     end
     Orb(0.78, 0.3, 0.52, "Accent")
     Orb(0.3, 0.78, 0.44, "Info")
+    Orb(0.14, 0.22, 0.34, "Accent")
 
     W.Sheen = Library:Sheen(W.Main, 90)
     W.Sheen.ZIndex = 2
@@ -2790,7 +2829,8 @@ function Library:NewWindow(UserConfig)
     Library:Themed(W.Sidebar, "BackgroundColor3", "Sidebar")
     Library:Themed(W.Sidebar, "BackgroundTransparency", "SidebarAlpha")
     Library:Corner(W.Sidebar, UDim.new(0, 18))
-    Library:GlassEdge(W.Sidebar, 1.2, 0.35)
+    Library:GlassEdge(W.Sidebar, 1.1, 0.6)
+    Library:Gloss(W.Sidebar, 0.95)
 
     W.SidebarLine = New("Frame", {
         Parent = W.Sidebar,
@@ -3385,7 +3425,7 @@ local ComponentNames = {
     "Tag", "Codeblock", "Progress", "Grid", "Table", "Image", "Viewport",
     "RangeSlider", "ToggleGroup", "FilePicker", "ConfirmToggle", "Hotbar",
     "PlayerSelector", "LogConsole",
-    "Separator", "Divider", "Space"
+    "Separator", "Divider", "Space", "Card"
 }
 
 local Aliases = {
@@ -3437,7 +3477,7 @@ local function BuildSection(Tab, Config)
         Library:Corner(Card, UDim.new(0, 16))
         Library:Themed(Card, "BackgroundColor3", "Card")
         Library:Themed(Card, "BackgroundTransparency", "CardAlpha")
-        Library:GlassEdge(Card, 1.1, 0.4)
+        Library:GlassEdge(Card, 1, 0.65)
     end
 
     New("UIPadding", {
@@ -3997,7 +4037,7 @@ local function Popup(W, Source, Width, Height)
     Library:Corner(Frame, UDim.new(0, 14))
     Library:Themed(Frame, "BackgroundColor3", "Elevated")
     Library:Themed(Frame, "BackgroundTransparency", "ElevatedAlpha")
-    Library:GlassEdge(Frame, 1.3, 0.2)
+    Library:GlassEdge(Frame, 1.2, 0.3)
     Library:Shadow(Frame, 46, 0.55)
     Library:Pop(Frame, 0.24, 0.94)
 
@@ -4267,6 +4307,330 @@ function Components.Button(Section, Config)
     return Element
 end
 
+-- Card: a glass container that hosts any other component. Build it with a declarative
+-- Items list, a Build(Card) callback, or by calling Card:AddButton / :AddSlider / ... later.
+function Components.Card(Section, Config)
+    Config = Merge({
+        Title = "Card",
+        Description = "",
+        Icon = nil,
+        Collapsible = false,
+        Opened = true,
+        Actions = nil,
+        Items = nil,
+        Build = nil
+    }, Config)
+
+    local Window = Section.Window
+    local Mobile = Window.Mobile
+
+    local Frame = New("Frame", {
+        Parent = Section.Body,
+        Name = "CardBlock",
+        BorderSizePixel = 0,
+        Size = UDim2.new(1, 0, 0, 0),
+        AutomaticSize = Enum.AutomaticSize.Y,
+        LayoutOrder = Section.Count + 1
+    })
+    Section.Count = Section.Count + 1
+    Library:Corner(Frame, UDim.new(0, 18))
+    Library:Themed(Frame, "BackgroundColor3", "Row")
+    Library:Themed(Frame, "BackgroundTransparency", "RowAlpha")
+    Library:GlassEdge(Frame, 1, 0.55)
+    Library:Gloss(Frame, 0.94)
+
+    -- inner holder owns the layout so the lock overlay can still cover the whole card
+    local Inner = New("Frame", {
+        Parent = Frame,
+        Name = "Text",
+        BackgroundTransparency = 1,
+        BorderSizePixel = 0,
+        Size = UDim2.new(1, 0, 0, 0),
+        AutomaticSize = Enum.AutomaticSize.Y
+    })
+    Library:Padding(Inner, 12, 12, 12, 12)
+    New("UIListLayout", {
+        Parent = Inner,
+        SortOrder = Enum.SortOrder.LayoutOrder,
+        Padding = UDim.new(0, 10)
+    })
+
+    -- header: [icon chip] [title + description] [actions]
+    local Header = New("Frame", {
+        Parent = Inner,
+        Name = "Header",
+        BackgroundTransparency = 1,
+        BorderSizePixel = 0,
+        Size = UDim2.new(1, 0, 0, 0),
+        AutomaticSize = Enum.AutomaticSize.Y,
+        LayoutOrder = 1
+    })
+    New("UIListLayout", {
+        Parent = Header,
+        FillDirection = Enum.FillDirection.Horizontal,
+        VerticalAlignment = Enum.VerticalAlignment.Center,
+        SortOrder = Enum.SortOrder.LayoutOrder,
+        Padding = UDim.new(0, 10)
+    })
+
+    local Used = 0
+    if Config.Icon then
+        local Chip = New("Frame", {
+            Parent = Header,
+            BorderSizePixel = 0,
+            Size = UDim2.fromOffset(34, 34),
+            BackgroundTransparency = 0.82,
+            LayoutOrder = 1
+        })
+        Library:Corner(Chip, UDim.new(1, 0))
+        Library:Themed(Chip, "BackgroundColor3", "Accent")
+        local ChipLine = New("UIStroke", {
+            Parent = Chip,
+            Thickness = 1,
+            Transparency = 0.6,
+            ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+        })
+        Library:Themed(ChipLine, "Color", "Accent")
+        local Glyph = IconLabel(Chip, Config.Icon, 16, "Accent")
+        Glyph.AnchorPoint = Vector2.new(0.5, 0.5)
+        Glyph.Position = UDim2.fromScale(0.5, 0.5)
+        Used = Used + 44
+    end
+
+    local ActionList = {}
+    if type(Config.Actions) == "table" then
+        for _, Action in ipairs(Config.Actions) do
+            table.insert(ActionList, Action)
+        end
+    end
+    local ActionCount = #ActionList + (Config.Collapsible and 1 or 0)
+    local ActionsWidth = ActionCount * 32
+    if ActionCount > 0 then
+        Used = Used + ActionsWidth + 10
+    end
+
+    local TextStack = New("Frame", {
+        Parent = Header,
+        BackgroundTransparency = 1,
+        BorderSizePixel = 0,
+        Size = UDim2.new(1, -Used, 0, 0),
+        AutomaticSize = Enum.AutomaticSize.Y,
+        LayoutOrder = 2
+    })
+    New("UIListLayout", {
+        Parent = TextStack,
+        SortOrder = Enum.SortOrder.LayoutOrder,
+        Padding = UDim.new(0, 2)
+    })
+    local TitleLabel = New("TextLabel", {
+        Parent = TextStack,
+        BackgroundTransparency = 1,
+        Font = Library.Font.Bold,
+        Text = Config.Title or "Card",
+        TextSize = Library.TextSize(14, 2),
+        TextXAlignment = Enum.TextXAlignment.Left,
+        TextTruncate = Enum.TextTruncate.AtEnd,
+        Size = UDim2.new(1, 0, 0, Library.TextSize(14, 2) + 4),
+        LayoutOrder = 1,
+        RichText = true
+    })
+    Library:Themed(TitleLabel, "TextColor3", "Text")
+    local DescLabel = New("TextLabel", {
+        Parent = TextStack,
+        BackgroundTransparency = 1,
+        Font = Library.Font.Regular,
+        Text = Config.Description or "",
+        TextSize = Library.TextSize(11, 2),
+        TextXAlignment = Enum.TextXAlignment.Left,
+        TextYAlignment = Enum.TextYAlignment.Top,
+        TextWrapped = true,
+        Size = UDim2.new(1, 0, 0, 0),
+        AutomaticSize = Enum.AutomaticSize.Y,
+        LayoutOrder = 2,
+        Visible = (Config.Description or "") ~= "",
+        RichText = true
+    })
+    Library:Themed(DescLabel, "TextColor3", "TextDisabled")
+
+    local Actions
+    local ChevronIcon
+    local Opened = Config.Opened ~= false
+    local Divider, Body
+
+    local function PaintOpen(Animated)
+        if Body then
+            Body.Visible = Opened
+        end
+        if Divider then
+            Divider.Visible = Opened
+        end
+        if ChevronIcon then
+            if Animated then
+                Library:Tween(ChevronIcon, FAST, { Rotation = Opened and 0 or -90 })
+            else
+                ChevronIcon.Rotation = Opened and 0 or -90
+            end
+        end
+    end
+
+    if ActionCount > 0 then
+        Actions = New("Frame", {
+            Parent = Header,
+            BackgroundTransparency = 1,
+            BorderSizePixel = 0,
+            Size = UDim2.fromOffset(ActionsWidth, 30),
+            LayoutOrder = 3
+        })
+        New("UIListLayout", {
+            Parent = Actions,
+            FillDirection = Enum.FillDirection.Horizontal,
+            HorizontalAlignment = Enum.HorizontalAlignment.Right,
+            VerticalAlignment = Enum.VerticalAlignment.Center,
+            SortOrder = Enum.SortOrder.LayoutOrder,
+            Padding = UDim.new(0, 2)
+        })
+        for Index, Action in ipairs(ActionList) do
+            local Button = GlyphButton(Actions, Action.Icon or Library.Icons.Right, Action.Tip)
+            Button.LayoutOrder = Index
+            Button.MouseButton1Click:Connect(function()
+                if Action.Callback then
+                    task.spawn(Action.Callback)
+                end
+            end)
+        end
+        if Config.Collapsible then
+            local Chevron, Icon = GlyphButton(Actions, Library.Icons.Down, "Collapse")
+            Chevron.LayoutOrder = #ActionList + 1
+            ChevronIcon = Icon
+            Chevron.MouseButton1Click:Connect(function()
+                Opened = not Opened
+                PaintOpen(true)
+            end)
+        end
+    end
+
+    Divider = New("Frame", {
+        Parent = Inner,
+        Name = "Divider",
+        BorderSizePixel = 0,
+        Size = UDim2.new(1, 0, 0, 1),
+        BackgroundTransparency = 0.9,
+        LayoutOrder = 2
+    })
+    Library:Themed(Divider, "BackgroundColor3", "Stroke")
+
+    Body = New("Frame", {
+        Parent = Inner,
+        Name = "Body",
+        BackgroundTransparency = 1,
+        BorderSizePixel = 0,
+        Size = UDim2.new(1, 0, 0, 0),
+        AutomaticSize = Enum.AutomaticSize.Y,
+        LayoutOrder = 3
+    })
+    New("UIListLayout", {
+        Parent = Body,
+        SortOrder = Enum.SortOrder.LayoutOrder,
+        Padding = UDim.new(0, 6)
+    })
+    PaintOpen(false)
+
+    -- a section-shaped context so every component can be built inside the card
+    local CardSection = {
+        Window = Window,
+        Tab = Section.Tab,
+        Title = Config.Title,
+        Elements = {},
+        Count = 0,
+        Body = Body,
+        Opened = true,
+        Parent = Section
+    }
+
+    local Handlers = {}
+    function Handlers.Get()
+        return nil
+    end
+    function Handlers.Set()
+    end
+    function Handlers.Lock(Locked, Reason)
+        for _, Child in ipairs(CardSection.Elements) do
+            Child:SetLocked(Locked, Reason)
+        end
+    end
+
+    local Card = Finish(Section, "Card", Config, Frame, Handlers, TitleLabel, DescLabel)
+    Card.Instance = Frame
+    Card.Body = Body
+    Card.Elements = CardSection.Elements
+
+    local function Add(Kind, ElementConfig)
+        local Builder = Components[Kind]
+        if not Builder then
+            return nil
+        end
+        return Builder(CardSection, type(ElementConfig) == "table" and ElementConfig or { Title = ElementConfig })
+    end
+
+    for _, Name in ipairs(ComponentNames) do
+        Card["Add" .. Name] = function(_, ElementConfig)
+            return Add(Name, ElementConfig)
+        end
+    end
+    for Alias, Target in pairs(Aliases) do
+        Card[Alias] = function(Self, ElementConfig)
+            return Card[Target](Self, ElementConfig)
+        end
+    end
+
+    function Card:Add(Kind, ElementConfig)
+        local Key = tostring(Kind):gsub("^Add", ""):lower()
+        for _, Name in ipairs(ComponentNames) do
+            if Name:lower() == Key then
+                return Add(Name, ElementConfig)
+            end
+        end
+        return nil
+    end
+
+    function Card:SetOpened(State)
+        Opened = State ~= false
+        PaintOpen(true)
+        return self
+    end
+
+    function Card:Clear()
+        for _, Child in ipairs(table.clone(CardSection.Elements)) do
+            Child:Destroy()
+        end
+        table.clear(CardSection.Elements)
+        CardSection.Count = 0
+        return self
+    end
+
+    function Card:Destroy()
+        Card:Clear()
+        Library.Element.Destroy(self)
+    end
+
+    if type(Config.Items) == "table" then
+        for _, Item in ipairs(Config.Items) do
+            local Kind = Item.Type or Item.Kind or Item.Component
+            if Kind then
+                Card:Add(Kind, Item)
+            end
+        end
+    end
+    if type(Config.Build) == "function" then
+        local Ok, Err = pcall(Config.Build, Card)
+        if not Ok then
+            warn("[sh1ttybanana] Card build: " .. tostring(Err))
+        end
+    end
+
+    return Card
+end
+
 function Components.Input(Section, Config)
     Config = Merge({
         Title = "Input",
@@ -4296,9 +4660,10 @@ function Components.Input(Section, Config)
         Position = UDim2.new(1, -14, 0.5, 0),
         Size = UDim2.fromOffset(BoxWidth, Mobile and 34 or 30)
     })
-    Library:Corner(Field, UDim.new(0, 12))
+    Library:Corner(Field, UDim.new(1, 0))
     Library:Themed(Field, "BackgroundColor3", "Inset")
     Library:Themed(Field, "BackgroundTransparency", "InsetAlpha")
+    Library:Gloss(Field, 0.96)
     local FieldLine = Library:Stroke(Field, "StrokeSoft", 1)
 
     local Box = New("TextBox", {
@@ -4441,8 +4806,10 @@ function Components.Slider(Section, Config)
     local BoxWidth = Clamp(#Sample * 7 + 18, Mobile and 52 or 48, Mobile and 90 or 118)
     local BarWidth = Mobile and 120 or 150
     local Reserve = Mobile and (BoxWidth + 6) or (BarWidth + BoxWidth + 22)
+    local SliderMobileExtra = Mobile and ((Section.Window.Config and Section.Window.Config.Compact) and 4 or 10) or 0
+    local SliderNeed = 20 + 17 + ((Config.Description or "") ~= "" and 17 or 0) + 3 + 30
     local Row, TitleLabel, DescLabel, _, Stack = MakeRow(Section, "Slider", Config.Title, Config.Description,
-        44, Reserve)
+        Mobile and math.max(44, SliderNeed - SliderMobileExtra) or 44, Reserve)
 
     local ValueBox = New("TextBox", {
         Parent = Row,
@@ -4456,9 +4823,10 @@ function Components.Slider(Section, Config)
         TextSize = 11,
         ClearTextOnFocus = false
     })
-    Library:Corner(ValueBox, UDim.new(0, 12))
+    Library:Corner(ValueBox, UDim.new(1, 0))
     Library:Themed(ValueBox, "BackgroundColor3", "Inset")
     Library:Themed(ValueBox, "BackgroundTransparency", "InsetAlpha")
+    Library:Gloss(ValueBox, 0.96)
     Library:Themed(ValueBox, "TextColor3", "Text")
     Library:Stroke(ValueBox, "StrokeSoft", 1)
 
@@ -4618,9 +4986,10 @@ function Components.Dropdown(Section, Config)
         Text = "",
         AutoButtonColor = false
     })
-    Library:Corner(Button, UDim.new(0, 12))
+    Library:Corner(Button, UDim.new(1, 0))
     Library:Themed(Button, "BackgroundColor3", "Inset")
     Library:Themed(Button, "BackgroundTransparency", "InsetAlpha")
+    Library:Gloss(Button, 0.96)
     local ButtonLine = Library:Stroke(Button, "StrokeSoft", 1)
 
     local Display = New("TextLabel", {
@@ -4736,9 +5105,10 @@ function Components.Dropdown(Section, Config)
                 Size = UDim2.new(1, -16, 0, 28),
                 ZIndex = (Handle and Handle.Frame and Handle.Frame.ZIndex or 202) + 1
             })
-            Library:Corner(Field, UDim.new(0, 10))
+            Library:Corner(Field, UDim.new(1, 0))
             Library:Themed(Field, "BackgroundColor3", "Inset")
             Library:Themed(Field, "BackgroundTransparency", "InsetAlpha")
+            Library:Gloss(Field, 0.96)
             local Search = New("TextBox", {
                 Parent = Field,
                 BackgroundTransparency = 1,
@@ -4810,7 +5180,7 @@ function Components.Dropdown(Section, Config)
                         BackgroundTransparency = Active and 0.85 or 1,
                         ZIndex = (Handle and Handle.Frame and Handle.Frame.ZIndex or 202) + 2
                     })
-                    Library:Corner(Item, UDim.new(0, 10))
+                    Library:Corner(Item, UDim.new(0, 14))
                     Library:Themed(Item, "BackgroundColor3", "Accent")
 
                     local ItemLabel = New("TextLabel", {
@@ -4978,9 +5348,10 @@ function Components.Keybind(Section, Config)
         TextSize = 11,
         AutoButtonColor = false
     })
-    Library:Corner(Button, UDim.new(0, 12))
+    Library:Corner(Button, UDim.new(1, 0))
     Library:Themed(Button, "BackgroundColor3", "Inset")
     Library:Themed(Button, "BackgroundTransparency", "InsetAlpha")
+    Library:Gloss(Button, 0.96)
     Library:Themed(Button, "TextColor3", "Text")
     local Line = Library:Stroke(Button, "StrokeSoft", 1)
 
@@ -5161,8 +5532,8 @@ function Components.Colorpicker(Section, Config)
         AutoButtonColor = false,
         BackgroundColor3 = Config.Default
     })
-    Library:Corner(Swatch, UDim.new(0, 10))
-    Library:Stroke(Swatch, "Stroke", 1)
+    Library:Corner(Swatch, UDim.new(1, 0))
+    Library:GlassEdge(Swatch, 1.2, 0.35)
 
     local Hue, Saturation, Value = Color3.toHSV(Config.Default)
     local Element
@@ -5250,10 +5621,11 @@ function Components.Colorpicker(Section, Config)
             ClearTextOnFocus = false,
             ZIndex = 103
         })
-        Library:Corner(HexBox, UDim.new(0, 10))
+        Library:Corner(HexBox, UDim.new(1, 0))
         Library:Stroke(HexBox, "StrokeSoft", 1)
         Library:Themed(HexBox, "BackgroundColor3", "Inset")
         Library:Themed(HexBox, "BackgroundTransparency", "InsetAlpha")
+        Library:Gloss(HexBox, 0.96)
         Library:Themed(HexBox, "TextColor3", "Text")
 
         local Preview = New("Frame", {
@@ -5683,7 +6055,18 @@ function Components.Tag(Section, Config)
         Size = UDim2.fromOffset(0, PillH),
         AutomaticSize = Enum.AutomaticSize.X
     })
-    Library:Corner(Pill, UDim.new(0, 12))
+    Library:Corner(Pill, UDim.new(1, 0))
+    local PillLine = New("UIStroke", {
+        Parent = Pill,
+        Thickness = 1,
+        Transparency = 0.55,
+        ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+    })
+    if typeof(TagColor) == "Color3" then
+        PillLine.Color = TagColor
+    else
+        Library:Themed(PillLine, "Color", "Accent")
+    end
     if typeof(TagColor) == "Color3" then
         Pill.BackgroundColor3 = TagColor
     else
@@ -5788,6 +6171,7 @@ function Components.Codeblock(Section, Config)
     Library:Corner(Block, Library.Theme.Radius and math.min(Library.Theme.Radius, 10) or 10)
     Library:Themed(Block, "BackgroundColor3", "Inset")
     Library:Themed(Block, "BackgroundTransparency", "InsetAlpha")
+    Library:Gloss(Block, 0.96)
     Library:Stroke(Block, "StrokeSoft", 1)
     New("UIPadding", {
         Parent = Block,
@@ -6178,6 +6562,7 @@ function Components.Viewport(Section, Config)
     Library:Corner(Frame, Config.Corner)
     Library:Themed(Frame, "BackgroundColor3", "Inset")
     Library:Themed(Frame, "BackgroundTransparency", "InsetAlpha")
+    Library:Gloss(Frame, 0.96)
     Library:Stroke(Frame, "StrokeSoft", 1)
 
     local Camera = New("Camera", {})
@@ -6315,7 +6700,10 @@ function Components.RangeSlider(Section, Config)
         Low, High = High, Low
     end
 
-    local Row, TitleLabel, DescLabel, _, Stack = MakeRow(Section, "RangeSlider", Config.Title, Config.Description, 48, 90)
+    local RangeMobile = Section.Window.Mobile
+    local RangeExtra = RangeMobile and ((Section.Window.Config and Section.Window.Config.Compact) and 4 or 10) or 0
+    local RangeNeed = 20 + 17 + ((Config.Description or "") ~= "" and 17 or 0) + 3 + ((RangeMobile and 22 or 18) + 8)
+    local Row, TitleLabel, DescLabel, _, Stack = MakeRow(Section, "RangeSlider", Config.Title, Config.Description, math.max(48, RangeNeed - RangeExtra), 90)
     local ValueLabel = New("TextLabel", {
         Parent = Row,
         AnchorPoint = Vector2.new(1, 0.5),
@@ -6469,15 +6857,26 @@ function Components.ToggleGroup(Section, Config)
     }, Config)
     local Options = Config.Options or {}
     local Selected = Config.Default or Options[1]
-    local Row, TitleLabel, DescLabel, _, Stack, Measure = MakeRow(Section, "ToggleGroup", Config.Title, Config.Description, 48, 0)
-    local Holder = Blank(Stack, {
-        Size = UDim2.new(1, 0, 0, 32),
+    local GroupMobile = Section.Window.Mobile
+    local GroupExtra = GroupMobile and ((Section.Window.Config and Section.Window.Config.Compact) and 4 or 10) or 0
+    local GroupNeed = 20 + 17 + ((Config.Description or "") ~= "" and 17 or 0) + 3 + (GroupMobile and 40 or 36)
+    local Row, TitleLabel, DescLabel, _, Stack, Measure = MakeRow(Section, "ToggleGroup", Config.Title, Config.Description, math.max(48, GroupNeed - GroupExtra), 0)
+    local Holder = New("Frame", {
+        Parent = Stack,
+        BorderSizePixel = 0,
+        Size = UDim2.new(1, 0, 0, Section.Window.Mobile and 40 or 36),
         LayoutOrder = 3
     })
+    Library:Corner(Holder, UDim.new(1, 0))
+    Library:Themed(Holder, "BackgroundColor3", "Inset")
+    Library:Themed(Holder, "BackgroundTransparency", "InsetAlpha")
+    Library:Stroke(Holder, "StrokeSoft", 1)
+    Library:Padding(Holder, 3, 3, 3, 3)
     New("UIListLayout", {
         Parent = Holder,
         FillDirection = Enum.FillDirection.Horizontal,
-        Padding = UDim.new(0, 6),
+        VerticalAlignment = Enum.VerticalAlignment.Center,
+        Padding = UDim.new(0, 2),
         SortOrder = Enum.SortOrder.LayoutOrder
     })
     local Buttons = {}
@@ -6485,17 +6884,13 @@ function Components.ToggleGroup(Section, Config)
     local function Paint()
         for Name, Btn in pairs(Buttons) do
             local On = Name == Selected
-            Library:Tween(Btn, FAST, {
-                BackgroundTransparency = On and 0.15 or Library.Theme.InsetAlpha
-            })
+            Btn.BackgroundColor3 = Library.Theme.Accent
+            Library:Tween(Btn, FAST, { BackgroundTransparency = On and 0.08 or 1 })
             local Lab = Btn:FindFirstChildOfClass("TextLabel")
             if Lab then
-                Lab.TextColor3 = On and Library.Theme.AccentText or Library.Theme.TextDim
-            end
-            if On then
-                Btn.BackgroundColor3 = Library.Theme.Accent
-            else
-                Btn.BackgroundColor3 = Library.Theme.Inset
+                Library:Tween(Lab, FAST, {
+                    TextColor3 = On and Library.Theme.AccentText or Library.Theme.TextDim
+                })
             end
         end
     end
@@ -6504,13 +6899,18 @@ function Components.ToggleGroup(Section, Config)
         local Btn = New("TextButton", {
             Parent = Holder,
             BorderSizePixel = 0,
-            Size = UDim2.new(1 / #Options, -4, 0, 30),
+            Size = UDim2.new(1 / #Options, -2, 1, 0),
+            BackgroundTransparency = 1,
             Text = "",
             AutoButtonColor = false,
             LayoutOrder = Index
         })
-        Library:Corner(Btn, UDim.new(0, 12))
-        Library:Stroke(Btn, "StrokeSoft", 1)
+        Library:Corner(Btn, UDim.new(1, 0))
+        New("UIGradient", {
+            Parent = Btn,
+            Rotation = 90,
+            Color = ColorSequence.new(Color3.fromRGB(255, 255, 255), Color3.fromRGB(196, 196, 218))
+        })
         local Lab = New("TextLabel", {
             Parent = Btn,
             BackgroundTransparency = 1,
@@ -6540,6 +6940,7 @@ function Components.ToggleGroup(Section, Config)
     end
     Element = Finish(Section, "ToggleGroup", Config, Row, Handlers, TitleLabel, DescLabel)
     Paint()
+    Library.OnThemeChanged:Connect(Paint)
     if Measure then
         task.defer(Measure)
     end
@@ -6648,36 +7049,60 @@ function Components.ConfirmToggle(Section, Config)
         Callback = function() end
     }, Config)
     local State = Config.Default and true or false
-    local Row, TitleLabel, DescLabel = MakeRow(Section, "ConfirmToggle", Config.Title, Config.Description, 42, 70)
+    local Mobile = Section.Window.Mobile
+    local Row, TitleLabel, DescLabel = MakeRow(Section, "ConfirmToggle", Config.Title, Config.Description, 46, 50)
+
+    local TrackW, TrackH = Mobile and 54 or 44, Mobile and 30 or 24
+    local KnobSize = TrackH - 6
+
     local Switch = New("TextButton", {
         Parent = Row,
         AnchorPoint = Vector2.new(1, 0.5),
         BorderSizePixel = 0,
         Position = UDim2.new(1, -14, 0.5, 0),
-        Size = UDim2.fromOffset(Section.Window.Mobile and 52 or 40, Section.Window.Mobile and 28 or 22),
+        Size = UDim2.fromOffset(TrackW, TrackH),
         Text = "",
-        AutoButtonColor = false
+        AutoButtonColor = false,
+        ZIndex = 2
     })
     Library:Corner(Switch, UDim.new(1, 0))
+    Switch.BackgroundColor3 = Library.Theme.Track or Color3.fromRGB(92, 100, 136)
+    Switch.BackgroundTransparency = Library.Theme.TrackAlpha or 0.35
+    local SwitchLine = Library:Stroke(Switch, "StrokeSoft", 1)
+
     local Knob = New("Frame", {
         Parent = Switch,
         AnchorPoint = Vector2.new(0, 0.5),
         BorderSizePixel = 0,
         Position = UDim2.new(0, 3, 0.5, 0),
-        Size = UDim2.fromOffset(Section.Window.Mobile and 22 or 16, Section.Window.Mobile and 22 or 16)
+        Size = UDim2.fromOffset(KnobSize, KnobSize),
+        BackgroundColor3 = Color3.fromRGB(205, 210, 228),
+        ZIndex = 3
     })
     Library:Corner(Knob, UDim.new(1, 0))
-    Library:Themed(Knob, "BackgroundColor3", "Text")
+    New("UIStroke", {
+        Parent = Knob,
+        Thickness = 1,
+        Color = Color3.fromRGB(0, 0, 0),
+        Transparency = 0.82,
+        ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+    })
+
     local Element
     local function Paint(Animated)
-        local On = State
-        local Info = Animated and FAST or TweenInfo.new(0)
-        Library:Tween(Switch, Info, {
-            BackgroundColor3 = On and Library.Theme.Accent or Library.Theme.Inset
-        })
+        local Info = Animated and TweenInfo.new(0.26, Quint, Out) or TweenInfo.new(0)
+        local Theme = Library.Theme
         Library:Tween(Knob, Info, {
-            Position = UDim2.new(On and 1 or 0, On and -3 or 3, 0.5, 0),
-            AnchorPoint = Vector2.new(On and 1 or 0, 0.5)
+            Position = UDim2.new(0, State and (TrackW - KnobSize - 3) or 3, 0.5, 0),
+            BackgroundColor3 = State and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(205, 210, 228)
+        })
+        Library:Tween(Switch, Info, {
+            BackgroundColor3 = State and Theme.Accent or (Theme.Track or Color3.fromRGB(92, 100, 136)),
+            BackgroundTransparency = State and 0.05 or (Theme.TrackAlpha or 0.35)
+        })
+        Library:Tween(SwitchLine, Info, {
+            Color = State and Theme.Accent or Theme.StrokeSoft,
+            Transparency = State and 0.3 or Theme.StrokeSoftAlpha
         })
     end
     local function Apply(NewState, Silent)
@@ -6713,6 +7138,9 @@ function Components.ConfirmToggle(Section, Config)
         Apply(Value and true or false, Silent)
     end
     Element = Finish(Section, "ConfirmToggle", Config, Row, Handlers, TitleLabel, DescLabel)
+    Library.OnThemeChanged:Connect(function()
+        Paint(false)
+    end)
     Paint(false)
     return Element
 end
@@ -6723,7 +7151,10 @@ function Components.Hotbar(Section, Config)
         Description = "",
         Items = {}
     }, Config)
-    local Row, TitleLabel, DescLabel, _, Stack, Measure = MakeRow(Section, "Hotbar", Config.Title, Config.Description, 56, 0)
+    local HotMobile = Section.Window.Mobile
+    local HotExtra = HotMobile and ((Section.Window.Config and Section.Window.Config.Compact) and 4 or 10) or 0
+    local HotNeed = 20 + 17 + ((Config.Description or "") ~= "" and 17 or 0) + 3 + 40
+    local Row, TitleLabel, DescLabel, _, Stack, Measure = MakeRow(Section, "Hotbar", Config.Title, Config.Description, math.max(56, HotNeed - HotExtra), 0)
     local Holder = Blank(Stack, {
         Size = UDim2.new(1, 0, 0, 40),
         LayoutOrder = 3
@@ -6743,10 +7174,12 @@ function Components.Hotbar(Section, Config)
             AutoButtonColor = false,
             LayoutOrder = Index
         })
-        Library:Corner(Btn, UDim.new(0, 12))
+        Library:Corner(Btn, UDim.new(0, 14))
         Library:Themed(Btn, "BackgroundColor3", "Inset")
         Library:Themed(Btn, "BackgroundTransparency", "InsetAlpha")
-        Library:Stroke(Btn, "StrokeSoft", 1)
+        local BtnLine = Library:Stroke(Btn, "StrokeSoft", 1)
+        Library:Gloss(Btn, 0.95)
+        Library:Hover(Btn, BtnLine, "Transparency", Library.Theme.StrokeSoftAlpha, 0.35)
         if Info.Icon then
             local Ic = IconLabel(Btn, Info.Icon, 18, "Accent")
             Ic.AnchorPoint = Vector2.new(0.5, 0.5)
@@ -6849,6 +7282,7 @@ function Components.LogConsole(Section, Config)
     Library:Corner(Frame, UDim.new(0, 12))
     Library:Themed(Frame, "BackgroundColor3", "Inset")
     Library:Themed(Frame, "BackgroundTransparency", "InsetAlpha")
+    Library:Gloss(Frame, 0.96)
     Library:StyleScroll(Frame)
     local Layout = New("UIListLayout", {
         Parent = Frame,
@@ -6933,6 +7367,13 @@ function Components.Separator(Section, Config)
         Size = UDim2.new(Text ~= "" and 0 or 1, Text ~= "" and 0 or -8, 0, 1)
     })
     Library:Themed(LeftLine, "BackgroundColor3", "Stroke")
+    New("UIGradient", {
+        Parent = LeftLine,
+        Transparency = NumberSequence.new({
+            NumberSequenceKeypoint.new(0, 0),
+            NumberSequenceKeypoint.new(1, 1)
+        })
+    })
 
     if Text ~= "" then
         local Label2 = New("TextLabel", {
@@ -7053,7 +7494,7 @@ function WM.Modal(W, Config)
     Library:Corner(Card, UDim.new(0, 18))
     Library:Themed(Card, "BackgroundColor3", "Elevated")
     Library:Themed(Card, "BackgroundTransparency", "ElevatedAlpha")
-    Library:GlassEdge(Card, 1.4, 0.2)
+    Library:GlassEdge(Card, 1.2, 0.3)
     Library:Shadow(Card, 70, 0.55)
     Library:Sheen(Card, 90).ZIndex = Card.ZIndex
 
@@ -7268,6 +7709,7 @@ function WM.Prompt(W, Config)
     Library:Corner(Field, UDim.new(0, 12))
     Library:Themed(Field, "BackgroundColor3", "Inset")
     Library:Themed(Field, "BackgroundTransparency", "InsetAlpha")
+    Library:Gloss(Field, 0.96)
     Library:Stroke(Field, "StrokeSoft", 1)
 
     local Box = New("TextBox", {
@@ -7419,6 +7861,7 @@ function WM.Palette(W)
     Library:Corner(Field, UDim.new(0, 12))
     Library:Themed(Field, "BackgroundColor3", "Inset")
     Library:Themed(Field, "BackgroundTransparency", "InsetAlpha")
+    Library:Gloss(Field, 0.96)
     Library:Stroke(Field, "StrokeSoft", 1)
 
     local Icon = IconLabel(Field, Library.Icons.Search, 15, "TextDisabled")
@@ -8907,7 +9350,7 @@ function WM.PlayerCard(W)
     Library:Corner(Card, UDim.new(0, 18))
     Library:Themed(Card, "BackgroundColor3", "Elevated")
     Library:Themed(Card, "BackgroundTransparency", "ElevatedAlpha")
-    Library:GlassEdge(Card, 1.4, 0.2)
+    Library:GlassEdge(Card, 1.2, 0.3)
     Library:Shadow(Card, 60, 0.6)
     Library:Sheen(Card, 90).ZIndex = 400
 
@@ -9675,6 +10118,7 @@ function WM.AI(W)
     Library:Corner(KeyField, UDim.new(0, 14))
     Library:Themed(KeyField, "BackgroundColor3", "Inset")
     Library:Themed(KeyField, "BackgroundTransparency", "InsetAlpha")
+    Library:Gloss(KeyField, 0.96)
     Library:Stroke(KeyField, "StrokeSoft", 1)
 
     local KeyReal = ""
@@ -9776,6 +10220,7 @@ function WM.AI(W)
     Library:Corner(Field, UDim.new(0, 14))
     Library:Themed(Field, "BackgroundColor3", "Inset")
     Library:Themed(Field, "BackgroundTransparency", "InsetAlpha")
+    Library:Gloss(Field, 0.96)
     Library:Stroke(Field, "StrokeSoft", 1)
 
     local Box = New("TextBox", {
