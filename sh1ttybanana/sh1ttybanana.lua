@@ -117,6 +117,245 @@ do
 end
 Library.Env = Env
 
+-- ============================================================================
+-- Key system providers. A provider is: function(Cfg, KeyCfg) -> function(Key) -> ok, message
+-- Built in: "Supabase" and "Http". Add your own:
+--   Library.KeyProviders.MyAuth = function(Cfg, KeyCfg) return function(Key) return true end end
+-- ============================================================================
+local function UrlEncode(Value)
+    return (tostring(Value):gsub("[^%w%-_%.~]", function(Char)
+        return string.format("%%%02X", string.byte(Char))
+    end))
+end
+
+local function ReadHwid()
+    if Env.gethwid then
+        local Ok, Value = pcall(Env.gethwid)
+        if Ok and Value then
+            return tostring(Value)
+        end
+    end
+    local Ok, Value = pcall(function()
+        return game:GetService("RbxAnalyticsService"):GetClientId()
+    end)
+    return Ok and tostring(Value) or "unavailable"
+end
+Library.GetHwid = ReadHwid
+
+local function HttpCall(Options)
+    if Env.request then
+        local Ok, Response = pcall(Env.request, Options)
+        if Ok and type(Response) == "table" then
+            return tonumber(Response.StatusCode or Response.Status) or 0, tostring(Response.Body or "")
+        end
+        return 0, tostring(Response)
+    end
+    local Ok, Response = pcall(function()
+        return HttpService:RequestAsync(Options)
+    end)
+    if Ok and type(Response) == "table" then
+        return tonumber(Response.StatusCode) or 0, tostring(Response.Body or "")
+    end
+    return 0, tostring(Response)
+end
+
+local function JsonDecode(Text)
+    local Ok, Result = pcall(function()
+        return HttpService:JSONDecode(Text)
+    end)
+    if Ok then
+        return Result
+    end
+    return nil
+end
+
+local function DeepFill(Value, Fill)
+    if type(Value) == "string" then
+        return (Value:gsub("{key}", function() return Fill.key end):gsub("{hwid}", function() return Fill.hwid end))
+    elseif type(Value) == "table" then
+        local Copy = {}
+        for Index, Item in pairs(Value) do
+            Copy[Index] = DeepFill(Item, Fill)
+        end
+        return Copy
+    end
+    return Value
+end
+
+Library.KeyProviders = {}
+
+-- Supabase (REST). Two modes:
+--   Table mode: looks the key up in a table (default table "keys", column "key").
+--     Optional columns: active (bool), expires_at (timestamp), and HwidColumn to bind a key to one device.
+--   RPC mode: set Rpc = "function_name"; it receives (p_key, p_hwid) and must return true/false.
+Library.KeyProviders.Supabase = function(Cfg)
+    local Base = tostring(Cfg.Url or ""):gsub("/+$", "")
+    local Anon = tostring(Cfg.AnonKey or Cfg.Key or "")
+    local Headers = {
+        ["apikey"] = Anon,
+        ["Authorization"] = "Bearer " .. Anon,
+        ["Content-Type"] = "application/json"
+    }
+    return function(Value)
+        if Base == "" or Anon == "" then
+            return false, "Supabase is not configured"
+        end
+        local Hwid = ReadHwid()
+
+        if Cfg.Rpc then
+            local Status, Body = HttpCall({
+                Url = Base .. "/rest/v1/rpc/" .. tostring(Cfg.Rpc),
+                Method = "POST",
+                Headers = Headers,
+                Body = HttpService:JSONEncode({
+                    [Cfg.RpcKeyArg or "p_key"] = Value,
+                    [Cfg.RpcHwidArg or "p_hwid"] = Hwid
+                })
+            })
+            if Status < 200 or Status >= 300 then
+                return false, "Server error (" .. Status .. ")"
+            end
+            local Decoded = JsonDecode(Body)
+            if type(Decoded) == "table" then
+                Decoded = Decoded.valid or Decoded.ok or Decoded[1]
+            end
+            if Decoded == true then
+                return true
+            end
+            return false, "Invalid key"
+        end
+
+        local Table = tostring(Cfg.Table or "keys")
+        local KeyColumn = tostring(Cfg.KeyColumn or "key")
+        local RowUrl = string.format("%s/rest/v1/%s?%s=eq.%s", Base, Table, KeyColumn, UrlEncode(Value))
+        local Status, Body = HttpCall({
+            Url = RowUrl .. "&select=*&limit=1",
+            Method = "GET",
+            Headers = Headers
+        })
+        if Status ~= 200 then
+            return false, "Server error (" .. Status .. ")"
+        end
+        local Rows = JsonDecode(Body)
+        local Row = type(Rows) == "table" and Rows[1] or nil
+        if type(Row) ~= "table" then
+            return false, "Invalid key"
+        end
+
+        local ActiveColumn = Cfg.ActiveColumn
+        if ActiveColumn == nil then
+            ActiveColumn = "active"
+        end
+        if ActiveColumn and Row[ActiveColumn] == false then
+            return false, "Key disabled"
+        end
+
+        local ExpiresColumn = Cfg.ExpiresColumn
+        if ExpiresColumn == nil then
+            ExpiresColumn = "expires_at"
+        end
+        if ExpiresColumn and type(Row[ExpiresColumn]) == "string" then
+            local Ok, Date = pcall(DateTime.fromIsoDate, Row[ExpiresColumn])
+            if Ok and Date and Date.UnixTimestamp < os.time() then
+                return false, "Key expired"
+            end
+        end
+
+        local HwidColumn = Cfg.HwidColumn
+        if HwidColumn then
+            local Bound = Row[HwidColumn]
+            if type(Bound) == "string" and Bound ~= "" then
+                if Bound ~= Hwid then
+                    return false, "Key is locked to another device"
+                end
+            elseif Cfg.BindHwid ~= false then
+                local PatchHeaders = {}
+                for Name, Header in pairs(Headers) do
+                    PatchHeaders[Name] = Header
+                end
+                PatchHeaders["Prefer"] = "return=minimal"
+                local PatchStatus = HttpCall({
+                    Url = RowUrl,
+                    Method = "PATCH",
+                    Headers = PatchHeaders,
+                    Body = HttpService:JSONEncode({ [HwidColumn] = Hwid })
+                })
+                if PatchStatus < 200 or PatchStatus >= 300 then
+                    return false, "Could not bind key to this device"
+                end
+            end
+        end
+        return true
+    end
+end
+
+-- Generic HTTP endpoint. {key} and {hwid} are replaced in Url, Headers and Body.
+--   Http = { Url = "https://api.site.com/verify?key={key}&hwid={hwid}", Method = "GET",
+--            SuccessField = "valid"   -- JSON path (dots allowed), or
+--            SuccessText = "true"     -- text the body must contain, or leave both nil for any 2xx,
+--            MessageField = "message" -- optional failure message path }
+Library.KeyProviders.Http = function(Cfg)
+    return function(Value)
+        if not Cfg.Url then
+            return false, "Http provider has no Url"
+        end
+        local Fill = { key = tostring(Value), hwid = ReadHwid() }
+        local Url = tostring(Cfg.Url):gsub("{key}", function() return UrlEncode(Fill.key) end)
+            :gsub("{hwid}", function() return UrlEncode(Fill.hwid) end)
+        local Headers = type(Cfg.Headers) == "table" and DeepFill(Cfg.Headers, Fill) or {}
+        local Request = { Url = Url, Method = Cfg.Method or "GET", Headers = Headers }
+        if Cfg.Body ~= nil then
+            local Body = DeepFill(Cfg.Body, Fill)
+            Request.Body = type(Body) == "table" and HttpService:JSONEncode(Body) or tostring(Body)
+            if not Headers["Content-Type"] then
+                Headers["Content-Type"] = "application/json"
+            end
+            if Request.Method == "GET" then
+                Request.Method = "POST"
+            end
+        end
+        local Status, Body = HttpCall(Request)
+        local function Path(Decoded, Dotted)
+            local Node = Decoded
+            for Part in tostring(Dotted):gmatch("[^%.]+") do
+                if type(Node) ~= "table" then
+                    return nil
+                end
+                Node = Node[Part]
+            end
+            return Node
+        end
+        if Status < 200 or Status >= 300 then
+            local Decoded = JsonDecode(Body)
+            local Message = Cfg.MessageField and Decoded and Path(Decoded, Cfg.MessageField)
+            return false, type(Message) == "string" and Message or ("Server error (" .. Status .. ")")
+        end
+        local Success
+        if Cfg.SuccessField then
+            local Decoded = JsonDecode(Body)
+            local Found = Decoded and Path(Decoded, Cfg.SuccessField)
+            if Cfg.SuccessValue ~= nil then
+                Success = Found == Cfg.SuccessValue
+            else
+                Success = Found == true or Found == "true" or Found == 1
+            end
+            if not Success then
+                local Message = Cfg.MessageField and Decoded and Path(Decoded, Cfg.MessageField)
+                return false, type(Message) == "string" and Message or "Invalid key"
+            end
+            return true
+        elseif Cfg.SuccessText then
+            Success = Body:find(tostring(Cfg.SuccessText), 1, true) ~= nil
+        else
+            Success = true
+        end
+        if Success then
+            return true
+        end
+        return false, "Invalid key"
+    end
+end
+
 local FS = {}
 
 function FS.Folder(Path)
@@ -776,6 +1015,26 @@ function Library:Gloss(Object, Alpha)
         Transparency = NumberSequence.new({
             NumberSequenceKeypoint.new(0, 0),
             NumberSequenceKeypoint.new(0.45, 0.75),
+            NumberSequenceKeypoint.new(1, 1)
+        })
+    })
+    -- specular edge: a thin bright line just inside the top, fading out at both ends
+    local Spec = New("Frame", {
+        Parent = Layer,
+        Name = "Specular",
+        AnchorPoint = Vector2.new(0.5, 0),
+        BackgroundColor3 = Color3.fromRGB(255, 255, 255),
+        BackgroundTransparency = 0.62,
+        BorderSizePixel = 0,
+        Position = UDim2.new(0.5, 0, 0, 1),
+        Size = UDim2.new(0.78, 0, 0, 1)
+    })
+    New("UIGradient", {
+        Parent = Spec,
+        Transparency = NumberSequence.new({
+            NumberSequenceKeypoint.new(0, 1),
+            NumberSequenceKeypoint.new(0.2, 0.2),
+            NumberSequenceKeypoint.new(0.8, 0.2),
             NumberSequenceKeypoint.new(1, 1)
         })
     })
@@ -1846,18 +2105,61 @@ function Library:NewWindow(UserConfig)
             SaveKey = true,
             Callback = nil,
             Custom = nil,
+            Provider = nil,
+            Supabase = nil,
+            Http = nil,
+            OnSuccess = nil,
             UI = "default"
         }, W.Config.KeySystem)
 
-        local function IsValidKey(Value)
-            if type(KeyCfg.Callback) == "function" then
-                local Ok, Result = pcall(KeyCfg.Callback, Value)
-                return Ok and Result == true
+        -- pick the remote provider (if any): Provider = "Supabase" | "Http" | your own name
+        local RemoteCheck
+        do
+            local Name = KeyCfg.Provider
+            if not Name then
+                if KeyCfg.Supabase then
+                    Name = "Supabase"
+                elseif KeyCfg.Http then
+                    Name = "Http"
+                end
             end
+            if Name then
+                local Maker = Library.KeyProviders[Name]
+                if Maker then
+                    local Ok, Result = pcall(Maker, KeyCfg[Name] or KeyCfg.ProviderConfig or {}, KeyCfg)
+                    if Ok and type(Result) == "function" then
+                        RemoteCheck = Result
+                    else
+                        warn("[sh1ttybanana] KeySystem provider failed to start:", tostring(Result))
+                    end
+                else
+                    warn("[sh1ttybanana] Unknown KeySystem provider: " .. tostring(Name))
+                end
+            end
+        end
+
+        -- returns ok, message
+        local function IsValidKey(Value)
             for _, K in ipairs(KeyCfg.Keys) do
                 if tostring(K) == Value then
                     return true
                 end
+            end
+            if type(KeyCfg.Callback) == "function" then
+                local Ok, Result, Message = pcall(KeyCfg.Callback, Value)
+                if Ok and Result == true then
+                    return true
+                end
+                if not RemoteCheck then
+                    return false, Ok and Message or nil
+                end
+            end
+            if RemoteCheck then
+                local Ok, Result, Message = pcall(RemoteCheck, Value)
+                if Ok and Result == true then
+                    return true
+                end
+                return false, Ok and Message or "Could not reach the key server"
             end
             return false
         end
@@ -2322,20 +2624,32 @@ function Library:NewWindow(UserConfig)
             Library:Themed(Vtx, "TextColor3", "AccentText")
 
             local Verified = false
+            local Busy = false
             local function TrySubmit()
+                if Busy then
+                    return
+                end
                 local Value = Trim(Box.Text)
                 if Value == "" then
                     GateError.Text = "Enter a key"
                     return
                 end
-                if IsValidKey(Value) then
+                Busy = true
+                GateError.Text = "Checking..."
+                Library:Themed(GateError, "TextColor3", "TextDim")
+                local Valid, Reason = IsValidKey(Value)
+                Busy = false
+                if Valid then
                     if KeyCfg.SaveKey ~= false then
                         FS.Folder(W.Paths.Folder)
                         FS.Write(W.Paths.KeyFile, Value)
                     end
+                    if type(KeyCfg.OnSuccess) == "function" then
+                        task.spawn(KeyCfg.OnSuccess, Value)
+                    end
                     Verified = true
                 else
-                    GateError.Text = "Invalid key"
+                    GateError.Text = Reason or "Invalid key"
                     Library:Themed(GateError, "TextColor3", "Error")
                     Library:Shake(Mid, 5)
                     Library:Animate(FieldLine, FAST, { Color = Library.Theme.Error })
@@ -2501,6 +2815,7 @@ function Library:NewWindow(UserConfig)
     Orb(0.3, 0.78, 0.44, "Info")
     Orb(0.14, 0.22, 0.34, "Accent")
 
+    Library:Gloss(W.Main, 0.97)
     W.Sheen = Library:Sheen(W.Main, 90)
     W.Sheen.ZIndex = 2
 
@@ -2992,6 +3307,31 @@ function Library:NewWindow(UserConfig)
     W.FavButton.AnchorPoint = Vector2.new(1, 0.5)
     W.FavButton.Position = UDim2.new(1, -12, 0.5, 0)
     W.FavButton.ZIndex = 5
+
+    local StarYellow = Color3.fromRGB(255, 205, 64)
+    function W.PaintFav()
+        local Favorited = W.Active ~= nil and table.find(W.State.Favorites or {}, W.Active.Name) ~= nil
+        local StarIcon = W.FavButton:FindFirstChildOfClass("ImageLabel")
+        W.FavButton.BackgroundColor3 = Favorited and StarYellow or Library.Theme.Row
+        Library:Tween(W.FavButton, FAST, { BackgroundTransparency = Favorited and 0.82 or 1 })
+        if StarIcon then
+            Library:Tween(StarIcon, FAST, { ImageColor3 = Favorited and StarYellow or Library.Theme.TextDim })
+        end
+    end
+    -- these run after the shared hover handlers, so the yellow wins
+    W.FavButton.MouseEnter:Connect(function()
+        local StarIcon = W.FavButton:FindFirstChildOfClass("ImageLabel")
+        if W.Active and table.find(W.State.Favorites or {}, W.Active.Name) and StarIcon then
+            Library:Tween(StarIcon, FAST, { ImageColor3 = StarYellow })
+            Library:Tween(W.FavButton, FAST, { BackgroundTransparency = 0.7 })
+        end
+    end)
+    W.FavButton.MouseLeave:Connect(function()
+        W.PaintFav()
+    end)
+    Library.OnThemeChanged:Connect(function()
+        W.PaintFav()
+    end)
 
     W.PageLine = New("Frame", {
         Parent = W.Content,
@@ -4800,7 +5140,6 @@ function Components.Slider(Section, Config)
         Flag = nil,
         Callback = function() end
     }, Config)
-
     local Mobile = Section.Window.Mobile
     local Sample = tostring(Config.Max) .. tostring(Config.Suffix or "")
     local BoxWidth = Clamp(#Sample * 7 + 18, Mobile and 52 or 48, Mobile and 90 or 118)
@@ -4810,7 +5149,6 @@ function Components.Slider(Section, Config)
     local SliderNeed = 20 + 17 + ((Config.Description or "") ~= "" and 17 or 0) + 3 + 30
     local Row, TitleLabel, DescLabel, _, Stack = MakeRow(Section, "Slider", Config.Title, Config.Description,
         Mobile and math.max(44, SliderNeed - SliderMobileExtra) or 44, Reserve)
-
     local ValueBox = New("TextBox", {
         Parent = Row,
         AnchorPoint = Vector2.new(1, 0.5),
@@ -4829,7 +5167,6 @@ function Components.Slider(Section, Config)
     Library:Gloss(ValueBox, 0.96)
     Library:Themed(ValueBox, "TextColor3", "Text")
     Library:Stroke(ValueBox, "StrokeSoft", 1)
-
     -- Hit is the (larger) touch area; Bar is the visible track inset inside it so the
     -- knob never pokes out of the row or into the description text.
     local KnobSize = Mobile and 22 or 18
@@ -4859,7 +5196,6 @@ function Components.Slider(Section, Config)
     Library:Corner(Bar, UDim.new(1, 0))
     Library:Themed(Bar, "BackgroundColor3", "Track")
     Library:Themed(Bar, "BackgroundTransparency", "TrackAlpha")
-
     local Fill = New("Frame", {
         Parent = Bar,
         BorderSizePixel = 0,
@@ -4867,7 +5203,11 @@ function Components.Slider(Section, Config)
     })
     Library:Corner(Fill, UDim.new(1, 0))
     Library:Themed(Fill, "BackgroundColor3", "Accent")
-
+    New("UIGradient", {
+        Parent = Fill,
+        Rotation = 90,
+        Color = ColorSequence.new(Color3.fromRGB(255, 255, 255), Color3.fromRGB(190, 190, 215))
+    })
     local Knob = New("Frame", {
         Parent = Bar,
         AnchorPoint = Vector2.new(0.5, 0.5),
@@ -4885,11 +5225,9 @@ function Components.Slider(Section, Config)
         ApplyStrokeMode = Enum.ApplyStrokeMode.Border
     })
     Library:Themed(KnobHalo, "Color", "Accent")
-
     local Value = Config.Default or Config.Min
     local Element
     local Dragging = false
-
     local Handlers = {}
     function Handlers.Get()
         return Value
@@ -4911,16 +5249,13 @@ function Components.Slider(Section, Config)
         Hit.Active = not Locked
         ValueBox.TextEditable = not Locked
     end
-
     Element = Finish(Section, "Slider", Config, Row, Handlers, TitleLabel, DescLabel)
-
     local function FromInput(Position)
         local Start = Bar.AbsolutePosition.X
         local Width = math.max(Bar.AbsoluteSize.X, 1)
         local Alpha = Clamp((Position.X - Start) / Width, 0, 1)
         Handlers.Set(Config.Min + Alpha * (Config.Max - Config.Min))
     end
-
     Hit.InputBegan:Connect(function(Input)
         if Element.Locked then
             return
@@ -4933,14 +5268,12 @@ function Components.Slider(Section, Config)
             FromInput(Input.Position)
         end
     end)
-
     table.insert(Section.Window.Connections, UserInputService.InputChanged:Connect(function(Input)
         if Dragging and (Input.UserInputType == Enum.UserInputType.MouseMovement
             or Input.UserInputType == Enum.UserInputType.Touch) then
             FromInput(Input.Position)
         end
     end))
-
     table.insert(Section.Window.Connections, UserInputService.InputEnded:Connect(function(Input)
         if Dragging and (Input.UserInputType == Enum.UserInputType.MouseButton1
             or Input.UserInputType == Enum.UserInputType.Touch) then
@@ -4948,16 +5281,13 @@ function Components.Slider(Section, Config)
             Library:Tween(Knob, SPRING, { Size = UDim2.fromOffset(KnobSize, KnobSize) })
         end
     end))
-
     ValueBox.FocusLost:Connect(function()
         local Typed = tonumber((ValueBox.Text:gsub("[^%d%.%-]", "")))
         Handlers.Set(Typed or Value)
     end)
-
     Boot(Section, Config, Element, Config.Default or Config.Min)
     return Element
 end
-
 function Components.Dropdown(Section, Config)
     Config = Merge({
         Title = "Dropdown",
@@ -5757,24 +6087,21 @@ function Components.ColorpickerRGB(Section, Config)
         Flag = nil,
         Callback = function() end
     }, Config)
-
     local Mobile = Section.Window.Mobile
     local BarH = Mobile and 18 or 14
     local Gap = Mobile and 6 or 4
     local BarsH = BarH * 3 + Gap * 2
     local Row, TitleLabel, DescLabel, _, Stack, Measure = MakeRow(Section, "ColorpickerRGB", Config.Title, Config.Description, 48 + BarsH, 40)
-
     local Preview = New("Frame", {
         Parent = Row,
         AnchorPoint = Vector2.new(1, 0),
         BorderSizePixel = 0,
         Position = UDim2.new(1, -14, 0, 10),
-        Size = UDim2.fromOffset(Mobile and 36 or 34, Mobile and 24 or 22),
+        Size = UDim2.fromOffset(Mobile and 30 or 28, Mobile and 30 or 28),
         BackgroundColor3 = Config.Default
     })
-    Library:Corner(Preview, UDim.new(0, 9))
-    Library:Stroke(Preview, "Stroke", 1)
-
+    Library:Corner(Preview, UDim.new(1, 0))
+    Library:GlassEdge(Preview, 1.4, 0.2)
     local Holder = Blank(Stack, {
         Size = UDim2.new(1, 0, 0, BarsH),
         LayoutOrder = 3
@@ -5784,15 +6111,12 @@ function Components.ColorpickerRGB(Section, Config)
         SortOrder = Enum.SortOrder.LayoutOrder,
         Padding = UDim.new(0, Gap)
     })
-
     local Channels = { R = 0, G = 0, B = 0 }
     local Element
     local Bars = {}
-
     local function Current()
         return Color3.fromRGB(Channels.R, Channels.G, Channels.B)
     end
-
     local Handlers = {}
     function Handlers.Get()
         return Current()
@@ -5807,13 +6131,12 @@ function Components.ColorpickerRGB(Section, Config)
         Preview.BackgroundColor3 = Color
         for Name, Bar in pairs(Bars) do
             Bar.Fill.Size = UDim2.fromScale(Channels[Name] / 255, 1)
+            Bar.Knob.Position = UDim2.fromScale(Channels[Name] / 255, 0.5)
             Bar.Label.Text = Name .. " " .. Channels[Name]
         end
         Element.Emit(Color, Silent)
     end
-
     Element = Finish(Section, "ColorpickerRGB", Config, Row, Handlers, TitleLabel, DescLabel)
-
     local Order = { "R", "G", "B" }
     for Index, Name in ipairs(Order) do
         local Line = Blank(Holder, { Size = UDim2.new(1, 0, 0, BarH), LayoutOrder = Index })
@@ -5827,19 +6150,17 @@ function Components.ColorpickerRGB(Section, Config)
             TextXAlignment = Enum.TextXAlignment.Left
         })
         Library:Themed(Text, "TextColor3", "TextDim")
-
         local Track = New("Frame", {
             Parent = Line,
             AnchorPoint = Vector2.new(1, 0.5),
             BorderSizePixel = 0,
             Position = UDim2.new(1, 0, 0.5, 0),
-            Size = UDim2.new(1, Mobile and -58 or -50, 0, Mobile and 10 or 6),
+            Size = UDim2.new(1, Mobile and -58 or -50, 0, Mobile and 10 or 8),
             Active = true
         })
         Library:Corner(Track, UDim.new(1, 0))
-        Library:Themed(Track, "BackgroundColor3", "Inset")
-        Library:Themed(Track, "BackgroundTransparency", "InsetAlpha")
-
+        Library:Themed(Track, "BackgroundColor3", "Track")
+        Library:Themed(Track, "BackgroundTransparency", "TrackAlpha")
         local Fill = New("Frame", {
             Parent = Track,
             BorderSizePixel = 0,
@@ -5849,9 +6170,29 @@ function Components.ColorpickerRGB(Section, Config)
                 or Color3.fromRGB(100, 160, 255)
         })
         Library:Corner(Fill, UDim.new(1, 0))
-
-        Bars[Name] = { Fill = Fill, Label = Text }
-
+        New("UIGradient", {
+            Parent = Fill,
+            Rotation = 90,
+            Color = ColorSequence.new(Color3.fromRGB(255, 255, 255), Color3.fromRGB(190, 190, 215))
+        })
+        local BarKnob = New("Frame", {
+            Parent = Track,
+            AnchorPoint = Vector2.new(0.5, 0.5),
+            BorderSizePixel = 0,
+            Position = UDim2.fromScale(0, 0.5),
+            Size = UDim2.fromOffset(Mobile and 16 or 14, Mobile and 16 or 14),
+            BackgroundColor3 = Color3.fromRGB(255, 255, 255),
+            ZIndex = 3
+        })
+        Library:Corner(BarKnob, UDim.new(1, 0))
+        New("UIStroke", {
+            Parent = BarKnob,
+            Thickness = 2,
+            Color = Fill.BackgroundColor3,
+            Transparency = 0.45,
+            ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+        })
+        Bars[Name] = { Fill = Fill, Label = Text, Knob = BarKnob }
         local Dragging = false
         local function Apply(Position)
             local Alpha = Clamp((Position.X - Track.AbsolutePosition.X) / math.max(Track.AbsoluteSize.X, 1), 0, 1)
@@ -5878,7 +6219,6 @@ function Components.ColorpickerRGB(Section, Config)
             Dragging = false
         end))
     end
-
     if Measure then
         task.defer(Measure)
         task.delay(0.08, Measure)
@@ -5886,7 +6226,6 @@ function Components.ColorpickerRGB(Section, Config)
     Boot(Section, Config, Element, Config.Default)
     return Element
 end
-
 function Components.MultiButton(Section, Config)
     Config = Merge({
         Title = "Actions",
@@ -5986,17 +6325,25 @@ function Components.Paragraph(Section, Config)
         Content = "",
         Text = nil
     }, Config)
-
     local Body = Config.Text or Config.Content or Config.Description
     local Row, TitleLabel, Content, _, _, Measure = MakeRow(Section, "Paragraph", Config.Title, Body, 44, 0)
     if Content then
         Content.TextSize = Library.TextSize(12, 1)
     end
+    local NoteBar = New("Frame", {
+        Parent = Row,
+        AnchorPoint = Vector2.new(0, 0.5),
+        BorderSizePixel = 0,
+        Position = UDim2.new(0, 5, 0.5, 0),
+        Size = UDim2.new(0, 3, 1, -4),
+        BackgroundTransparency = 0.1
+    })
+    Library:Corner(NoteBar, UDim.new(1, 0))
+    Library:Themed(NoteBar, "BackgroundColor3", "Accent")
     if Measure then
         task.defer(Measure)
         task.delay(0.08, Measure)
     end
-
     local Handlers = {}
     function Handlers.Get()
         return Content.Text
@@ -6004,17 +6351,32 @@ function Components.Paragraph(Section, Config)
     function Handlers.Set(Value)
         Content.Text = tostring(Value)
     end
-
     return Finish(Section, "Paragraph", Config, Row, Handlers, TitleLabel, Content)
 end
-
 function Components.Label(Section, Config)
     Config = Merge({ Title = "Label", Description = "", Icon = nil }, Config)
-    local Row, TitleLabel, DescLabel = MakeRow(Section, "Label", Config.Title, Config.Description, 38, 20)
+    local Row, TitleLabel, DescLabel = MakeRow(Section, "Label", Config.Title, Config.Description, 38, Config.Icon and 34 or 20)
     if Config.Icon then
-        local Icon = IconLabel(Row, Config.Icon, 16, "Accent")
-        Icon.AnchorPoint = Vector2.new(1, 0.5)
-        Icon.Position = UDim2.new(1, -14, 0.5, 0)
+        local Chip = New("Frame", {
+            Parent = Row,
+            AnchorPoint = Vector2.new(1, 0.5),
+            BorderSizePixel = 0,
+            Position = UDim2.new(1, -12, 0.5, 0),
+            Size = UDim2.fromOffset(28, 28),
+            BackgroundTransparency = 0.82
+        })
+        Library:Corner(Chip, UDim.new(1, 0))
+        Library:Themed(Chip, "BackgroundColor3", "Accent")
+        local ChipLine = New("UIStroke", {
+            Parent = Chip,
+            Thickness = 1,
+            Transparency = 0.6,
+            ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+        })
+        Library:Themed(ChipLine, "Color", "Accent")
+        local Icon = IconLabel(Chip, Config.Icon, 15, "Accent")
+        Icon.AnchorPoint = Vector2.new(0.5, 0.5)
+        Icon.Position = UDim2.fromScale(0.5, 0.5)
         Library:Themed(Icon, "ImageColor3", "Accent")
     end
     local Handlers = {}
@@ -6026,7 +6388,6 @@ function Components.Label(Section, Config)
     end
     return Finish(Section, "Label", Config, Row, Handlers, TitleLabel, DescLabel)
 end
-
 function Components.Tag(Section, Config)
     Config = Merge({
         Title = "Tag",
@@ -6152,13 +6513,12 @@ function Components.Codeblock(Section, Config)
         Description = "",
         Code = "",
         Text = nil,
-        Copy = true
+        Copy = true,
+        Language = "lua"
     }, Config)
-
     local Body = tostring(Config.Text or Config.Code or "")
     local Row, TitleLabel, _, _, Stack, Measure = MakeRow(Section, "Codeblock", Config.Title, "", 72, 0)
     Row.ClipsDescendants = false
-
     local Block = New("Frame", {
         Parent = Stack,
         BorderSizePixel = 0,
@@ -6168,18 +6528,81 @@ function Components.Codeblock(Section, Config)
         ClipsDescendants = false,
         ZIndex = 4
     })
-    Library:Corner(Block, Library.Theme.Radius and math.min(Library.Theme.Radius, 10) or 10)
+    Library:Corner(Block, UDim.new(0, 16))
     Library:Themed(Block, "BackgroundColor3", "Inset")
     Library:Themed(Block, "BackgroundTransparency", "InsetAlpha")
-    Library:Gloss(Block, 0.96)
-    Library:Stroke(Block, "StrokeSoft", 1)
+    Library:GlassEdge(Block, 1, 0.5)
     New("UIPadding", {
         Parent = Block,
-        PaddingTop = UDim.new(0, 10),
-        PaddingBottom = UDim.new(0, 10),
+        PaddingTop = UDim.new(0, 8),
+        PaddingBottom = UDim.new(0, 12),
         PaddingLeft = UDim.new(0, 12),
-        PaddingRight = UDim.new(0, 36)
+        PaddingRight = UDim.new(0, 12)
     })
+    New("UIListLayout", {
+        Parent = Block,
+        SortOrder = Enum.SortOrder.LayoutOrder,
+        Padding = UDim.new(0, 8)
+    })
+
+    -- header: traffic-light dots, language tag, copy button
+    local Chrome = New("Frame", {
+        Parent = Block,
+        BackgroundTransparency = 1,
+        BorderSizePixel = 0,
+        Size = UDim2.new(1, 0, 0, 24),
+        LayoutOrder = 1,
+        ZIndex = 5
+    })
+    local Dots = New("Frame", {
+        Parent = Chrome,
+        AnchorPoint = Vector2.new(0, 0.5),
+        BackgroundTransparency = 1,
+        BorderSizePixel = 0,
+        Position = UDim2.new(0, 0, 0.5, 0),
+        Size = UDim2.fromOffset(46, 10),
+        ZIndex = 5
+    })
+    New("UIListLayout", {
+        Parent = Dots,
+        FillDirection = Enum.FillDirection.Horizontal,
+        VerticalAlignment = Enum.VerticalAlignment.Center,
+        Padding = UDim.new(0, 6),
+        SortOrder = Enum.SortOrder.LayoutOrder
+    })
+    for Index, DotColor in ipairs({ Color3.fromRGB(255, 95, 86), Color3.fromRGB(255, 189, 46), Color3.fromRGB(39, 201, 63) }) do
+        local Dot = New("Frame", {
+            Parent = Dots,
+            BackgroundColor3 = DotColor,
+            BorderSizePixel = 0,
+            Size = UDim2.fromOffset(10, 10),
+            LayoutOrder = Index,
+            ZIndex = 6
+        })
+        Library:Corner(Dot, UDim.new(1, 0))
+    end
+    local LangTag = New("TextLabel", {
+        Parent = Chrome,
+        AnchorPoint = Vector2.new(0, 0.5),
+        BackgroundTransparency = 1,
+        Position = UDim2.new(0, 60, 0.5, 0),
+        Size = UDim2.new(1, -100, 0, 14),
+        Font = Library.Font.Bold,
+        Text = string.upper(tostring(Config.Language or "lua")),
+        TextSize = 10,
+        TextXAlignment = Enum.TextXAlignment.Left,
+        ZIndex = 5
+    })
+    Library:Themed(LangTag, "TextColor3", "TextDisabled")
+    local Rule = New("Frame", {
+        Parent = Block,
+        BorderSizePixel = 0,
+        Size = UDim2.new(1, 0, 0, 1),
+        BackgroundTransparency = 0.9,
+        LayoutOrder = 2,
+        ZIndex = 5
+    })
+    Library:Themed(Rule, "BackgroundColor3", "Stroke")
 
     local Code = New("TextLabel", {
         Parent = Block,
@@ -6193,6 +6616,7 @@ function Components.Codeblock(Section, Config)
         TextXAlignment = Enum.TextXAlignment.Left,
         TextYAlignment = Enum.TextYAlignment.Top,
         RichText = false,
+        LayoutOrder = 3,
         ZIndex = 5
     })
     Library:Themed(Code, "TextColor3", "Neutral")
@@ -6202,11 +6626,11 @@ function Components.Codeblock(Section, Config)
 
     if Config.Copy then
         local CopyButton = New("TextButton", {
-            Parent = Block,
-            AnchorPoint = Vector2.new(1, 0),
+            Parent = Chrome,
+            AnchorPoint = Vector2.new(1, 0.5),
             BackgroundTransparency = 1,
-            Position = UDim2.new(1, 28, 0, 0),
-            Size = UDim2.fromOffset(28, 28),
+            Position = UDim2.new(1, 0, 0.5, 0),
+            Size = UDim2.fromOffset(28, 24),
             Text = "",
             AutoButtonColor = false,
             ZIndex = 8
@@ -6237,7 +6661,6 @@ function Components.Codeblock(Section, Config)
             task.defer(Measure)
         end)
     end
-
 local Handlers = {}
     function Handlers.Get()
         return Code.Text
@@ -6245,10 +6668,8 @@ local Handlers = {}
     function Handlers.Set(Value)
         Code.Text = tostring(Value)
     end
-
     return Finish(Section, "Codeblock", Config, Row, Handlers, TitleLabel, Code)
 end
-
 function Components.Progress(Section, Config)
     Config = Merge({
         Title = "Progress",
@@ -6258,19 +6679,32 @@ function Components.Progress(Section, Config)
         Flag = nil,
         Callback = function() end
     }, Config)
-
-    local Row, TitleLabel, DescLabel, _, Stack = MakeRow(Section, "Progress", Config.Title, Config.Description, 44, 50)
-
-    local Percent = New("TextLabel", {
+    local Row, TitleLabel, DescLabel, _, Stack = MakeRow(Section, "Progress", Config.Title, Config.Description, 44, 60)
+    local PercentChip = New("Frame", {
         Parent = Row,
-        AnchorPoint = Vector2.new(1, 0),
+        AnchorPoint = Vector2.new(1, 0.5),
+        BorderSizePixel = 0,
+        Position = UDim2.new(1, -12, 0.5, 0),
+        Size = UDim2.fromOffset(46, 22),
+        BackgroundTransparency = 0.82
+    })
+    Library:Corner(PercentChip, UDim.new(1, 0))
+    Library:Themed(PercentChip, "BackgroundColor3", "Accent")
+    local PercentLine = New("UIStroke", {
+        Parent = PercentChip,
+        Thickness = 1,
+        Transparency = 0.6,
+        ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+    })
+    Library:Themed(PercentLine, "Color", "Accent")
+    local Percent = New("TextLabel", {
+        Parent = PercentChip,
         BackgroundTransparency = 1,
-        Position = UDim2.new(1, -14, 0, 10),
-        Size = UDim2.fromOffset(50, 16),
+        Size = UDim2.fromScale(1, 1),
         Font = Library.Font.Bold,
         Text = "0%",
         TextSize = 11,
-        TextXAlignment = Enum.TextXAlignment.Right
+        TextXAlignment = Enum.TextXAlignment.Center
     })
     Library:Themed(Percent, "TextColor3", "Accent")
 
@@ -6283,7 +6717,6 @@ function Components.Progress(Section, Config)
     Library:Corner(Track, UDim.new(1, 0))
     Library:Themed(Track, "BackgroundColor3", "Track")
     Library:Themed(Track, "BackgroundTransparency", "TrackAlpha")
-
     local Fill = New("Frame", {
         Parent = Track,
         BorderSizePixel = 0,
@@ -6291,10 +6724,13 @@ function Components.Progress(Section, Config)
     })
     Library:Corner(Fill, UDim.new(1, 0))
     Library:Themed(Fill, "BackgroundColor3", "Accent")
-
+    New("UIGradient", {
+        Parent = Fill,
+        Rotation = 90,
+        Color = ColorSequence.new(Color3.fromRGB(255, 255, 255), Color3.fromRGB(190, 190, 215))
+    })
     local Value = 0
     local Element
-
     local Handlers = {}
     function Handlers.Get()
         return Value
@@ -6306,12 +6742,10 @@ function Components.Progress(Section, Config)
         Percent.Text = math.floor(NewValue * 100 + 0.5) .. (Config.Suffix or "")
         Element.Emit(Value, Silent)
     end
-
     Element = Finish(Section, "Progress", Config, Row, Handlers, TitleLabel, DescLabel)
     Handlers.Set(Config.Default or 0, true)
     return Element
 end
-
 function Components.Grid(Section, Config)
     Config = Merge({
         Title = "Grid",
@@ -6320,7 +6754,6 @@ function Components.Grid(Section, Config)
         Height = 62,
         Items = {}
     }, Config)
-
     local Cols = math.max(Config.Columns or 3, 1)
     local Count = math.max(#Config.Items, 1)
     local Rows = math.ceil(Count / Cols)
@@ -6328,7 +6761,6 @@ function Components.Grid(Section, Config)
     local Gap = 6
     local GridH = Rows * CellH + math.max(Rows - 1, 0) * Gap
     local Row, TitleLabel, DescLabel, _, Stack, Measure = MakeRow(Section, "Grid", Config.Title, Config.Description, 44 + GridH, 0)
-
     local Holder = Blank(Stack, {
         Size = UDim2.new(1, 0, 0, GridH),
         LayoutOrder = 3,
@@ -6345,7 +6777,6 @@ function Components.Grid(Section, Config)
         task.defer(Measure)
         task.delay(0.08, Measure)
     end
-
     local API = {}
     local function AddItem(Info, Index)
         local Cell = New("TextButton", {
@@ -6355,18 +6786,34 @@ function Components.Grid(Section, Config)
             AutoButtonColor = false,
             LayoutOrder = Index
         })
-        Library:Corner(Cell, UDim.new(0, 12))
+        Library:Corner(Cell, UDim.new(0, 16))
         Library:Themed(Cell, "BackgroundColor3", "Inset")
         Library:Themed(Cell, "BackgroundTransparency", "InsetAlpha")
+        Library:Gloss(Cell, 0.95)
         local Line = Library:Stroke(Cell, "StrokeSoft", 1)
-
         if Info.Icon then
-            local Icon = IconLabel(Cell, Info.Icon, 20, "Accent")
-            Icon.AnchorPoint = Vector2.new(0.5, 0)
-            Icon.Position = UDim2.new(0.5, 0, 0, 12)
+            local Chip = New("Frame", {
+                Parent = Cell,
+                AnchorPoint = Vector2.new(0.5, 0),
+                BorderSizePixel = 0,
+                Position = UDim2.new(0.5, 0, 0, 8),
+                Size = UDim2.fromOffset(26, 26),
+                BackgroundTransparency = 0.82
+            })
+            Library:Corner(Chip, UDim.new(1, 0))
+            Library:Themed(Chip, "BackgroundColor3", "Accent")
+            local ChipLine = New("UIStroke", {
+                Parent = Chip,
+                Thickness = 1,
+                Transparency = 0.6,
+                ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+            })
+            Library:Themed(ChipLine, "Color", "Accent")
+            local Icon = IconLabel(Chip, Info.Icon, 15, "Accent")
+            Icon.AnchorPoint = Vector2.new(0.5, 0.5)
+            Icon.Position = UDim2.fromScale(0.5, 0.5)
             Library:Themed(Icon, "ImageColor3", "Accent")
         end
-
         local Text = New("TextLabel", {
             Parent = Cell,
             AnchorPoint = Vector2.new(0.5, 1),
@@ -6379,7 +6826,6 @@ function Components.Grid(Section, Config)
             TextTruncate = Enum.TextTruncate.AtEnd
         })
         Library:Themed(Text, "TextColor3", "Text")
-
         Library:Hover(Cell, Line, "Transparency", Library.Theme.StrokeSoftAlpha, 0.45)
         Cell.MouseButton1Click:Connect(function()
             Library:Feedback(1.1)
@@ -6389,11 +6835,9 @@ function Components.Grid(Section, Config)
         end)
         return Cell
     end
-
     for Index, Info in ipairs(Config.Items) do
         AddItem(Info, Index)
     end
-
     if Measure then
         task.defer(Measure)
     end
@@ -6405,7 +6849,6 @@ function Components.Grid(Section, Config)
     Layout.SortOrder = Enum.SortOrder.LayoutOrder
     return Element
 end
-
 function Components.Table(Section, Config)
     Config = Merge({
         Title = "Table",
@@ -6413,31 +6856,35 @@ function Components.Table(Section, Config)
         Columns = {},
         Rows = {}
     }, Config)
-
     local LineCount = (#Config.Columns > 0 and 1 or 0) + #Config.Rows
     local TableH = math.max(LineCount, 1) * 28
-    local Row, TitleLabel, DescLabel, _, Stack, Measure = MakeRow(Section, "Table", Config.Title, Config.Description, 44 + TableH, 0)
-
-    local Holder = Blank(Stack, {
+    local Row, TitleLabel, DescLabel, _, Stack, Measure = MakeRow(Section, "Table", Config.Title, Config.Description, 52 + TableH, 0)
+    local Holder = New("Frame", {
+        Parent = Stack,
+        BorderSizePixel = 0,
         Size = UDim2.new(1, 0, 0, 0),
         AutomaticSize = Enum.AutomaticSize.Y,
         LayoutOrder = 3
     })
+    Library:Corner(Holder, UDim.new(0, 16))
+    Library:Themed(Holder, "BackgroundColor3", "Inset")
+    Library:Themed(Holder, "BackgroundTransparency", "InsetAlpha")
+    Library:Stroke(Holder, "StrokeSoft", 1)
+    Library:Padding(Holder, 4, 4, 4, 4)
     New("UIListLayout", {
         Parent = Holder,
         SortOrder = Enum.SortOrder.LayoutOrder,
         Padding = UDim.new(0, 2)
     })
-
     local function Line(Values, Header, Order)
         local LineFrame = New("Frame", {
             Parent = Holder,
             BorderSizePixel = 0,
             Size = UDim2.new(1, 0, 0, 26),
-            BackgroundTransparency = Header and 0.9 or 1,
+            BackgroundTransparency = Header and 0.8 or (Order % 2 == 0 and 0.95 or 1),
             LayoutOrder = Order
         })
-        Library:Corner(LineFrame, UDim.new(0, 9))
+        Library:Corner(LineFrame, Header and UDim.new(1, 0) or UDim.new(0, 12))
         Library:Themed(LineFrame, "BackgroundColor3", "Accent")
         local Count = math.max(#Values, 1)
         for Index, Value in ipairs(Values) do
@@ -6459,7 +6906,6 @@ function Components.Table(Section, Config)
         end
         return LineFrame
     end
-
     if #Config.Columns > 0 then
         Line(Config.Columns, true, 0)
     end
@@ -6470,10 +6916,8 @@ function Components.Table(Section, Config)
         task.defer(Measure)
         task.delay(0.08, Measure)
     end
-
     local Handlers = { Get = function() end, Set = function() end }
     local Element = Finish(Section, "Table", Config, Row, Handlers, TitleLabel, DescLabel)
-
     function Element:SetRows(Rows)
         for _, Child in ipairs(Holder:GetChildren()) do
             if Child:IsA("Frame") and Child.LayoutOrder > 0 then
@@ -6490,7 +6934,6 @@ function Components.Table(Section, Config)
     end
     return Element
 end
-
 function Components.Image(Section, Config)
     Config = Merge({
         Title = "",
@@ -6498,12 +6941,10 @@ function Components.Image(Section, Config)
         Image = "",
         Height = 120,
         Ratio = nil,
-        Corner = 10
+        Corner = 16
     }, Config)
-
     local ImgH = Config.Height or 120
     local Row, TitleLabel, DescLabel, _, Stack, Measure = MakeRow(Section, "Image", Config.Title, Config.Description, 44 + ImgH, 0)
-
     local Picture = New("ImageLabel", {
         Parent = Stack,
         BackgroundTransparency = 0.92,
@@ -6513,7 +6954,8 @@ function Components.Image(Section, Config)
         Image = Config.Image,
         ScaleType = Enum.ScaleType.Crop
     })
-    Library:Corner(Picture, Config.Corner or 10)
+    Library:Corner(Picture, Config.Corner or 16)
+    Library:GlassEdge(Picture, 1.1, 0.4)
     Library:Themed(Picture, "BackgroundColor3", "Inset")
     if Config.Ratio then
         New("UIAspectRatioConstraint", { Parent = Picture, AspectRatio = Config.Ratio })
@@ -6522,7 +6964,6 @@ function Components.Image(Section, Config)
         task.defer(Measure)
         task.delay(0.08, Measure)
     end
-
     local Handlers = {}
     function Handlers.Get()
         return Picture.Image
@@ -6530,10 +6971,8 @@ function Components.Image(Section, Config)
     function Handlers.Set(Value)
         Picture.Image = tostring(Value)
     end
-
     return Finish(Section, "Image", Config, Row, Handlers, TitleLabel, DescLabel)
 end
-
 function Components.Viewport(Section, Config)
     Config = Merge({
         Title = "",
@@ -6541,13 +6980,11 @@ function Components.Viewport(Section, Config)
         Object = nil,
         Height = 180,
         Interactive = true,
-        Corner = 10,
+        Corner = 16,
         Callback = function() end
     }, Config)
-
     local VpH = Config.Height or 180
     local Row, TitleLabel, DescLabel, _, Stack, Measure = MakeRow(Section, "Viewport", Config.Title, Config.Description, 44 + VpH, 0)
-
     local Frame = New("Frame", {
         Parent = Stack,
         BorderSizePixel = 0,
@@ -6563,8 +7000,7 @@ function Components.Viewport(Section, Config)
     Library:Themed(Frame, "BackgroundColor3", "Inset")
     Library:Themed(Frame, "BackgroundTransparency", "InsetAlpha")
     Library:Gloss(Frame, 0.96)
-    Library:Stroke(Frame, "StrokeSoft", 1)
-
+    Library:GlassEdge(Frame, 1.1, 0.4)
     local Camera = New("Camera", {})
     local View = New("ViewportFrame", {
         Parent = Frame,
@@ -6575,16 +7011,12 @@ function Components.Viewport(Section, Config)
         LightColor = Color3.fromRGB(255, 255, 255)
     })
     Camera.Parent = View
-
     local Models = New("Folder", { Parent = View, Name = "Models" })
-
     local HintIcon = IconLabel(Frame, Library.Icons.Command, 20, "TextDisabled")
     HintIcon.AnchorPoint = Vector2.new(0.5, 0.5)
     HintIcon.Position = UDim2.fromScale(0.5, 0.5)
     HintIcon.Visible = false
-
     local Current, Distance, Yaw, Pitch = nil, 6, 0, 0.35
-
     local function Frame3D()
         if not Current then
             return
@@ -6609,7 +7041,6 @@ function Components.Viewport(Section, Config)
         ) * Distance
         Camera.CFrame = CFrame.lookAt(Center + Offset, Center)
     end
-
     local Handlers = {}
     local Element
     function Handlers.Get()
@@ -6634,10 +7065,8 @@ function Components.Viewport(Section, Config)
         end
         Element.Emit(Current, Silent)
     end
-
     Element = Finish(Section, "Viewport", Config, Row, Handlers, TitleLabel, DescLabel)
     Element.SetObject = Element.Set
-
     if Config.Interactive then
         local Dragging, LastX, LastY = false, 0, 0
         local Catcher = New("TextButton", {
@@ -6672,14 +7101,11 @@ function Components.Viewport(Section, Config)
             end
         end)
     end
-
     if Config.Object then
         Element:Set(Config.Object, true)
     end
-
     return Element
 end
-
 
 function Components.RangeSlider(Section, Config)
     Config = Merge({
@@ -6699,7 +7125,6 @@ function Components.RangeSlider(Section, Config)
     if Low > High then
         Low, High = High, Low
     end
-
     local RangeMobile = Section.Window.Mobile
     local RangeExtra = RangeMobile and ((Section.Window.Config and Section.Window.Config.Compact) and 4 or 10) or 0
     local RangeNeed = 20 + 17 + ((Config.Description or "") ~= "" and 17 or 0) + 3 + ((RangeMobile and 22 or 18) + 8)
@@ -6716,7 +7141,6 @@ function Components.RangeSlider(Section, Config)
         TextXAlignment = Enum.TextXAlignment.Right
     })
     Library:Themed(ValueLabel, "TextColor3", "TextDim")
-
     local ThumbSize = Section.Window.Mobile and 22 or 18
     local Pad = math.floor(ThumbSize / 2) + 4
     local Hit = New("Frame", {
@@ -6736,7 +7160,6 @@ function Components.RangeSlider(Section, Config)
     Library:Corner(Track, UDim.new(1, 0))
     Library:Themed(Track, "BackgroundColor3", "Track")
     Library:Themed(Track, "BackgroundTransparency", "TrackAlpha")
-
     local Fill = New("Frame", {
         Parent = Track,
         BorderSizePixel = 0,
@@ -6744,7 +7167,11 @@ function Components.RangeSlider(Section, Config)
     })
     Library:Corner(Fill, UDim.new(1, 0))
     Library:Themed(Fill, "BackgroundColor3", "Accent")
-
+    New("UIGradient", {
+        Parent = Fill,
+        Rotation = 90,
+        Color = ColorSequence.new(Color3.fromRGB(255, 255, 255), Color3.fromRGB(190, 190, 215))
+    })
     local function Thumb()
         local T = New("TextButton", {
             Parent = Track,
@@ -6845,7 +7272,6 @@ function Components.RangeSlider(Section, Config)
     Paint()
     return Element
 end
-
 function Components.ToggleGroup(Section, Config)
     Config = Merge({
         Title = "Mode",
@@ -6957,28 +7383,49 @@ function Components.FilePicker(Section, Config)
         Callback = function() end
     }, Config)
     local Folder = Config.Folder or (Section.Window.Paths and Section.Window.Paths.Configs) or "sh1ttybanana"
-    local Row, TitleLabel, DescLabel, _, Stack, Measure = MakeRow(Section, "FilePicker", Config.Title, Config.Description, 80, 0)
+    local FileMobile = Section.Window.Mobile
+    local FileExtra = FileMobile and ((Section.Window.Config and Section.Window.Config.Compact) and 4 or 10) or 0
+    local FileNeed = 20 + 17 + ((Config.Description or "") ~= "" and 17 or 0) + 3 + 104
+    local Row, TitleLabel, DescLabel, _, Stack, Measure = MakeRow(Section, "FilePicker", Config.Title, Config.Description, math.max(80, FileNeed - FileExtra), 0)
     local List = New("ScrollingFrame", {
         Parent = Stack,
-        BackgroundTransparency = 1,
         BorderSizePixel = 0,
-        Size = UDim2.new(1, 0, 0, 72),
+        Size = UDim2.new(1, 0, 0, 104),
         LayoutOrder = 3,
-        ScrollBarThickness = 3
+        ScrollBarThickness = 3,
+        CanvasSize = UDim2.new(),
+        AutomaticCanvasSize = Enum.AutomaticSize.Y
     })
+    Library:Corner(List, UDim.new(0, 16))
+    Library:Themed(List, "BackgroundColor3", "Inset")
+    Library:Themed(List, "BackgroundTransparency", "InsetAlpha")
+    Library:Stroke(List, "StrokeSoft", 1)
     Library:StyleScroll(List)
+    Library:Padding(List, 5, 5, 5, 5)
     New("UIListLayout", {
         Parent = List,
         SortOrder = Enum.SortOrder.LayoutOrder,
         Padding = UDim.new(0, 4)
     })
     local Selected, Element
+    local Entries = {}
+    local function PaintFiles()
+        for Name, Entry in pairs(Entries) do
+            local On = Name == Selected
+            Entry.Item.BackgroundColor3 = On and Library.Theme.Accent or Library.Theme.Inset
+            Library:Tween(Entry.Item, FAST, { BackgroundTransparency = On and 0.8 or Library.Theme.InsetAlpha })
+            Library:Tween(Entry.Label, FAST, { TextColor3 = On and Library.Theme.Accent or Library.Theme.TextDim })
+            Library:Tween(Entry.Line, FAST, { Color = On and Library.Theme.Accent or Library.Theme.StrokeSoft, Transparency = On and 0.45 or Library.Theme.StrokeSoftAlpha })
+            Entry.Icon.ImageColor3 = On and Library.Theme.Accent or Library.Theme.TextDisabled
+        end
+    end
     local function Refresh()
         for _, Child in ipairs(List:GetChildren()) do
             if Child:IsA("GuiObject") then
                 Child:Destroy()
             end
         end
+        table.clear(Entries)
         local Files = FS.List(Folder)
         local Order = 0
         for _, Path in ipairs(Files) do
@@ -6988,19 +7435,23 @@ function Components.FilePicker(Section, Config)
                 local Item = New("TextButton", {
                     Parent = List,
                     BorderSizePixel = 0,
-                    Size = UDim2.new(1, -4, 0, 26),
+                    Size = UDim2.new(1, -4, 0, 30),
                     Text = "",
                     AutoButtonColor = false,
                     LayoutOrder = Order
                 })
-                Library:Corner(Item, UDim.new(0, 10))
+                Library:Corner(Item, UDim.new(1, 0))
                 Library:Themed(Item, "BackgroundColor3", "Inset")
                 Library:Themed(Item, "BackgroundTransparency", "InsetAlpha")
+                local ItemLine = Library:Stroke(Item, "StrokeSoft", 1)
+                local FileIcon = IconLabel(Item, Library.Icons.Folder, 14, "TextDisabled")
+                FileIcon.AnchorPoint = Vector2.new(0, 0.5)
+                FileIcon.Position = UDim2.new(0, 12, 0.5, 0)
                 local Lab = New("TextLabel", {
                     Parent = Item,
                     BackgroundTransparency = 1,
-                    Position = UDim2.new(0, 10, 0, 0),
-                    Size = UDim2.new(1, -20, 1, 0),
+                    Position = UDim2.new(0, 34, 0, 0),
+                    Size = UDim2.new(1, -46, 1, 0),
                     Font = Library.Font.Medium,
                     Text = Name,
                     TextSize = Library.TextSize(11, 1),
@@ -7008,14 +7459,16 @@ function Components.FilePicker(Section, Config)
                     TextTruncate = Enum.TextTruncate.AtEnd
                 })
                 Library:Themed(Lab, "TextColor3", "TextDim")
+                Entries[Name] = { Item = Item, Label = Lab, Line = ItemLine, Icon = FileIcon }
                 Item.MouseButton1Click:Connect(function()
                     Selected = Name
-                    Lab.TextColor3 = Library.Theme.Accent
+                    PaintFiles()
                     Element.Emit(Name)
                     Library:Feedback(1.05)
                 end)
             end
         end
+        PaintFiles()
         if Measure then
             task.defer(Measure)
         end
@@ -7027,6 +7480,7 @@ function Components.FilePicker(Section, Config)
     end
     function Handlers.Set(Value, Silent)
         Selected = Value and tostring(Value) or nil
+        PaintFiles()
         Element.Emit(Selected, Silent)
     end
     Element = Finish(Section, "FilePicker", Config, Row, Handlers, TitleLabel, DescLabel)
@@ -7035,7 +7489,6 @@ function Components.FilePicker(Section, Config)
     end
     return Element
 end
-
 function Components.ConfirmToggle(Section, Config)
     Config = Merge({
         Title = "Confirm Toggle",
@@ -7244,28 +7697,45 @@ function Components.PlayerSelector(Section, Config)
     end
     local RefreshBtn = New("TextButton", {
         Parent = Element.Frame,
-        AnchorPoint = Vector2.new(1, 0),
-        BackgroundTransparency = 1,
-        Position = UDim2.new(1, -10, 0, 4),
-        Size = UDim2.fromOffset(22, 22),
+        AnchorPoint = Vector2.new(1, 0.5),
+        BorderSizePixel = 0,
+        Size = UDim2.fromOffset(26, 26),
         Text = "",
+        AutoButtonColor = false,
         ZIndex = 6
     })
+    -- sit just left of the dropdown field
+    local FieldWidth = 0
+    for _, Child in ipairs(Element.Frame:GetChildren()) do
+        if Child:IsA("TextButton") and Child ~= RefreshBtn and Child.AnchorPoint.X == 1 then
+            FieldWidth = math.max(FieldWidth, Child.Size.X.Offset)
+        end
+    end
+    RefreshBtn.Position = UDim2.new(1, -(14 + FieldWidth + 6), 0.5, 0)
+    Library:Corner(RefreshBtn, UDim.new(1, 0))
+    Library:Themed(RefreshBtn, "BackgroundColor3", "Row")
+    Library:Themed(RefreshBtn, "BackgroundTransparency", "ButtonAlpha")
+    local RefreshLine = Library:Stroke(RefreshBtn, "StrokeSoft", 1)
     local Ric = IconLabel(RefreshBtn, Library.Icons.Refresh, 14, "TextDim")
     Ric.Size = UDim2.fromOffset(14, 14)
+    Ric.AnchorPoint = Vector2.new(0.5, 0.5)
+    Ric.Position = UDim2.fromScale(0.5, 0.5)
+    Library:Hover(RefreshBtn, RefreshLine, "Transparency", Library.Theme.StrokeSoftAlpha, 0.35)
     RefreshBtn.MouseButton1Click:Connect(function()
         Element:Refresh()
         Library:Feedback(1.05)
+        Ric.Rotation = 0
+        Library:Tween(Ric, TweenInfo.new(0.5, Quart, Out), { Rotation = 360 })
     end)
     return Element
 end
-
 function Components.LogConsole(Section, Config)
     Config = Merge({
         Title = "Console",
         Description = "",
         MaxLines = 80,
-        Height = 120
+        Height = 120,
+        Timestamps = true
     }, Config)
     local Mobile = Section.Window.Mobile
     local H = Mobile and math.max(Config.Height, 140) or Config.Height
@@ -7279,7 +7749,8 @@ function Components.LogConsole(Section, Config)
         CanvasSize = UDim2.new(),
         ScrollBarThickness = 3
     })
-    Library:Corner(Frame, UDim.new(0, 12))
+    Library:Corner(Frame, UDim.new(0, 16))
+    Library:GlassEdge(Frame, 1, 0.5)
     Library:Themed(Frame, "BackgroundColor3", "Inset")
     Library:Themed(Frame, "BackgroundTransparency", "InsetAlpha")
     Library:Gloss(Frame, 0.96)
@@ -7306,7 +7777,7 @@ function Components.LogConsole(Section, Config)
             Size = UDim2.new(1, 0, 0, 0),
             AutomaticSize = Enum.AutomaticSize.Y,
             Font = Library.Font.Mono,
-            Text = tostring(Text),
+            Text = (Config.Timestamps ~= false and (os.date("%H:%M:%S") .. "  ") or "") .. tostring(Text),
             TextSize = Library.TextSize(11, 1),
             TextXAlignment = Enum.TextXAlignment.Left,
             TextWrapped = true,
@@ -7344,7 +7815,6 @@ function Components.LogConsole(Section, Config)
     if Measure then task.defer(Measure) end
     return Element
 end
-
 function Components.Separator(Section, Config)
     Config = Merge({ Title = "", Text = nil }, Config)
     local Text = Config.Text or Config.Title or ""
@@ -10612,9 +11082,7 @@ function WM.BuildAPI(W)
         end
         table.insert(W.Recent, 1, Tab.Name)
 
-        local Favorited = table.find(W.State.Favorites or {}, Tab.Name) ~= nil
-        Library:SetIcon(W.FavButton:FindFirstChildOfClass("ImageLabel"), Library.Icons.Star,
-            Favorited and Library.Theme.Accent or Library.Theme.TextDim)
+        W.PaintFav()
 
     end
 

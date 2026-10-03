@@ -11,6 +11,41 @@ local Window = Library:NewWindow({
     Theme = "Dark",                    -- the single theme; window is solid by default
     Size = UDim2.fromOffset(720, 520),
     -- Color = Color3.fromRGB(150, 118, 255), -- optional accent override
+
+    --[[ KEY SYSTEM (optional) - uncomment ONE provider. The window only opens after a valid key.
+    KeySystem = {
+        Title = "sh1ttybanana",
+        Note = "Get a key from our Discord",
+        GetKeyLink = "https://discord.gg/YOUR_INVITE",
+        SaveKey = true,                     -- remember the key between sessions
+        OnSuccess = function(Key) print("verified", Key) end,
+
+        -- A) fixed list of keys
+        -- Keys = { "KEY-1234", "KEY-5678" },
+
+        -- B) Supabase (recommended: RPC mode, see the SQL at the bottom of this file)
+        Provider = "Supabase",
+        Supabase = {
+            Url = "https://YOUR_PROJECT.supabase.co",
+            AnonKey = "YOUR_ANON_PUBLIC_KEY",
+            Rpc = "validate_key",
+            -- or table mode instead of Rpc:
+            -- Table = "keys", KeyColumn = "key", ExpiresColumn = "expires_at",
+            -- ActiveColumn = "active", HwidColumn = "hwid"
+        },
+
+        -- C) any HTTP endpoint ({key} and {hwid} are filled in)
+        -- Provider = "Http",
+        -- Http = {
+        --     Url = "https://api.yoursite.com/verify?key={key}&hwid={hwid}",
+        --     SuccessField = "valid",        -- JSON field that must be true
+        --     MessageField = "message"       -- optional error text from the server
+        -- },
+
+        -- D) your own function: return true, or false plus a message
+        -- Callback = function(Key) return Key == "secret", "That key is wrong" end,
+    },
+    ]]
     -- Transparency = 0.15,                   -- optional: make the window see-through again
     ToggleKey = Enum.KeyCode.RightShift
 })
@@ -92,7 +127,7 @@ Actions:AddMultiButton({
     }
 })
 
-Actions:AddProgress({ Title = "Loading", Default = 65, Suffix = "%" })
+Actions:AddProgress({ Title = "Loading", Default = 0.65, Suffix = "%" })  -- Default is a 0..1 fraction
 
 -- Cards: containers that hold ANY other component -----------------------------
 local Showcase = Cards:AddSection({ Title = "Card showcase" })
@@ -181,3 +216,33 @@ Appearance:AddSlider({
 Appearance:AddParagraph({ Title = "Tip", Content = "Press RightShift to hide or show the window." })
 
 Window:Notify({ Title = "sh1ttybanana", Content = "Loaded fluid glass UI", Type = "Success" })
+
+
+--[[ SUPABASE SETUP (run once in the Supabase SQL editor) ------------------------
+create table keys (
+  key text primary key,
+  active boolean not null default true,
+  expires_at timestamptz,
+  hwid text
+);
+alter table keys enable row level security;   -- no policies = the table is NOT readable with the anon key
+
+create or replace function validate_key(p_key text, p_hwid text) returns boolean
+language plpgsql security definer set search_path = public as $$
+declare r keys%rowtype;
+begin
+  select * into r from keys
+   where key = p_key and active and (expires_at is null or expires_at > now());
+  if not found then return false; end if;
+  if r.hwid is null then
+    update keys set hwid = p_hwid where key = p_key;   -- first use locks it to this device
+    return true;
+  end if;
+  return r.hwid = p_hwid;
+end $$;
+grant execute on function validate_key(text, text) to anon;
+
+insert into keys (key) values ('KEY-1234');   -- add keys like this
+NOTE: key checks run on the client, so a determined user can bypass them. Treat this as
+a gate, not as security for anything valuable; keep real checks on your own server.
+-------------------------------------------------------------------------------]]
