@@ -15,7 +15,7 @@ end
 local Window = Library:NewWindow({
     Title = "sh1ttybanana",
     Description = "fluid glass",
-    Theme = "Liquid Glass",            -- "Fluid Glass Black" | "Aurora Glass" | "Rose Glass"
+    Theme = "Dark",                    -- the single fluid-glass theme
     Size = UDim2.fromOffset(720, 520),
     Blur = true,
     -- Color = Color3.fromRGB(150, 118, 255), -- optional: overrides the accent of every theme
@@ -159,15 +159,6 @@ ESP:AddInput({
 
 -- Settings -------------------------------------------------------------------
 local Appearance = Settings:AddSection({ Title = "Appearance" })
-
-Appearance:AddDropdown({
-    Title = "Theme",
-    Options = Library.ThemeOrder,
-    Default = "Liquid Glass",
-    Callback = function(Name)
-        Window:SetTheme(Name)
-    end
-})
 
 Appearance:AddSlider({
     Title = "Window Transparency",
