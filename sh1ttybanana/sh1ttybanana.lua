@@ -1,5 +1,5 @@
 local Library = {}
-Library.Version = "0.3.0-glass"
+Library.Version = "0.4.0-glass"
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
@@ -19,10 +19,10 @@ local Back = Enum.EasingStyle.Back
 local Out = Enum.EasingDirection.Out
 local In = Enum.EasingDirection.In
 
-local FAST = TweenInfo.new(0.16, Quart, Out)
-local NORMAL = TweenInfo.new(0.26, Quart, Out)
-local SLOW = TweenInfo.new(0.42, Quint, Out)
-local SPRING = TweenInfo.new(0.34, Back, Out)
+local FAST = TweenInfo.new(0.18, Quint, Out)
+local NORMAL = TweenInfo.new(0.3, Quint, Out)
+local SLOW = TweenInfo.new(0.5, Quint, Out)
+local SPRING = TweenInfo.new(0.5, Back, Out)
 
 local function New(ClassName, Props, Children)
     local Obj = Instance.new(ClassName)
@@ -475,12 +475,12 @@ Library.Signal = Signal
 
 Library.Themes = {
     Dark = {
-        Main = Color3.fromRGB(8, 8, 9),
+        Main = Color3.fromRGB(12, 14, 20),
         Sidebar = Color3.fromRGB(255, 255, 255),
         Card = Color3.fromRGB(255, 255, 255),
         Row = Color3.fromRGB(255, 255, 255),
         Inset = Color3.fromRGB(0, 0, 0),
-        Elevated = Color3.fromRGB(14, 14, 15),
+        Elevated = Color3.fromRGB(16, 18, 26),
         Ink = Color3.fromRGB(255, 255, 255),
         InkText = Color3.fromRGB(10, 10, 10),
         Text = Color3.fromRGB(245, 245, 245),
@@ -497,14 +497,14 @@ Library.Themes = {
         Warn = Color3.fromRGB(190, 190, 190),
         Error = Color3.fromRGB(255, 255, 255),
         Info = Color3.fromRGB(150, 150, 150),
-        WindowAlpha = 0,
-        SidebarAlpha = 0.955,
-        CardAlpha = 0.95,
-        RowAlpha = 0.93,
-        RowHoverAlpha = 0.88,
+        WindowAlpha = 0.3,
+        SidebarAlpha = 0.9,
+        CardAlpha = 0.92,
+        RowAlpha = 0.91,
+        RowHoverAlpha = 0.84,
         InsetAlpha = 0.35,
-        ElevatedAlpha = 0,
-        StrokeAlpha = 0.84,
+        ElevatedAlpha = 0.14,
+        StrokeAlpha = 0.78,
         StrokeSoftAlpha = 0.9,
         SheenAlpha = 0.92,
         ButtonAlpha = 0.88,
@@ -515,7 +515,7 @@ Library.Themes = {
         TabActiveAlpha = 0.84,
         TabHoverAlpha = 0.93,
         Radius = 18,
-        Blur = 0,
+        Blur = 18,
         Glass = true
     }
 }
@@ -1136,7 +1136,7 @@ function Library:Rise(Objects)
     end
     for Index, Object in ipairs(Objects) do
         if Object and Object.Parent then
-            local Scale = New("UIScale", { Parent = Object, Scale = 0.95 })
+            local Scale = New("UIScale", { Parent = Object, Scale = 0.965 })
             local Info = TweenInfo.new(0.38, Back, Out, 0, false, math.min((Index - 1) * 0.04, 0.28))
             Library:Tween(Scale, Info, { Scale = 1 }, function()
                 Scale:Destroy()
@@ -2090,7 +2090,7 @@ function Library:NewWindow(UserConfig)
         AutoScale = true,
         AutoPosition = "Center",
         Transparency = nil,
-        Blur = false,
+        Blur = true,
         Version = "V0.1 Alpha",
         Tag = "beta",
         FolderName = "sh1ttybanana",
@@ -2875,7 +2875,7 @@ function Library:NewWindow(UserConfig)
 
     if W.Config.Blur then
         pcall(function()
-            W.Blur = New("BlurEffect", { Parent = Lighting, Size = 0, Name = RandomName() })
+            W.Blur = New("BlurEffect", { Parent = Lighting, Size = Library.Theme.Blur or 0, Name = RandomName() })
         end)
     end
 
@@ -2904,11 +2904,17 @@ function Library:NewWindow(UserConfig)
     Library:Themed(W.Main, "BackgroundTransparency", "WindowAlpha")
 
     -- glass rim: bright on the top-left edge, fading across the window
-    Library:GlassEdge(W.Main, 1.4, 0.15)
+    local MainRim = Library:GlassEdge(W.Main, 1.6, 0.1)
+    local MainRimGradient = MainRim:FindFirstChildOfClass("UIGradient")
+    if MainRimGradient and not Library.Motion.Reduce then
+        MainRimGradient.Rotation = 0
+        TweenService:Create(MainRimGradient, TweenInfo.new(18, Enum.EasingStyle.Linear, Enum.EasingDirection.InOut, -1), { Rotation = 360 }):Play()
+    end
     Library:Gradient(W.Main, {
         Color3.fromRGB(255, 255, 255),
-        Color3.fromRGB(190, 190, 190)
+        Color3.fromRGB(214, 218, 230)
     }, 90)
+    Library:Gloss(W.Main, 0.93)
     Library:Shadow(W.Root, 80, 0.62)
 
     -- soft ambient colour blobs behind the content (fluid look). Sized by window
@@ -3688,6 +3694,49 @@ function Library:NewWindow(UserConfig)
         ZIndex = 3
     })
 
+    W.SearchToggle = GlyphButton(W.PageHeader, Library.Icons.Search, "Search")
+    W.SearchToggle.AnchorPoint = Vector2.new(1, 0.5)
+    W.SearchToggle.Position = UDim2.new(1, -52, 0.5, 0)
+    W.SearchToggle.ZIndex = 5
+    W.SearchToggle.Visible = false
+    W.SearchFloating = false
+
+    function W.SetSearchFloating(State)
+        if State == nil then
+            State = not W.SearchFloating
+        end
+        W.SearchFloating = State
+        if State then
+            W.SearchBox.Parent = W.Content
+            W.SearchBox.AnchorPoint = Vector2.new(0.5, 0)
+            W.SearchBox.Size = UDim2.new(1, -24, 0, W.Mobile and 36 or 32)
+            W.SearchBox.Position = UDim2.new(0.5, 0, 0, 38)
+            W.SearchBox.ZIndex = 25
+            W.SearchBox.Visible = true
+            Library:Tween(W.SearchBox, SPRING, { Position = UDim2.new(0.5, 0, 0, 54) })
+            task.defer(function()
+                W.SearchInput:CaptureFocus()
+            end)
+        else
+            W.SearchBox.Parent = W.Sidebar
+            W.SearchBox.AnchorPoint = Vector2.new(0, 0)
+            W.SearchBox.Position = UDim2.new(0, 10, 0, 12)
+            W.SearchBox.Size = UDim2.new(1, -21, 0, W.Mobile and 36 or 32)
+            W.SearchBox.ZIndex = 4
+            W.SearchBox.Visible = not W.RailState
+        end
+    end
+
+    W.SearchToggle.MouseButton1Click:Connect(function()
+        Library:Feedback(1.1)
+        W.SetSearchFloating()
+    end)
+    W.SearchInput.FocusLost:Connect(function()
+        if W.SearchFloating and W.SearchInput.Text == "" then
+            W.SetSearchFloating(false)
+        end
+    end)
+
     function W.SetPageHead(Title, Description, Icon)
         W.PageTitle.Text = Title or ""
         local HasDesc = (Description or "") ~= ""
@@ -3708,6 +3757,7 @@ function Library:NewWindow(UserConfig)
         Visible = false,
         ZIndex = 20
     })
+    Library:Corner(W.Backdrop, UDim.new(0, 20))
     W.Backdrop.MouseButton1Click:Connect(function()
     end)
 
@@ -3734,6 +3784,10 @@ function Library:NewWindow(UserConfig)
         W.RailState = Rail
         local Top = Rail and 10 or (W.SearchBox.Size.Y.Offset + 20)
         W.SearchBox.Visible = not Rail
+        W.SearchToggle.Visible = Rail
+        if not Rail and W.SearchFloating then
+            W.SetSearchFloating(false)
+        end
         W.TabScroll.Position = UDim2.new(0, 8, 0, Top)
         W.TabScroll.Size = UDim2.new(1, -16, 1, -(Top + 44))
         W.ProfileLabel.Visible = not Rail
@@ -4093,8 +4147,14 @@ function Library:NewWindow(UserConfig)
             if Closing then
                 Closing:Destroy()
             end
-            Library:Pop(W.Main, 0.42, 0.9)
+            Library:Pop(W.Main, 0.55, 0.88)
+            W.Main.BackgroundTransparency = 1
             Library:Animate(W.Main, SLOW, { BackgroundTransparency = Library.Theme.WindowAlpha })
+            local TabButtons = {}
+            for _, Entry in ipairs(W.Tabs) do
+                table.insert(TabButtons, Entry.Button)
+            end
+            Library:Rise(TabButtons)
             if W.Sidebar then
                 W.Sidebar.Position = UDim2.fromOffset(-18, 6)
                 Library:Animate(W.Sidebar, SLOW, { Position = UDim2.fromOffset(8, 6) })
@@ -4373,12 +4433,15 @@ local function BuildSubtab(Tab, Config)
     if not Tab.SubBar then
         Tab.Subtabs = {}
         Tab.SubBar = New("ScrollingFrame", {
-            Parent = Tab.Page,
+            Parent = W.Content,
             Name = "Subtabs",
+            AnchorPoint = Vector2.new(0.5, 1),
             BackgroundTransparency = 1,
             BorderSizePixel = 0,
-            Size = UDim2.new(1, 0, 0, Mobile and 42 or 36),
-            LayoutOrder = 0,
+            Position = UDim2.new(0.5, 0, 1, -10),
+            Size = UDim2.new(0, 0, 0, Mobile and 46 or 42),
+            Visible = false,
+            ZIndex = 12,
             ScrollBarThickness = 0,
             CanvasSize = UDim2.new(),
             AutomaticCanvasSize = Enum.AutomaticSize.X,
@@ -4389,20 +4452,21 @@ local function BuildSubtab(Tab, Config)
             Parent = Tab.SubBar,
             BorderSizePixel = 0,
             AnchorPoint = Vector2.new(0, 0.5),
-            Position = UDim2.new(0, 0, 0.5, 0),
-            Size = UDim2.new(0, 0, 0, Mobile and 36 or 30),
+            Position = UDim2.new(0, 3, 0.5, 0),
+            Size = UDim2.new(0, 0, 0, Mobile and 40 or 36),
             AutomaticSize = Enum.AutomaticSize.X
         })
         Library:Corner(Tab.SubTrack, UDim.new(1, 0))
-        Library:Themed(Tab.SubTrack, "BackgroundColor3", "Row")
-        Library:Themed(Tab.SubTrack, "BackgroundTransparency", "RowAlpha")
-        Library:GlassEdge(Tab.SubTrack, 1, 0.6)
+        Library:Themed(Tab.SubTrack, "BackgroundColor3", "Elevated")
+        Library:Themed(Tab.SubTrack, "BackgroundTransparency", "ElevatedAlpha")
+        Library:GlassEdge(Tab.SubTrack, 1.2, 0.3)
+        Tab.SubScale = New("UIScale", { Parent = Tab.SubBar, Scale = 1 })
         Tab.SubIndicator = New("Frame", {
             Parent = Tab.SubTrack,
             BorderSizePixel = 0,
             AnchorPoint = Vector2.new(0, 0.5),
             Position = UDim2.new(0, 3, 0.5, 0),
-            Size = UDim2.fromOffset(0, Mobile and 30 or 24),
+            Size = UDim2.fromOffset(0, Mobile and 34 or 30),
             BackgroundTransparency = 0.06,
             Visible = false,
             ZIndex = 1
@@ -4439,10 +4503,10 @@ local function BuildSubtab(Tab, Config)
             local Offset = (Active.Button.AbsolutePosition.X - Tab.SubTrack.AbsolutePosition.X) / Scale
             local Width = Active.Button.AbsoluteSize.X / Scale
             Tab.SubIndicator.Visible = true
-            local Info = Animated and TweenInfo.new(0.34, Enum.EasingStyle.Quint, Enum.EasingDirection.Out) or TweenInfo.new(0)
+            local Info = Animated and TweenInfo.new(0.45, Enum.EasingStyle.Back, Enum.EasingDirection.Out) or TweenInfo.new(0)
             Library:Tween(Tab.SubIndicator, Info, {
                 Position = UDim2.new(0, Offset, 0.5, 0),
-                Size = UDim2.new(0, Width, 0, Mobile and 30 or 24)
+                Size = UDim2.new(0, Width, 0, Mobile and 34 or 30)
             })
         end
         Tab.MoveSubIndicator = Move
@@ -4451,6 +4515,48 @@ local function BuildSubtab(Tab, Config)
         end
         Tab.SubTrack:GetPropertyChangedSignal("AbsoluteSize"):Connect(function()
             Move(false)
+        end)
+
+        local BarHeight = Mobile and 46 or 42
+        local function Resize()
+            local Scale = math.max(W.Scale.Scale, 0.001)
+            local Room = math.max(W.Content.AbsoluteSize.X / Scale - 28, 80)
+            local Want = Tab.SubTrack.AbsoluteSize.X / Scale + 8
+            Tab.SubBar.Size = UDim2.new(0, math.min(Want, Room), 0, BarHeight)
+        end
+        Tab.SubTrack:GetPropertyChangedSignal("AbsoluteSize"):Connect(Resize)
+        W.Content:GetPropertyChangedSignal("AbsoluteSize"):Connect(Resize)
+        task.defer(Resize)
+
+        local Padding = Tab.Page:FindFirstChildOfClass("UIPadding")
+        if Padding then
+            Padding.PaddingBottom = UDim.new(0, BarHeight + 30)
+        end
+
+        local function SyncVisible()
+            local Show = Tab.Page.Visible and W.Pages.Visible
+            if Show and not Tab.SubBar.Visible then
+                Tab.SubBar.Position = UDim2.new(0.5, 0, 1, 18)
+                Tab.SubBar.Visible = true
+                Library:Tween(Tab.SubBar, SPRING, { Position = UDim2.new(0.5, 0, 1, -10) })
+                Tab.SubScale.Scale = 1
+            elseif not Show then
+                Tab.SubBar.Visible = false
+            end
+        end
+        Tab.Page:GetPropertyChangedSignal("Visible"):Connect(SyncVisible)
+        W.Pages:GetPropertyChangedSignal("Visible"):Connect(SyncVisible)
+        task.defer(SyncVisible)
+
+        local LastScroll = 0
+        Tab.Page:GetPropertyChangedSignal("CanvasPosition"):Connect(function()
+            local Y = Tab.Page.CanvasPosition.Y
+            if Y > LastScroll + 6 and Y > 40 then
+                Library:Tween(Tab.SubScale, NORMAL, { Scale = 0.88 })
+            elseif Y < LastScroll - 6 or Y <= 40 then
+                Library:Tween(Tab.SubScale, NORMAL, { Scale = 1 })
+            end
+            LastScroll = Y
         end)
     end
 
@@ -4482,7 +4588,7 @@ local function BuildSubtab(Tab, Config)
         Parent = Tab.SubLane,
         BackgroundTransparency = 1,
         BorderSizePixel = 0,
-        Size = UDim2.new(0, 0, 0, Mobile and 30 or 24),
+        Size = UDim2.new(0, 0, 0, Mobile and 34 or 30),
         AutomaticSize = Enum.AutomaticSize.X,
         Text = "",
         AutoButtonColor = false,
@@ -4547,6 +4653,16 @@ local function BuildSubtab(Tab, Config)
             end
         end
         Tab.MoveSubIndicator(Animated ~= false)
+        task.defer(function()
+            local Scale = math.max(W.Scale.Scale, 0.001)
+            local Bar = Tab.SubBar
+            local Left = (Sub.Button.AbsolutePosition.X - Tab.SubTrack.AbsolutePosition.X) / Scale
+            local Width = Sub.Button.AbsoluteSize.X / Scale
+            local View = Bar.AbsoluteSize.X / Scale
+            local Limit = math.max(Bar.AbsoluteCanvasSize.X / Scale - View, 0)
+            local Target = math.clamp(Left + Width / 2 - View / 2, 0, Limit)
+            Library:Tween(Bar, NORMAL, { CanvasPosition = Vector2.new(Target, 0) })
+        end)
         if Animated ~= false then
             local Cards = {}
             for _, Child in ipairs(Sub.Container:GetChildren()) do
@@ -5043,6 +5159,7 @@ local function Popup(W, Source, Width, Height)
         AutoButtonColor = false,
         ZIndex = PopupBase
     })
+    Library:Corner(Backdrop, UDim.new(0, 20))
 
     local Position, Size = LocalPosition(W, Source)
     local MainSize = W.Main.AbsoluteSize / math.max(W.Scale.Scale, 0.001)
@@ -8668,6 +8785,7 @@ function WM.Modal(W, Config)
         AutoButtonColor = false,
         ZIndex = 210 + #W.Modals * 4
     })
+    Library:Corner(Backdrop, UDim.new(0, 20))
 
     local MainSize = W.Main.AbsoluteSize / W.Scale.Scale
     local Width = math.min(Config.Width, MainSize.X - 24)
@@ -10814,6 +10932,9 @@ local function DockPanel(W, Panel)
     Panel.Position = UDim2.fromOffset(0, 0)
     Panel.Size = UDim2.new(1, 0, 1, 0)
     Panel.ZIndex = 60
+    if not Panel:FindFirstChildOfClass("UICorner") then
+        Library:Corner(Panel, UDim.new(0, 18))
+    end
     Panel:SetAttribute("Docked", true)
     pcall(function()
         Panel.BackgroundColor3 = Library.Theme.Elevated
@@ -11930,6 +12051,44 @@ function WM.AI(W)
         table.insert(ChipList, Chip)
     end
 
+    local function FitEmpty()
+        local Scale = math.max(W.Scale.Scale, 0.001)
+        local Available = Empty.AbsoluteSize.Y / Scale
+        if Available <= 0 then
+            return
+        end
+        local ChipHeight = (Mobile and 40 or 36) + 6
+        local ShowTile = true
+        local ShowText = true
+        local Count = #ChipList
+        local function Needed()
+            local Value = 48
+            if ShowTile then
+                Value = Value + 68
+            end
+            if ShowText then
+                Value = Value + 30
+            end
+            return Value + Count * ChipHeight
+        end
+        if Needed() > Available then
+            ShowTile = false
+        end
+        if Needed() > Available then
+            ShowText = false
+        end
+        while Count > 1 and Needed() > Available do
+            Count = Count - 1
+        end
+        EmptyTile.Visible = ShowTile
+        EmptyText.Visible = ShowText
+        for Index, Chip in ipairs(ChipList) do
+            Chip.Visible = Index <= Count
+        end
+    end
+    Empty:GetPropertyChangedSignal("AbsoluteSize"):Connect(FitEmpty)
+    task.defer(FitEmpty)
+
     local Gate = Blank(Chat, {
         Position = UDim2.fromOffset(0, 54),
         Size = UDim2.new(1, 0, 1, -54),
@@ -12759,6 +12918,10 @@ function WM.BuildAPI(W)
         end
         RestorePages(W)
         W.SetPageHead(Tab.Name, Tab.Description, Tab.Icon)
+        if not Library.Motion.Reduce and not Library.ReduceMotion then
+            Tab.Page.Position = UDim2.fromOffset(0, 16)
+            Library:Tween(Tab.Page, SLOW, { Position = UDim2.fromOffset(0, 0) })
+        end
         local Cards = {}
         for _, Child in ipairs(Tab.Page:GetChildren()) do
             if Child:IsA("Frame") and Child.Visible then

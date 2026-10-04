@@ -1,6 +1,8 @@
 local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/Nail120212/NexLib/refs/heads/main/sh1ttybanana/sh1ttybanana.lua"))()
 
-local Window = Library:NewWindow({
+local Window
+
+Window = Library:NewWindow({
     Title = "sh1ttybanana",
     Description = "fluid glass",
     Size = UDim2.fromOffset(720, 520),
@@ -14,7 +16,7 @@ local Window = Library:NewWindow({
             Callback = function()
                 Window:Dialog({
                     Title = "sh1ttybanana",
-                    Content = "Fluid glass UI. Switch TopbarStyle between Classic and Mac.",
+                    Content = "Fluid glass UI v0.4. Floating subtab bar, header search, blur and smoother motion.",
                     Type = "Info",
                     Buttons = { { Title = "Nice", Filled = true } }
                 })
@@ -46,11 +48,36 @@ local Premium = Window:Tab({
         end
     }
 })
+local Showcase = Window:Tab({ Title = "Showcase", Icon = "layout-dashboard" })
 local Settings = Window:Tab({ Title = "Settings", Icon = "settings" })
 
 local General = Main:AddSubtab({ Title = "General", Icon = "layout-dashboard" })
 local Movement = Main:AddSubtab({ Title = "Movement", Icon = "footprints" })
 local Misc = Main:AddSubtab({ Title = "Misc", Icon = "box" })
+
+local ShowcaseNames = {
+    { "Overview", "layout-dashboard" },
+    { "Aim", "crosshair" },
+    { "Visual", "eye" },
+    { "World", "box" },
+    { "Player", "footprints" },
+    { "Teleport", "sparkles" },
+    { "Config", "settings" },
+    { "Credits", "crown" }
+}
+
+for Index, Entry in ipairs(ShowcaseNames) do
+    local Sub = Showcase:AddSubtab({ Title = Entry[1], Icon = Entry[2] })
+    local Group = Sub:AddSection({ Title = Entry[1] })
+    for Row = 1, 6 do
+        Group:AddToggle({
+            Title = Entry[1] .. " option " .. Row,
+            Description = "Scroll down and the bar at the bottom shrinks out of the way",
+            Default = Row % 2 == 0,
+            Flag = "Showcase" .. Index .. "_" .. Row
+        })
+    end
+end
 
 local Combat = General:AddSection({ Title = "Combat" })
 
@@ -235,7 +262,7 @@ Look:AddSlider({
     Title = "Window Transparency",
     Min = 0,
     Max = 60,
-    Default = 0,
+    Default = 30,
     Suffix = "%",
     Callback = function(Value)
         Window:SetTransparency(Value / 100)
