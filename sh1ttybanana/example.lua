@@ -1,88 +1,67 @@
---[[
-    sh1ttybanana  |  example.lua   (v0.3.0-glass)
-    Solid dark fluid-glass UI. Every component and config key below exists in the library.
-]]
-
 local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/Nail120212/NexLib/refs/heads/main/sh1ttybanana/sh1ttybanana.lua"))()
 
 local Window = Library:NewWindow({
     Title = "sh1ttybanana",
     Description = "fluid glass",
-    Theme = "Dark",                    -- the single theme; window is solid by default
     Size = UDim2.fromOffset(720, 520),
-    -- Color = Color3.fromRGB(150, 118, 255), -- optional accent override
-
-    --[[ KEY SYSTEM (optional) - uncomment ONE provider. The window only opens after a valid key.
-    KeySystem = {
-        Title = "sh1ttybanana",
-        Note = "Get a key from our Discord",
-        GetKeyLink = "https://discord.gg/YOUR_INVITE",
-        SaveKey = true,                     -- remember the key between sessions
-        OnSuccess = function(Key) print("verified", Key) end,
-
-        -- A) fixed list of keys
-        -- Keys = { "KEY-1234", "KEY-5678" },
-
-        -- B) Supabase (recommended: RPC mode, see the SQL at the bottom of this file)
-        Provider = "Supabase",
-        Supabase = {
-            Url = "https://YOUR_PROJECT.supabase.co",
-            AnonKey = "YOUR_ANON_PUBLIC_KEY",
-            Rpc = "validate_key",
-            -- or table mode instead of Rpc:
-            -- Table = "keys", KeyColumn = "key", ExpiresColumn = "expires_at",
-            -- ActiveColumn = "active", HwidColumn = "hwid"
-        },
-
-        -- C) any HTTP endpoint ({key} and {hwid} are filled in)
-        -- Provider = "Http",
-        -- Http = {
-        --     Url = "https://api.yoursite.com/verify?key={key}&hwid={hwid}",
-        --     SuccessField = "valid",        -- JSON field that must be true
-        --     MessageField = "message"       -- optional error text from the server
-        -- },
-
-        -- D) your own function: return true, or false plus a message
-        -- Callback = function(Key) return Key == "secret", "That key is wrong" end,
-    },
-    ]]
-    -- Transparency = 0.15,                   -- optional: make the window see-through again
-    ToggleKey = Enum.KeyCode.RightShift
+    TopbarStyle = "Mac",
+    ToggleKey = Enum.KeyCode.RightShift,
+    Background = nil,
+    TopbarButtons = {
+        {
+            Icon = "sparkles",
+            Title = "About",
+            Callback = function()
+                Window:Dialog({
+                    Title = "sh1ttybanana",
+                    Content = "Fluid glass UI. Switch TopbarStyle between Classic and Mac.",
+                    Type = "Info",
+                    Buttons = { { Title = "Nice", Filled = true } }
+                })
+            end
+        }
+    }
 })
 
-local Main     = Window:Tab({ Title = "Main",     Icon = "sparkles" })
-local Cards    = Window:Tab({ Title = "Cards",    Icon = "palette" })
+local Main = Window:Tab({ Title = "Main", Icon = "sparkles" })
+local Visuals = Window:Tab({ Title = "Visuals", Icon = "eye" })
+local Premium = Window:Tab({
+    Title = "Premium",
+    Icon = "crown",
+    Lock = {
+        Title = "Premium access",
+        Description = "Enter your license key",
+        Provider = "Http",
+        Http = {
+            Url = "https://api.yoursite.com/verify?key={key}&hwid={hwid}&nonce={nonce}",
+            SuccessField = "valid",
+            MessageField = "message",
+            NonceField = "nonce",
+            PayloadField = "token"
+        },
+        Remember = true,
+        RememberMinutes = 30,
+        OnUnlock = function(Token)
+            print("server token", Token)
+        end
+    }
+})
 local Settings = Window:Tab({ Title = "Settings", Icon = "settings" })
 
--- Main -----------------------------------------------------------------------
-local Combat = Main:AddSection({ Title = "Combat" })
+local General = Main:AddSubtab({ Title = "General", Icon = "layout-dashboard" })
+local Movement = Main:AddSubtab({ Title = "Movement", Icon = "footprints" })
+local Misc = Main:AddSubtab({ Title = "Misc", Icon = "box" })
+
+local Combat = General:AddSection({ Title = "Combat" })
 
 Combat:AddToggle({
     Title = "Auto Farm",
-    Description = "Glass toggle with a lit accent track",
+    Description = "Neutral glass toggle",
     Default = false,
     Flag = "AutoFarm",
-    Callback = function(Value) print("Auto Farm:", Value) end
-})
-
-Combat:AddSlider({
-    Title = "Walk Speed",
-    Description = "Drag the knob",
-    Min = 16, Max = 120, Increment = 1, Default = 16,
-    Suffix = " sps",
-    Flag = "WalkSpeed",
     Callback = function(Value)
-        local Character = game.Players.LocalPlayer.Character
-        local Humanoid = Character and Character:FindFirstChildOfClass("Humanoid")
-        if Humanoid then Humanoid.WalkSpeed = Value end
+        print("Auto Farm:", Value)
     end
-})
-
-Combat:AddRangeSlider({
-    Title = "Target Range",
-    Min = 0, Max = 100, Default = { 20, 80 },
-    Flag = "TargetRange",
-    Callback = function(Value) print("Range:", Value[1], Value[2]) end
 })
 
 Combat:AddDropdown({
@@ -92,157 +71,184 @@ Combat:AddDropdown({
     Flag = "TargetPart"
 })
 
+Combat:AddDropdown({
+    Title = "Targets",
+    Options = { "Players", "NPCs", "Bosses", "Chests", "Vehicles", "Pets", "Objects", "Portals", "Drops" },
+    Multi = true,
+    Flag = "Targets"
+})
+
 Combat:AddKeybind({
     Title = "Quick Action",
     Default = Enum.KeyCode.E,
     Mode = "Toggle",
     Flag = "QuickKey",
-    Callback = function() print("Keybind fired") end
+    Callback = function()
+        print("Keybind fired")
+    end
 })
 
-local Actions = Main:AddSection({ Title = "Actions" })
+local Walk = Movement:AddSection({ Title = "Walking" })
 
-Actions:AddButton({
+Walk:AddSlider({
+    Title = "Walk Speed",
+    Min = 16,
+    Max = 120,
+    Increment = 1,
+    Default = 16,
+    Suffix = " sps",
+    Flag = "WalkSpeed",
+    Callback = function(Value)
+        local Character = game.Players.LocalPlayer.Character
+        local Humanoid = Character and Character:FindFirstChildOfClass("Humanoid")
+        if Humanoid then
+            Humanoid.WalkSpeed = Value
+        end
+    end
+})
+
+Walk:AddRangeSlider({
+    Title = "Target Range",
+    Min = 0,
+    Max = 100,
+    Default = { 20, 80 },
+    Flag = "TargetRange"
+})
+
+Movement:AddToggle({
+    Title = "Infinite Jump",
+    Description = "Added straight to the subtab",
+    Flag = "InfJump"
+})
+
+Misc:AddButton({
     Title = "Send Notification",
-    Description = "Glass button with an accent chip",
     Callback = function()
         Window:Notify({ Title = "Hello", Content = "Fluid glass notification", Type = "Success", Duration = 4 })
     end
 })
 
-Actions:AddButton({
-    Title = "Dangerous Action",
-    Description = "Asks before running",
-    Confirm = "Are you sure you want to run this?",
+Misc:AddButton({
+    Title = "Open Dialog",
+    Description = "Danger dialog with stacked actions on mobile",
     Callback = function()
-        Window:Notify({ Title = "Done", Content = "Action confirmed", Type = "Info" })
+        Window:Dialog({
+            Title = "Reset everything?",
+            Content = "All saved flags in this profile will be cleared.",
+            Type = "Danger",
+            Buttons = {
+                { Title = "Cancel" },
+                { Title = "Reset", Filled = true, Callback = function()
+                    Window:Notify({ Title = "Reset", Content = "Profile cleared", Type = "Info" })
+                end }
+            }
+        })
     end
 })
 
-Actions:AddMultiButton({
+Misc:AddButton({
+    Title = "Dialog With Input",
+    Callback = function()
+        Window:Dialog({
+            Title = "Rename profile",
+            Content = "Choose a new name.",
+            Type = "Question",
+            Input = { Placeholder = "profile name", Default = "default" },
+            Buttons = {
+                { Title = "Cancel" },
+                { Title = "Save", Filled = true, Callback = function(Value)
+                    print("new name", Value)
+                end }
+            }
+        })
+    end
+})
+
+Misc:AddMultiButton({
     Title = "Quick Row",
     Buttons = {
-        { Title = "Accent", Accent = true, Callback = function() print("accent") end },
+        { Title = "Primary", Filled = true, Callback = function() print("primary") end },
         { Title = "Normal", Callback = function() print("normal") end }
     }
 })
 
-Actions:AddProgress({ Title = "Loading", Default = 0.65, Suffix = "%" })  -- Default is a 0..1 fraction
+Misc:AddProgress({ Title = "Loading", Default = 0.65, Suffix = "%" })
 
--- Cards: containers that hold ANY other component -----------------------------
-local Showcase = Cards:AddSection({ Title = "Card showcase" })
+local Esp = Visuals:AddSection({ Title = "ESP" })
+Esp:AddToggle({ Title = "Boxes", Default = true, Flag = "Boxes" })
+Esp:AddToggle({ Title = "Names", Default = true, Flag = "Names" })
+Esp:AddColorpicker({ Title = "Box Color", Default = Color3.fromRGB(255, 255, 255), Flag = "BoxColor" })
 
--- 1) Declarative: describe the contents as a list. "Type" is any component name.
-Showcase:AddCard({
+Esp:AddCard({
     Title = "Aimbot",
-    Description = "Everything in this card is described by a table",
+    Description = "Everything here is described by a table",
     Icon = "crosshair",
-    Collapsible = true,                -- adds a chevron to fold the card
-    Actions = {                        -- little round buttons in the header
-        { Icon = "settings", Tip = "Settings", Callback = function() print("card settings") end }
-    },
+    Collapsible = true,
     Items = {
-        { Type = "Toggle",  Title = "Enabled",  Default = true,  Flag = "CardAimEnabled" },
-        { Type = "Slider",  Title = "Smoothness", Min = 1, Max = 20, Default = 6, Flag = "CardAimSmooth" },
-        { Type = "Dropdown", Title = "Bone", Options = { "Head", "Neck", "Chest" }, Default = "Head", Flag = "CardAimBone" },
-        { Type = "Button",  Title = "Reset", Callback = function() print("reset") end }
+        { Type = "Toggle", Title = "Enabled", Default = true, Flag = "CardAimEnabled" },
+        { Type = "Slider", Title = "Smoothness", Min = 1, Max = 20, Default = 6, Flag = "CardAimSmooth" },
+        { Type = "Dropdown", Title = "Bone", Options = { "Head", "Neck", "Chest" }, Default = "Head", Flag = "CardAimBone" }
     }
 })
 
--- 2) Method style: build it, then keep adding things any time.
-local Visual = Showcase:AddCard({
-    Title = "Visual Pack",
-    Description = "Add elements with the same Add* methods as a section",
-    Icon = "eye"
-})
-Visual:AddToggle({ Title = "Boxes", Default = true, Flag = "CardBoxes" })
-Visual:AddColorpicker({ Title = "Box Color", Default = Color3.fromRGB(150, 118, 255), Flag = "CardBoxColor" })
-Visual:AddInput({ Title = "Label Text", Placeholder = "type here...", Flag = "CardLabel" })
+local Vip = Premium:AddSection({ Title = "Premium tools" })
+Vip:AddToggle({ Title = "Unlimited Everything", Flag = "Unlimited" })
 
--- 3) Build callback, with a card nested inside a card.
-Showcase:AddCard({
-    Title = "Advanced",
-    Icon = "cpu",
-    Opened = false,                    -- starts folded
-    Collapsible = true,
-    Build = function(Card)
-        Card:AddParagraph({ Title = "Note", Content = "Cards can be nested and folded." })
-        local Inner = Card:AddCard({ Title = "Nested card", Description = "A card inside a card" })
-        Inner:AddSlider({ Title = "Value", Min = 0, Max = 100, Default = 50 })
+local Secure = Settings:AddSection({ Title = "Locked controls" })
+
+Secure:AddButton({
+    Title = "Wipe Data",
+    Description = "Needs a key from your own function",
+    Lock = {
+        Title = "Admin only",
+        Verify = function(Value)
+            if Value == "letmein" then
+                return true
+            end
+            return false, "Wrong key"
+        end
+    },
+    Callback = function()
+        Window:Notify({ Title = "Wiped", Content = "Data removed", Type = "Warn" })
     end
 })
 
--- More controls (all rebuilt for the glass design) -----------------------------
-local More = Cards:AddSection({ Title = "More controls" })
-
-More:AddSeparator({ Text = "Toggles and groups" })
-
-More:AddConfirmToggle({
-    Title = "Risky Mode",
-    Description = "Asks before turning on",
-    ConfirmTitle = "Enable Risky Mode?",
-    ConfirmContent = "This can get you flagged.",
-    Flag = "RiskyMode"
+Secure:AddToggle({
+    Title = "Server Backed",
+    Description = "Needs both the key list and the HTTP check to pass",
+    Lock = {
+        Require = "all",
+        Keys = { "KEY-1234", "KEY-5678" },
+        Provider = "Http",
+        Http = {
+            Url = "https://api.yoursite.com/verify?key={key}&hwid={hwid}&nonce={nonce}",
+            SuccessField = "valid",
+            NonceField = "nonce"
+        }
+    },
+    Flag = "ServerBacked"
 })
 
-More:AddToggleGroup({
-    Title = "Mode",
-    Options = { "Legit", "Rage", "Silent" },
-    Default = "Legit",
-    Flag = "AimMode"
-})
+local Look = Settings:AddSection({ Title = "Appearance" })
 
-More:AddTag({ Title = "Status", Name = "Undetected" })
-
-More:AddHotbar({
-    Title = "Quick Slots",
-    Items = {
-        { Icon = "settings", Tip = "Settings", Callback = function() print("slot 1") end },
-        { Icon = "eye",      Tip = "Visuals",  Callback = function() print("slot 2") end },
-        { Icon = "sparkles", Tip = "Effects",  Callback = function() print("slot 3") end }
-    }
-})
-
--- Settings -------------------------------------------------------------------
-local Appearance = Settings:AddSection({ Title = "Appearance" })
-
-Appearance:AddSlider({
+Look:AddSlider({
     Title = "Window Transparency",
-    Description = "0 = solid (default), higher = see-through",
-    Min = 0, Max = 60, Default = 0, Suffix = "%",
-    Callback = function(Value) Window:SetTransparency(Value / 100) end
+    Min = 0,
+    Max = 60,
+    Default = 0,
+    Suffix = "%",
+    Callback = function(Value)
+        Window:SetTransparency(Value / 100)
+    end
 })
 
-Appearance:AddParagraph({ Title = "Tip", Content = "Press RightShift to hide or show the window." })
+Look:AddInput({
+    Title = "Background Image",
+    Description = "Asset id or image url, empty to clear",
+    Placeholder = "rbxassetid://0",
+    Callback = function(Value)
+        Window:SetBackground(Value ~= "" and { Image = Value, Transparency = 0.55, Dim = 0.45 } or nil)
+    end
+})
 
-Window:Notify({ Title = "sh1ttybanana", Content = "Loaded fluid glass UI", Type = "Success" })
-
-
---[[ SUPABASE SETUP (run once in the Supabase SQL editor) ------------------------
-create table keys (
-  key text primary key,
-  active boolean not null default true,
-  expires_at timestamptz,
-  hwid text
-);
-alter table keys enable row level security;   -- no policies = the table is NOT readable with the anon key
-
-create or replace function validate_key(p_key text, p_hwid text) returns boolean
-language plpgsql security definer set search_path = public as $$
-declare r keys%rowtype;
-begin
-  select * into r from keys
-   where key = p_key and active and (expires_at is null or expires_at > now());
-  if not found then return false; end if;
-  if r.hwid is null then
-    update keys set hwid = p_hwid where key = p_key;   -- first use locks it to this device
-    return true;
-  end if;
-  return r.hwid = p_hwid;
-end $$;
-grant execute on function validate_key(text, text) to anon;
-
-insert into keys (key) values ('KEY-1234');   -- add keys like this
-NOTE: key checks run on the client, so a determined user can bypass them. Treat this as
-a gate, not as security for anything valuable; keep real checks on your own server.
--------------------------------------------------------------------------------]]
+Window:Notify({ Title = "sh1ttybanana", Content = "Press RightShift to hide or show", Type = "Success" })
