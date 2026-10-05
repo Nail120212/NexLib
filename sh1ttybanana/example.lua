@@ -4,19 +4,18 @@ local Window
 
 Window = Library:NewWindow({
     Title = "sh1ttybanana",
-    Description = "fluid glass",
-    Size = UDim2.fromOffset(720, 520),
-    TopbarStyle = "Mac",
+    Description = "Interactive Showcase · v0.5.0",
+    Icon = "sparkles",
+    Size = UDim2.fromOffset(700, 480),
     ToggleKey = Enum.KeyCode.RightShift,
-    Background = nil,
     TopbarButtons = {
         {
-            Icon = "sparkles",
+            Icon = "info",
             Title = "About",
             Callback = function()
                 Window:Dialog({
                     Title = "sh1ttybanana",
-                    Content = "Fluid glass UI v0.4. Floating subtab bar, header search, blur and smoother motion.",
+                    Content = "Version 0.5.0. Glass sidebar, top tabs, pill rows, header search and a cleaner component set.",
                     Type = "Info",
                     Buttons = { { Title = "Nice", Filled = true } }
                 })
@@ -25,11 +24,17 @@ Window = Library:NewWindow({
     }
 })
 
-local Main = Window:Tab({ Title = "Main", Icon = "sparkles" })
-local Visuals = Window:Tab({ Title = "Visuals", Icon = "eye" })
+local Settings = Window:Tab({ Title = "Settings", Icon = "sliders-horizontal|settings", Group = "Workspace" })
+local About = Window:Tab({ Title = "About", Icon = "info", Group = "Workspace" })
+local Appearance = Window:Tab({ Title = "Appearance", Icon = "palette", Group = "Workspace" })
+
+local Insights = Window:Tab({ Title = "Insights", Icon = "layout-dashboard", Group = "All Elements" })
+local Actions = Window:Tab({ Title = "API & Actions", Icon = "zap", Group = "All Elements" })
+local Components = Window:Tab({ Title = "Components", Icon = "grid-3x3|layout-grid|box", Group = "All Elements" })
 local Premium = Window:Tab({
     Title = "Premium",
     Icon = "crown",
+    Group = "All Elements",
     Lock = {
         Title = "Premium access",
         Description = "Enter your license key",
@@ -48,42 +53,17 @@ local Premium = Window:Tab({
         end
     }
 })
-local Showcase = Window:Tab({ Title = "Showcase", Icon = "layout-dashboard" })
-local Settings = Window:Tab({ Title = "Settings", Icon = "settings" })
 
-local General = Main:AddSubtab({ Title = "General", Icon = "layout-dashboard" })
-local Movement = Main:AddSubtab({ Title = "Movement", Icon = "footprints" })
-local Misc = Main:AddSubtab({ Title = "Misc", Icon = "box" })
+local General = Settings:AddSubtab({ Title = "General", Icon = "layout-dashboard" })
+local Movement = Settings:AddSubtab({ Title = "Movement", Icon = "footprints" })
+local Misc = Settings:AddSubtab({ Title = "Misc", Icon = "box" })
 
-local ShowcaseNames = {
-    { "Overview", "layout-dashboard" },
-    { "Aim", "crosshair" },
-    { "Visual", "eye" },
-    { "World", "box" },
-    { "Player", "footprints" },
-    { "Teleport", "sparkles" },
-    { "Config", "settings" },
-    { "Credits", "crown" }
-}
-
-for Index, Entry in ipairs(ShowcaseNames) do
-    local Sub = Showcase:AddSubtab({ Title = Entry[1], Icon = Entry[2] })
-    local Group = Sub:AddSection({ Title = Entry[1] })
-    for Row = 1, 6 do
-        Group:AddToggle({
-            Title = Entry[1] .. " option " .. Row,
-            Description = "Scroll down and the bar at the bottom shrinks out of the way",
-            Default = Row % 2 == 0,
-            Flag = "Showcase" .. Index .. "_" .. Row
-        })
-    end
-end
-
-local Combat = General:AddSection({ Title = "Combat" })
+local Combat = General:AddSection({ Title = "Combat", Icon = "crosshair" })
 
 Combat:AddToggle({
     Title = "Auto Farm",
-    Description = "Neutral glass toggle",
+    Description = "Runs the farm loop while enabled",
+    Icon = "repeat",
     Default = false,
     Flag = "AutoFarm",
     Callback = function(Value)
@@ -100,6 +80,7 @@ Combat:AddDropdown({
 
 Combat:AddDropdown({
     Title = "Targets",
+    Description = "Multi select with search",
     Options = { "Players", "NPCs", "Bosses", "Chests", "Vehicles", "Pets", "Objects", "Portals", "Drops" },
     Multi = true,
     Flag = "Targets"
@@ -110,12 +91,12 @@ Combat:AddKeybind({
     Default = Enum.KeyCode.E,
     Mode = "Toggle",
     Flag = "QuickKey",
-    Callback = function()
-        print("Keybind fired")
+    Callback = function(State)
+        print("Keybind state:", State)
     end
 })
 
-local Walk = Movement:AddSection({ Title = "Walking" })
+local Walk = Movement:AddSection({ Title = "Walking", Icon = "footprints" })
 
 Walk:AddSlider({
     Title = "Walk Speed",
@@ -139,7 +120,10 @@ Walk:AddRangeSlider({
     Min = 0,
     Max = 100,
     Default = { 20, 80 },
-    Flag = "TargetRange"
+    Flag = "TargetRange",
+    Callback = function(Low, High)
+        print("Range:", Low, High)
+    end
 })
 
 Movement:AddToggle({
@@ -148,16 +132,21 @@ Movement:AddToggle({
     Flag = "InfJump"
 })
 
-Misc:AddButton({
+local Notify = Misc:AddSection({ Title = "Feedback", Icon = "bell" })
+
+Notify:AddButton({
     Title = "Send Notification",
+    Description = "Slides a toast in from the corner",
+    Icon = "bell",
     Callback = function()
-        Window:Notify({ Title = "Hello", Content = "Fluid glass notification", Type = "Success", Duration = 4 })
+        Window:Notify({ Title = "Hello", Content = "Glass notification", Type = "Success", Duration = 4 })
     end
 })
 
-Misc:AddButton({
+Notify:AddButton({
     Title = "Open Dialog",
-    Description = "Danger dialog with stacked actions on mobile",
+    Description = "Danger dialog with two actions",
+    Icon = "triangle-alert|alert-triangle",
     Callback = function()
         Window:Dialog({
             Title = "Reset everything?",
@@ -165,16 +154,22 @@ Misc:AddButton({
             Type = "Danger",
             Buttons = {
                 { Title = "Cancel" },
-                { Title = "Reset", Filled = true, Callback = function()
-                    Window:Notify({ Title = "Reset", Content = "Profile cleared", Type = "Info" })
-                end }
+                {
+                    Title = "Reset",
+                    Filled = true,
+                    Callback = function()
+                        Window:Notify({ Title = "Reset", Content = "Profile cleared", Type = "Info" })
+                    end
+                }
             }
         })
     end
 })
 
-Misc:AddButton({
+Notify:AddButton({
     Title = "Dialog With Input",
+    Description = "Press Enter to confirm",
+    Icon = "pencil",
     Callback = function()
         Window:Dialog({
             Title = "Rename profile",
@@ -183,30 +178,194 @@ Misc:AddButton({
             Input = { Placeholder = "profile name", Default = "default" },
             Buttons = {
                 { Title = "Cancel" },
-                { Title = "Save", Filled = true, Callback = function(Value)
-                    print("new name", Value)
-                end }
+                {
+                    Title = "Save",
+                    Filled = true,
+                    Callback = function(Value)
+                        print("new name", Value)
+                    end
+                }
             }
         })
     end
 })
 
-Misc:AddMultiButton({
-    Title = "Quick Row",
+Notify:AddMultiButton({
     Buttons = {
         { Title = "Primary", Filled = true, Callback = function() print("primary") end },
         { Title = "Normal", Callback = function() print("normal") end }
     }
 })
 
-Misc:AddProgress({ Title = "Loading", Default = 0.65, Suffix = "%" })
+local Overview = About:AddSection({ Title = "About", Icon = "info" })
+Overview:AddParagraph({
+    Title = "sh1ttybanana 0.5.0",
+    Description = "A glass UI library with a grouped sidebar, top tabs, pill rows and a header search that jumps straight to any element."
+})
+Overview:AddLabel({ Title = "Toggle the window with RightShift" })
+Overview:AddProgress({ Title = "Showcase progress", Default = 0.65, Suffix = "%" })
 
-local Esp = Visuals:AddSection({ Title = "ESP" })
-Esp:AddToggle({ Title = "Boxes", Default = true, Flag = "Boxes" })
-Esp:AddToggle({ Title = "Names", Default = true, Flag = "Names" })
-Esp:AddColorpicker({ Title = "Box Color", Default = Color3.fromRGB(255, 255, 255), Flag = "BoxColor" })
+local Look = Appearance:AddSection({ Title = "Window", Icon = "palette" })
 
-Esp:AddCard({
+Look:AddSlider({
+    Title = "Window Transparency",
+    Min = 0,
+    Max = 60,
+    Default = 0,
+    Suffix = "%",
+    Callback = function(Value)
+        Window:SetTransparency(Value / 100)
+    end
+})
+
+Look:AddInput({
+    Title = "Background Image",
+    Description = "Asset id or image url, empty to clear",
+    Placeholder = "rbxassetid://0",
+    Callback = function(Value)
+        Window:SetBackground(Value ~= "" and { Image = Value, Transparency = 0.55, Dim = 0.45 } or nil)
+    end
+})
+
+Look:AddColorpicker({ Title = "Box Color", Default = Color3.fromRGB(255, 255, 255), Flag = "BoxColor" })
+
+Window:ThemePanel(Appearance)
+
+local Stats = Insights:AddSubtab({ Title = "Overview", Icon = "layout-dashboard" })
+local Detail = Insights:AddSubtab({ Title = "Detail", Icon = "scan|eye" })
+
+local Live = Stats:AddSection({ Title = "Live", Icon = "activity|zap" })
+Live:AddProgress({ Title = "Loading", Default = 0.4, Suffix = "%" })
+Live:AddLabel({ Title = "Nothing else to report" })
+
+local Rows = Detail:AddSection({ Title = "Rows", Icon = "list" })
+for Index = 1, 6 do
+    Rows:AddToggle({
+        Title = "Detail option " .. Index,
+        Description = "Scroll the page, the tab bar stays pinned",
+        Default = Index % 2 == 0,
+        Flag = "Detail" .. Index
+    })
+end
+
+local Welcome = Actions:AddSubtab({ Title = "Welcome", Icon = "info" })
+local Profile = Actions:AddSubtab({ Title = "Profile", Icon = "user" })
+local Quick = Actions:AddSubtab({ Title = "Actions", Icon = "zap" })
+local Win = Actions:AddSubtab({ Title = "Window", Icon = "app-window|layout-dashboard" })
+local Lab = Actions:AddSubtab({ Title = "API Lab", Icon = "braces|code" })
+
+Welcome:AddSection({ Title = "Welcome", Icon = "info" }):AddParagraph({
+    Title = "Everything is flag driven",
+    Description = "Mark an element with a Flag and it is saved, restored and searchable."
+})
+
+local Me = Profile:AddSection({ Title = "Player", Icon = "user" })
+Me:AddLabel({ Title = "Signed in as " .. game.Players.LocalPlayer.DisplayName })
+Me:AddInput({ Title = "Nickname", Placeholder = "type here", Flag = "Nickname" })
+
+local Quickies = Quick:AddSection({ Title = "Quick Actions", Icon = "zap" })
+
+Quickies:AddMultiButton({
+    Buttons = {
+        {
+            Title = "Save",
+            Icon = "save",
+            Callback = function()
+                Window:SaveConfig()
+                Window:Notify({ Title = "Saved", Content = "Settings written to disk", Type = "Success" })
+            end
+        },
+        {
+            Title = "Load",
+            Icon = "folder-open|folder",
+            Callback = function()
+                local Ok = Window:LoadConfig()
+                Window:Notify({
+                    Title = Ok and "Loaded" or "Nothing saved",
+                    Content = Ok and "Settings restored" or "Save once first",
+                    Type = Ok and "Success" or "Warn"
+                })
+            end
+        },
+        {
+            Title = "Delete",
+            Icon = "trash-2|trash",
+            Callback = function()
+                Window:Notify({
+                    Title = Window:DeleteConfig("default") and "Deleted" or "Delete failed",
+                    Content = "Profile: default",
+                    Type = "Info"
+                })
+            end
+        }
+    }
+})
+
+Quickies:AddButton({
+    Title = "Save Settings",
+    Description = "Saves every setting marked with a Flag",
+    Icon = "save",
+    Callback = function()
+        Window:SaveConfig()
+        Window:Notify({ Title = "Saved", Content = "Settings written to disk", Type = "Success" })
+    end
+})
+
+Quickies:AddButton({
+    Title = "Load Settings",
+    Description = "Restores whatever was last saved",
+    Icon = "folder-open|folder",
+    Callback = function()
+        Window:LoadConfig()
+    end
+})
+
+Quickies:AddButton({
+    Title = "Print Current Config",
+    Description = "Dumps every flagged value to the console",
+    Icon = "code-xml|code",
+    Callback = function()
+        for Flag, Element in pairs(Window.Flags) do
+            print(Flag, Element:Get())
+        end
+    end
+})
+
+Quickies:AddButton({
+    Title = "List Saved Configs",
+    Description = "Shows every local profile on disk",
+    Icon = "list-checks|list",
+    Callback = function()
+        local Names = Window:ListConfigs()
+        Window:Notify({
+            Title = "Saved configs",
+            Content = #Names > 0 and table.concat(Names, ", ") or "None yet",
+            Type = "Info"
+        })
+    end
+})
+
+Window:ConfigPanel(Win)
+
+local Api = Lab:AddSection({ Title = "Element API", Icon = "braces|code" })
+local Target = Api:AddToggle({ Title = "Target Toggle", Description = "Driven by the buttons below", Flag = "LabToggle" })
+
+Api:AddMultiButton({
+    Buttons = {
+        { Title = "Enable", Callback = function() Target:Set(true) end },
+        { Title = "Disable", Callback = function() Target:Set(false) end },
+        {
+            Title = "Lock",
+            Callback = function()
+                Target:SetLocked(not Target.Locked, "Locked from code")
+            end
+        }
+    }
+})
+
+Api:AddSeparator({ Title = "Cards" })
+
+Api:AddCard({
     Title = "Aimbot",
     Description = "Everything here is described by a table",
     Icon = "crosshair",
@@ -218,10 +377,16 @@ Esp:AddCard({
     }
 })
 
-local Vip = Premium:AddSection({ Title = "Premium tools" })
+local Parts = Components:AddSection({ Title = "Inputs", Icon = "keyboard" })
+Parts:AddInput({ Title = "Text", Placeholder = "anything", Flag = "DemoText" })
+Parts:AddInput({ Title = "Number", Placeholder = "digits only", Numeric = true, Flag = "DemoNumber" })
+Parts:AddKeybind({ Title = "Hold To Run", Default = Enum.KeyCode.LeftShift, Mode = "Hold", Flag = "HoldKey" })
+Parts:AddColorpicker({ Title = "Accent", Default = Color3.fromRGB(120, 180, 255), Flag = "DemoAccent" })
+
+local Vip = Premium:AddSection({ Title = "Premium tools", Icon = "crown" })
 Vip:AddToggle({ Title = "Unlimited Everything", Flag = "Unlimited" })
 
-local Secure = Settings:AddSection({ Title = "Locked controls" })
+local Secure = Components:AddSection({ Title = "Locked controls", Icon = "lock" })
 
 Secure:AddButton({
     Title = "Wipe Data",
@@ -256,26 +421,5 @@ Secure:AddToggle({
     Flag = "ServerBacked"
 })
 
-local Look = Settings:AddSection({ Title = "Appearance" })
-
-Look:AddSlider({
-    Title = "Window Transparency",
-    Min = 0,
-    Max = 60,
-    Default = 30,
-    Suffix = "%",
-    Callback = function(Value)
-        Window:SetTransparency(Value / 100)
-    end
-})
-
-Look:AddInput({
-    Title = "Background Image",
-    Description = "Asset id or image url, empty to clear",
-    Placeholder = "rbxassetid://0",
-    Callback = function(Value)
-        Window:SetBackground(Value ~= "" and { Image = Value, Transparency = 0.55, Dim = 0.45 } or nil)
-    end
-})
-
+Settings:Select()
 Window:Notify({ Title = "sh1ttybanana", Content = "Press RightShift to hide or show", Type = "Success" })
