@@ -1,5 +1,5 @@
 local Library = {}
-Library.Version = "0.5.0-glass"
+Library.Version = "0.7.0-glass"
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
@@ -721,6 +721,9 @@ function Library:NormalizeIcon(Name)
         return Name
     end
     local Lower = Name:lower()
+    if Lower == "home" then
+        return "lucide:house"
+    end
     if Lower:sub(1, 8) == "gravity:" then
         return "gravity:" .. Name:sub(9)
     end
@@ -1514,7 +1517,7 @@ local function PillButton(Parent, Text, IconName, Width, Filled)
         New("UIGradient", {
             Parent = Button,
             Rotation = 90,
-            Color = ColorSequence.new(Color3.fromRGB(255, 255, 255), Color3.fromRGB(196, 196, 196))
+            Color = ColorSequence.new(Color3.fromRGB(255, 255, 255), Color3.fromRGB(238, 238, 238))
         })
     else
         New("UIGradient", {
@@ -3265,8 +3268,10 @@ function Library:NewWindow(UserConfig)
         return Holder
     end
 
-    Badge(W.Config.Version, "Ink", 2)
-    Badge(W.Config.Tag, "Success", 3)
+    if not W.Mobile then
+        Badge(W.Config.Version, "Ink", 2)
+        Badge(W.Config.Tag, "Success", 3)
+    end
 
     local ToolCount = 0
     W.Controls = Blank(W.Header, {
@@ -3394,7 +3399,7 @@ function Library:NewWindow(UserConfig)
         ZIndex = 3
     })
 
-    W.SidebarWidth = Device.Viewport().X < 560 and 140 or 156
+    W.SidebarWidth = Device.Viewport().X < 560 and 144 or 156
     W.Inset = 0
 
     W.Sidebar = New("Frame", {
@@ -3762,8 +3767,8 @@ function Library:NewWindow(UserConfig)
         W.Body.Size = UDim2.new(1, 0, 1, -HeaderHeight)
         W.MenuButton.Visible = false
         local Class = Device.Class()
-        local Rail = Class == "Mobile"
-        W.SidebarWidth = Rail and 70 or (Class == "Tablet" and 164 or 156)
+        local Rail = false
+        W.SidebarWidth = Class == "Mobile" and 144 or (Class == "Tablet" and 164 or 156)
         W.ApplyRail(Rail)
         W.Sidebar.Size = UDim2.new(0, W.SidebarWidth, 1, 0)
         W.Sidebar.Visible = true
@@ -4229,26 +4234,19 @@ local function BuildSection(Tab, Config)
         BorderSizePixel = 0,
         Size = UDim2.new(1, 0, 0, 0),
         AutomaticSize = Enum.AutomaticSize.Y,
-        BackgroundTransparency = Config.Headerless and 1 or 0,
+        BackgroundTransparency = 1,
         LayoutOrder = Tab.SectionCount + 1,
         ClipsDescendants = true
     })
     Tab.SectionCount = Tab.SectionCount + 1
     Section.Frame = Card
 
-    if not Config.Headerless then
-        Library:Corner(Card, UDim.new(0, 16))
-        Library:Themed(Card, "BackgroundColor3", "Card")
-        Library:Themed(Card, "BackgroundTransparency", "CardAlpha")
-        Library:GlassEdge(Card, 1, 0.65)
-    end
-
     New("UIPadding", {
         Parent = Card,
-        PaddingTop = UDim.new(0, Config.Headerless and 0 or 12),
-        PaddingBottom = UDim.new(0, Config.Headerless and 0 or 12),
-        PaddingLeft = UDim.new(0, Config.Headerless and 0 or 12),
-        PaddingRight = UDim.new(0, Config.Headerless and 0 or 12)
+        PaddingTop = UDim.new(0, 2),
+        PaddingBottom = UDim.new(0, 2),
+        PaddingLeft = UDim.new(0, 1),
+        PaddingRight = UDim.new(0, 1)
     })
 
     New("UIListLayout", {
@@ -8123,7 +8121,7 @@ function Components.ToggleGroup(Section, Config)
         New("UIGradient", {
             Parent = Btn,
             Rotation = 90,
-            Color = ColorSequence.new(Color3.fromRGB(255, 255, 255), Color3.fromRGB(196, 196, 196))
+            Color = ColorSequence.new(Color3.fromRGB(255, 255, 255), Color3.fromRGB(238, 238, 238))
         })
         local Lab = New("TextLabel", {
             Parent = Btn,
@@ -12101,7 +12099,11 @@ function WM.AI(W)
         Size = UDim2.new(1, 0, 0, 44),
         LayoutOrder = 4
     })
+    KeyField.Visible = false
     New("UISizeConstraint", { Parent = KeyField, MaxSize = Vector2.new(360, 44) })
+    local GateButton = PillButton(GateStack, "Enter API key", Library.Icons.Key, 170, true)
+    GateButton.Size = UDim2.fromOffset(170, 38)
+    GateButton.LayoutOrder = 5
     Library:Corner(KeyField, UDim.new(0, 22))
     Library:Themed(KeyField, "BackgroundColor3", "Inset")
     Library:Themed(KeyField, "BackgroundTransparency", "InsetAlpha")
@@ -12166,12 +12168,19 @@ function WM.AI(W)
     KeySave.Position = UDim2.new(1, -8, 0.5, 0)
     KeySave.Size = UDim2.fromOffset(28, 28)
 
+    local KeyDialog
+    local OpenKeyDialog
     local function SetGate(Visible)
         Gate.Visible = Visible
         Field.Visible = not Visible
         Empty.Visible = not Visible and #Current().Messages == 0
         if Visible then
-            Library:Rise({ GateTile, GateTitle, GateText, KeyField })
+            Library:Rise({ GateTile, GateTitle, GateText, GateButton })
+            task.defer(function()
+                if Gate.Visible and OpenKeyDialog then
+                    OpenKeyDialog()
+                end
+            end)
         end
     end
 
@@ -12179,18 +12188,19 @@ function WM.AI(W)
         local Key = Trim(Value or "")
         if Key == "" then
             Notify("API key", "Paste a Groq key (gsk...)", "Warn")
+            OpenKeyDialog("")
             return
         end
         if not Key:lower():find("^gsk") then
             Notify("API key", "Key must start with gsk", "Error")
-            Library:Shake(KeyField, 5)
+            OpenKeyDialog(Key)
             return
         end
         Notify("API key", "Verifying...", "Info")
         Library:TestGroqKey(Key, function(Ok, Message)
             if not Ok then
                 Notify("API key", tostring(Message or "invalid"), "Error")
-                Library:Shake(KeyField, 5)
+                OpenKeyDialog(Key)
                 return
             end
             Library.Groq.Key = Key
@@ -12201,6 +12211,33 @@ function WM.AI(W)
             Notify("API key", "Verified and saved", "Success")
         end)
     end
+    OpenKeyDialog = function(Default)
+        if KeyDialog and KeyDialog.Open then
+            return
+        end
+        KeyDialog = WM.Dialog(W, {
+            Title = "Connect Groq",
+            Content = "Paste your Groq API key. It starts with gsk and is only saved on this device.",
+            Type = "Question",
+            Width = 380,
+            Input = { Placeholder = "gsk_...", Default = Default or "" },
+            Buttons = {
+                { Title = "Cancel" },
+                {
+                    Title = "Save key",
+                    Icon = Library.Icons.Check,
+                    Filled = true,
+                    Callback = function(Value)
+                        ApplyKey(Value)
+                    end
+                }
+            }
+        })
+    end
+    GateButton.MouseButton1Click:Connect(function()
+        Library:Press(GateButton)
+        OpenKeyDialog()
+    end)
     KeySave.MouseButton1Click:Connect(function()
         Library:Press(KeySave)
         ApplyKey(KeyReal)

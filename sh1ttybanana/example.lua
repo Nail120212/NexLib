@@ -24,7 +24,7 @@ Window = Library:NewWindow({
     }
 })
 
-local Main = Window:Tab({ Title = "Main", Icon = "sparkles" })
+local Main = Window:Tab({ Title = "Main", Icon = "house" })
 local Visuals = Window:Tab({ Title = "Visuals", Icon = "eye" })
 local Premium = Window:Tab({
     Title = "Premium",
